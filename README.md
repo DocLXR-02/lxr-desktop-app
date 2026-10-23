@@ -4,11 +4,11 @@ Firmware for the LXR V2 desktop drum machine: an STM32F765 (Cortex-M7, 216 MHz) 
 drum voices, FX bus, step sequencer, MIDI (DIN + USB), SD-card preset storage and the LCD/button UI.
 
 > **Licence and trademarks:** the firmware source code is free software under the GNU GPL version 3
-> ([LICENSE](../LICENSE)). You're welcome to study, change and share it, for example to write your own
+> ([LICENSE](LICENSE)). You're welcome to study, change and share it, for example to write your own
 > updates for your LXR. The names **"Erica Synths" and "LXR"** and the **LXR hardware** are the property
 > of Erica Synths and are **not** covered by this licence. Building and installing your own firmware is
 > at your own risk: Erica Synths provides no support for self-built or modified firmware. See
-> [Licence, trademarks and hardware](#licence-trademarks-and-hardware) below and [NOTICE.md](../NOTICE.md).
+> [Licence, trademarks and hardware](#licence-trademarks-and-hardware) below and [NOTICE.md](NOTICE.md).
 
 ## Updating your LXR
 
@@ -63,7 +63,7 @@ When the build has finished it shows where the update file is and how to install
 ```
 ======================================================================
   Firmware update file:
-    .../LXR_V2_STM32F765/build/release/LXR_V2_V1.7.img
+    .../lxr_desktop_app/build/release/LXR_V2_V1.7.img
   ...
 ```
 
@@ -108,7 +108,7 @@ If the updater stops with one of these messages, switch the LXR off, fix the cau
 | `-DLXR_GENERATE_LISTING=ON` | Also write a disassembly listing (`.list`) |
 
 Options are passed when configuring, e.g. `cmake --preset release -DLXR_GENERATE_LISTING=ON`.
-The toolchain file and the shared CMake modules and tools are in the repository's top-level `cmake/` folder.
+The toolchain file and the CMake modules and tools are in the `cmake/` folder.
 
 All files the build creates (in `build/<preset>/`):
 
@@ -249,8 +249,8 @@ V2J29) failed half-way through programming.
 Copyright (C) 2012-2026 Erica Synths.
 
 **Firmware licence.** The firmware, the bootloader and the build system are licensed under the
-[GNU General Public License version 3](../LICENSE) (GPL-3.0-only), with an additional permission for
-the STMicroelectronics libraries and the additional terms in [NOTICE.md](../NOTICE.md). In short:
+[GNU General Public License version 3](LICENSE) (GPL-3.0-only), with an additional permission for
+the STMicroelectronics libraries and the additional terms in [NOTICE.md](NOTICE.md). In short:
 
 - You may use, study and change the firmware, for example to build your own updates for your device.
 - If you share or distribute the firmware, or a modified version of it, including pre-installed on a
@@ -273,7 +273,7 @@ not be copied, manufactured or sold, in whole or in part, without prior written 
 Erica Synths.
 
 **Third-party code.** The repository includes components from STMicroelectronics, Arm and ChaN (FatFs)
-under their own licences. See [NOTICE.md](../NOTICE.md#third-party-components).
+under their own licences. See [NOTICE.md](NOTICE.md#third-party-components).
 
 
 <sup>

@@ -13,8 +13,8 @@ cmake_minimum_required(VERSION 3.21)
 #
 # See README.md for details.
 
-# CMake modules and tools shared with the bootloader project.
-set(LXR_CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}/../cmake")
+# CMake modules and tools (toolchain file, MCU settings, output generation).
+set(LXR_CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}/cmake")
 if(NOT CMAKE_TOOLCHAIN_FILE)
     set(CMAKE_TOOLCHAIN_FILE "${LXR_CMAKE_DIR}/arm-none-eabi.cmake")
 endif()
