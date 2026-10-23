@@ -179,3 +179,7 @@ set(LXR_ITCM_SOURCES
 if(LXR_ITCM_OPT)
     set_source_files_properties(${LXR_ITCM_SOURCES} PROPERTIES COMPILE_OPTIONS "${LXR_ITCM_OPT}")
 endif()
+# The SVF filters switch on the filter type inside the per-sample loop. GCC 15
+# jump-threads the loop back edge through that switch and duplicates the whole
+# loop body per case (ResonantFilter.c: 2772 B -> 6720 B at -O3, 8028 B at -O2).
+set_property(SOURCE Src/Soundengine/DSPAudio/ResonantFilter.c APPEND PROPERTY COMPILE_OPTIONS -fno-thread-jumps)

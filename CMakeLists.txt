@@ -41,11 +41,12 @@ set(CMAKE_C_FLAGS_RELEASE   "-O3 -g0")
 set(CMAKE_ASM_FLAGS_DEBUG   "-g3")
 set(CMAKE_ASM_FLAGS_RELEASE "")
 
-# The 16 KB ITCM overflows at -O3 with current GCC releases. Measured .itcm_text
-# with Arm GNU 14.3.rel1: -O3 16968 B (overflow), -O2 13168 B, -Os 8648 B;
-# with Arm GNU 11.3.rel1: -O3 14552 B (fits, use -DLXR_ITCM_OPT= for full -O3).
-# See LXR_ITCM_SOURCES in Core/CMakeLists.txt.
-set(LXR_ITCM_OPT "-O2" CACHE STRING
+# The 16 KB ITCM is tight. Measured .itcm_text (without linker stubs, ~0.5 KB)
+# with Arm GNU 15.2.rel1: -O3 14564 B, -O2 10420 B (with -fno-thread-jumps on
+# ResonantFilter.c, see Core/CMakeLists.txt; without it -O3 18724 B, -O2 16152 B);
+# with Arm GNU 11.3.rel1: -O3 14552 B. Set e.g. -DLXR_ITCM_OPT=-O2 if a future
+# compiler overflows again. See LXR_ITCM_SOURCES in Core/CMakeLists.txt.
+set(LXR_ITCM_OPT "" CACHE STRING
     "Optimisation flag for translation units with IN_ITCM_RAM code (empty = same as the rest)")
 
 # Bootloader for the full-flash image and "flash_full" (blank devices only).
