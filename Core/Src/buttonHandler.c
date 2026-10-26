@@ -1150,7 +1150,8 @@ static void buttonHandler_seqButtonPressed(uint8_t seqButtonPressed)
 
 
 
-				preset_savePatternRAM(seqButtonPressed + 16 * menu_activePatternBank);
+				FRESULT saveResult = preset_savePatternRAM(seqButtonPressed + 16 * menu_activePatternBank);
+				if(saveResult != FR_OK) { menu_showSdError(saveResult); return; }
 
 				//save to tmp folder
 				#if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
@@ -1158,7 +1159,7 @@ static void buttonHandler_seqButtonPressed(uint8_t seqButtonPressed)
 				#else
 
 				#endif
-					preset_savePatternSD(seqButtonPressed + 16 * menu_activePatternBank);
+					saveResult = preset_savePatternSD(seqButtonPressed + 16 * menu_activePatternBank);
 				#if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
 							HAL_TIM_Base_Stop_IT(&htim2);	//calc sample interrupt - prio 1
 				#else
@@ -1166,6 +1167,7 @@ static void buttonHandler_seqButtonPressed(uint8_t seqButtonPressed)
 				#endif
 
 
+				if(saveResult != FR_OK) { menu_showSdError(saveResult); return; }
 				menu_selectedPresetNr[SAVE_TYPE_PATTERN] = seqButtonPressed + 16 * menu_activePatternBank;
 				menu_activePage = PATTERN_SAVE_PAGE_OK;
 				sucessTimer = systick_ticks;

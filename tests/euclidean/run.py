@@ -54,6 +54,8 @@ def main():
         'seq_isMainStepActive', 'seq_setMainStep', 'seq_getShiftFlamPattern',
         'seq_processFlam', 'seq_addNote')]
     functions += [(preset, name) for name in (
+        'preset_sharedStatus', 'preset_openShared', 'preset_closeShared',
+        'preset_writeChecked', 'preset_finishSave',
         'preset_readPatternLengths', 'preset_writePatternData',
         'preset_readPatternData', 'preset_savePatternSD', 'preset_loadPatternSD',
         'preset_saveTmpPat', 'preset_LoadTmpPat')]

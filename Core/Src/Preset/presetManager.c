@@ -84,8 +84,52 @@ uint32_t preset_patTimer = 0;
 uint8_t preset_kitDirty = 0;
 uint8_t preset_patDirty = 0;
 
+/* One shared FIL: failed/short writes and failed closes are quarantined until reboot.
+ * Never clear FIL.err or close after an incomplete write: close could flush more data.
+ */
+static FRESULT preset_sharedFailure = FR_OK;
+static FRESULT preset_sharedStatus(void)
+{
+    if(preset_sharedFailure != FR_OK) return preset_sharedFailure;
+    return SDFile.obj.fs ? FR_LOCKED : FR_OK;
+}
+static FRESULT preset_openShared(FIL *file, const TCHAR *name, BYTE mode)
+{
+    FRESULT res = preset_sharedStatus();
+    if(res != FR_OK) return res;
+    res = f_open(file, name, mode);
+    if(res != FR_OK && ((mode & FA_WRITE) || res == FR_DISK_ERR || res == FR_INT_ERR))
+        preset_sharedFailure = res;
+    return res;
+}
+static FRESULT preset_closeShared(FIL *file)
+{
+    FRESULT res;
+    if(preset_sharedFailure != FR_OK) return preset_sharedFailure;
+    if(!file->obj.fs) return FR_INVALID_OBJECT;
+    res = f_close(file);
+    if(res != FR_OK) preset_sharedFailure = res;
+    return res;
+}
+static FRESULT preset_writeChecked(const void *data, UINT count)
+{
+    UINT written = 0;
+    FRESULT res;
+    if(preset_sharedFailure != FR_OK) return preset_sharedFailure;
+    res = f_write((FIL*)&SDFile, data, count, &written);
+    if(res == FR_OK && written != count) res = FR_DISK_ERR;
+    if(res != FR_OK) preset_sharedFailure = res;
+    return res;
+}
+static FRESULT preset_finishSave(FRESULT res)
+{
+    return res == FR_OK ? preset_closeShared((FIL*)&SDFile) : res;
+}
+static FRESULT preset_writePatternData(uint8_t patternNr);
+
 void preset_initTmpFolder()
 {
+    if(preset_sharedStatus() != FR_OK) return;
 	char folderName[13];
 	sprintf(folderName, "/tmp");
 
@@ -115,6 +159,8 @@ void preset_resetAllSaveTimers()
 
 FRESULT loadTmpFolderFiles()
 {
+    FRESULT shared = preset_sharedStatus();
+    if(shared != FR_OK) return shared;
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
 	HAL_TIM_Base_Start_IT(&htim2);	//calc sample interrupt - prio 1
 #else
@@ -132,7 +178,7 @@ FRESULT loadTmpFolderFiles()
 		{
 			lcd_process_display_interrupt = 1;
 			preset_initTmpFolder();
-			f_close((FIL*)&SDFile);
+			preset_closeShared((FIL*)&SDFile);
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
 			HAL_TIM_Base_Stop_IT(&htim2);	//calc sample interrupt - prio 1
 #else
@@ -143,7 +189,7 @@ FRESULT loadTmpFolderFiles()
 		res = preset_loadPatternSD(i);
 		if ((res != FR_OK) && (res != FR_NO_FILE))
 		{
-			f_close((FIL*)&SDFile);
+			preset_closeShared((FIL*)&SDFile);
 			lcd_process_display_interrupt = 1;
 			preset_initTmpFolder();
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
@@ -156,7 +202,7 @@ FRESULT loadTmpFolderFiles()
 		res = preset_loadSongSD(i);
 		if ((res != FR_OK) && (res != FR_NO_FILE))
 		{
-			f_close((FIL*)&SDFile);
+			preset_closeShared((FIL*)&SDFile);
 			lcd_process_display_interrupt = 1;
 			preset_initTmpFolder();
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
@@ -194,49 +240,20 @@ void preset_touchTimer(PresetTimer type)
 
 FRESULT preset_saveTmpKit()
 {
+    FRESULT res;
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
-	HAL_TIM_Base_Start_IT(&htim2);	//calc sample interrupt - prio 1
-#else
-
+    HAL_TIM_Base_Start_IT(&htim2);
 #endif
-	FRESULT res;
-	unsigned int bytesWritten;
-
-	//open the file
-	res = f_open((FIL*)&SDFile,"tmp.snd",FA_CREATE_ALWAYS | FA_WRITE);
-	if(res != FR_OK)
-	{
+    res = preset_openShared((FIL*)&SDFile, "tmp.snd", FA_CREATE_ALWAYS | FA_WRITE);
+    if(res == FR_OK) {
+        res = preset_writeChecked(&menu_selectedPresetNr[SAVE_TYPE_KIT], 1);
+        if(res == FR_OK) res = preset_writeChecked(activeParameters, END_OF_SOUND_PARAMETERS);
+        res = preset_finishSave(res);
+    }
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
-			HAL_TIM_Base_Stop_IT(&htim2);	//calc sample interrupt - prio 1
-#else
-
+    HAL_TIM_Base_Stop_IT(&htim2);
 #endif
-		return res;
-	}
-
-	//write current preset nr to file
-	res = f_write((FIL*)&SDFile,(void*)&menu_selectedPresetNr[SAVE_TYPE_KIT],1,&bytesWritten);
-	if(res != FR_OK)
-	{
-		f_close((FIL*)&SDFile);
-#if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
-			HAL_TIM_Base_Stop_IT(&htim2);	//calc sample interrupt - prio 1
-#else
-
-#endif
-		return res;
-	}
-	//write the preset data
-	f_write((FIL*)&SDFile,activeParameters,END_OF_SOUND_PARAMETERS,&bytesWritten);
-
-	//close the file
-	f_close((FIL*)&SDFile);
-#if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
-			HAL_TIM_Base_Stop_IT(&htim2);	//calc sample interrupt - prio 1
-#else
-
-#endif
-	return FR_OK;
+    return res;
 }
 
 FRESULT preset_LoadTmpKit()
@@ -246,7 +263,7 @@ FRESULT preset_LoadTmpKit()
 	uint8_t kitNr = 0;
 
 	//open the file
-	res = f_open((FIL*)&SDFile,"tmp.snd",FA_OPEN_EXISTING | FA_READ);
+	res = preset_openShared((FIL*)&SDFile,"tmp.snd",FA_OPEN_EXISTING | FA_READ);
 	if(res != FR_OK) return res;
 
 	//first the preset nr
@@ -288,7 +305,7 @@ FRESULT preset_LoadTmpKit()
 
 	closeFile:
 		//close the file handle
-		f_close((FIL*)&SDFile);
+		preset_closeShared((FIL*)&SDFile);
 
 		// update the soundengine with the new parameters
 		if(res==FR_OK) {
@@ -344,7 +361,7 @@ FRESULT preset_LoadTmpPat()
 
 
 
-		res = f_open((FIL*)&SDFile,"tmp.pat",FA_OPEN_EXISTING | FA_READ);
+		res = preset_openShared((FIL*)&SDFile,"tmp.pat",FA_OPEN_EXISTING | FA_READ);
 		if(res != FR_OK)
 		{
 		#if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
@@ -460,7 +477,7 @@ FRESULT preset_LoadTmpPat()
 		{
 
 
-			f_close((FIL*)&SDFile);
+			preset_closeShared((FIL*)&SDFile);
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
 			HAL_TIM_Base_Stop_IT(&htim2);	//calc sample interrupt - prio 1
 #else
@@ -475,7 +492,7 @@ FRESULT preset_LoadTmpPat()
 
 
 	closeFile:
-		f_close((FIL*)&SDFile);
+		preset_closeShared((FIL*)&SDFile);
 
 		#if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
 					HAL_TIM_Base_Stop_IT(&htim2);	//calc sample interrupt - prio 1
@@ -493,108 +510,21 @@ FRESULT preset_LoadTmpPat()
 
 FRESULT preset_saveTmpPat()
 {
-
-	//don't save invalid pattern
-	if(menu_playedPattern >= NUM_PATTERN) return FR_INVALID_PARAMETER;
+    FRESULT res;
+    if(menu_playedPattern >= NUM_PATTERN) return FR_INVALID_PARAMETER;
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
-	HAL_TIM_Base_Start_IT(&htim2);	//calc sample interrupt - prio 1
-#else
-
+    HAL_TIM_Base_Start_IT(&htim2);
 #endif
-
-	FRESULT res;
-	UINT bytesWritten;
-	uint8_t presetNr = menu_playedPattern;
-	//lcd_clear();
-	//lcd_home();
-	//lcd_string(PSTR("Saving pattern"));
-
-	//open the file
-	res = f_open((FIL*)&SDFile,"tmp.pat",FA_CREATE_ALWAYS | FA_WRITE);
-	if(res != FR_OK)
-	{
+    res = preset_openShared((FIL*)&SDFile, "tmp.pat", FA_CREATE_ALWAYS | FA_WRITE);
+    if(res == FR_OK) {
+        res = preset_writeChecked(&menu_playedPattern, 1);
+        if(res == FR_OK) res = preset_writePatternData(menu_playedPattern);
+        res = preset_finishSave(res);
+    }
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
-			HAL_TIM_Base_Stop_IT(&htim2);	//calc sample interrupt - prio 1
-#else
-
+    HAL_TIM_Base_Stop_IT(&htim2);
 #endif
-		return res;
-	}
-
-	//write current preset nr to file
-	res = f_write((FIL*)&SDFile,(void*)&menu_playedPattern,1,&bytesWritten);
-	if(res != FR_OK)
-	{
-		f_close((FIL*)&SDFile);
-#if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
-			HAL_TIM_Base_Stop_IT(&htim2);	//calc sample interrupt - prio 1
-#else
-
-#endif
-		return res;
-	}
-
-	//write pattern data
-	//preset_writePatternData(presetNr);
-#if 0
-#else
-
-		uint8_t length;
-
-		//---------------  write the step data (note, vol, prob, autom.) ---------------
-		for(uint8_t trk=0; trk<NUM_TRACKS;trk++)
-		{
-			f_write((FIL*)&SDFile,(const void*)&seq_patternSet.seq_subStepPattern[presetNr][trk][0],sizeof(Step)*STEPS_PER_PATTERN,&bytesWritten);
-
-			f_write((FIL*)&SDFile,(const void*)&seq_patternSet.seq_stepTiming[presetNr][trk][0],sizeof(uint8_t)*STEPS_PER_PATTERN,&bytesWritten);
-		}
-
-		//--------------- now the main step data ---------------
-		for(uint8_t trk=0; trk<NUM_TRACKS;trk++)
-		{
-			for(uint8_t bar=0;bar<NUM_BARS; bar++)
-			{
-				const uint16_t mainStepData = seq_patternSet.seq_mainSteps[bar][presetNr][trk];
-				f_write((FIL*)&SDFile,(const void*)&mainStepData,sizeof(uint16_t),&bytesWritten);
-			}
-		}
-
-		//----- shuffle setting ------
-
-
-		//f_write((FIL*)&SDFile,(const void*)&activeParameters[PAR_SHUFFLE],sizeof(uint8_t),&bytesWritten);
-		f_write((FIL*)&SDFile,(const void*)&seq_patternSet.shuffle[presetNr],sizeof(uint8_t),&bytesWritten);
-
-		//----- pattern/track lengths ------
-		// we reuse the same call from above (when saving main step data)
-		// but we only use the length info retrieved. We want to store it at the end
-		// to avoid breaking compatibility with save file
-
-
-		for(uint8_t trk=0; trk<NUM_TRACKS;trk++)
-		{
-				length = seq_patternSet.length[presetNr][trk] ;//seq_patternSet.seq_mainSteps[bar][pat][trk];
-				f_write((FIL*)&SDFile,(const void*)&length,sizeof(uint8_t),&bytesWritten);
-		}
-
-		//write associated kit nr
-		f_write((FIL*)&SDFile,&seq_patternSet.kitNr[presetNr],sizeof(uint8_t),&bytesWritten);
-
-#endif
-
-	//close the file
-	f_close((FIL*)&SDFile);
-
-	//reset the lcd
-//	menu_repaintAll();
-
-#if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
-			HAL_TIM_Base_Stop_IT(&htim2);	//calc sample interrupt - prio 1
-#else
-
-#endif
-
-	return res;
+    return res;
 }
 
 /*------------------------------------------------------------/
@@ -649,6 +579,8 @@ FRESULT delete_node (
 
 FRESULT preset_clearTmpFolder()
 {
+    FRESULT shared = preset_sharedStatus();
+    if(shared != FR_OK) return shared;
 	FILINFO fno;
 	FRESULT fr;
 	TCHAR buff[256];
@@ -668,23 +600,23 @@ FRESULT preset_clearTmpFolder()
 
 void preset_processTimer()
 {
-	if(preset_patDirty == 1)
-	{
-		if(HAL_GetTick()-preset_patTimer >= PRESET_SAVE_TIME )
-		{
-			preset_patDirty = 0;
-			preset_saveTmpPat();
-		}
-	}
-
-	if(preset_kitDirty == 1)
-	{
-		if(HAL_GetTick()-preset_kitTimer >= PRESET_SAVE_TIME )
-		{
-			preset_kitDirty = 0;
-			preset_saveTmpKit();
-		}
-	}
+    FRESULT res = FR_OK;
+    if(preset_sharedFailure != FR_OK) {
+        preset_resetAllSaveTimers();
+        return;
+    }
+    if(preset_patDirty && HAL_GetTick() - preset_patTimer >= PRESET_SAVE_TIME) {
+        preset_patDirty = 0;
+        res = preset_saveTmpPat();
+    }
+    if(res == FR_OK && preset_kitDirty && HAL_GetTick() - preset_kitTimer >= PRESET_SAVE_TIME) {
+        preset_kitDirty = 0;
+        res = preset_saveTmpKit();
+    }
+    if(res != FR_OK) {
+        preset_resetAllSaveTimers();
+        menu_showSdError(res); /* This service is called only by the foreground loop. */
+    }
 }
 
 
@@ -798,10 +730,10 @@ void preset_init(uint8_t presetNr)
 }
 
 //----------------------------------------------------
-static void preset_writeDrumsetData(uint8_t presetNr, uint8_t isMorph)
+static FRESULT preset_writeDrumsetData(uint8_t presetNr, uint8_t isMorph)
 {
 	uint16_t i;
-	unsigned int bytesWritten;
+	FRESULT res;
 
 	if(isMorph)
 	{
@@ -823,14 +755,17 @@ static void preset_writeDrumsetData(uint8_t presetNr, uint8_t isMorph)
 			{
 				value = preset_getMorphValue(i,activeParameters[PAR_MORPH]);
 			}					
-			f_write((FIL*)&SDFile,&value,1,&bytesWritten);
+			res = preset_writeChecked(&value,1);
+			if(res != FR_OK) return res;
 		}
 	} else {
 		for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
 		{
-			f_write((FIL*)&SDFile,&mainParameters[presetNr][i],1,&bytesWritten);
+			res = preset_writeChecked(&mainParameters[presetNr][i],1);
+			if(res != FR_OK) return res;
 		}
 	}
+    return FR_OK;
 }
 
 //----------------------------------------------------
@@ -901,69 +836,43 @@ void preset_saveDrumsetRam(uint8_t presetNr, uint8_t isMorph)
 FRESULT preset_saveDrumsetSD(uint8_t presetNr, uint8_t isMorph)
 {
 #if USE_SD_CARD
-	FRESULT res;
-	unsigned int bytesWritten;
-	//filename in 8.3  format
-	char filename[13];
-	preset_makeFileNameSave(filename,presetNr,FEXT_SOUND, savefileNames[presetNr][KIT_NAMES]);
-	//sprintf(filename,"p%03d.snd",presetNr);
-
-
-
-	//open the file
-	res = f_open((FIL*)&SDFile,filename,FA_CREATE_ALWAYS | FA_WRITE);
-	if(res != FR_OK) return res;
-	
-	//write preset name to file
-
-	res = f_write((FIL*)&SDFile,(void*)savefileNames[presetNr][KIT_NAMES],8,&bytesWritten);
-	if(res != FR_OK) return res;
-	//write the preset data
-	preset_writeDrumsetData(presetNr, isMorph);
-	
-	//close the file
-	f_close((FIL*)&SDFile);
-
-	return FR_OK;
+    char filename[13];
+    FRESULT res;
+    if(presetNr >= NUM_KIT_SLOTS) return FR_INVALID_PARAMETER;
+    preset_makeFileNameSave(filename, presetNr, FEXT_SOUND, savefileNames[presetNr][KIT_NAMES]);
+    res = preset_openShared((FIL*)&SDFile, filename, FA_CREATE_ALWAYS | FA_WRITE);
+    if(res != FR_OK) return res;
+    res = preset_writeChecked(savefileNames[presetNr][KIT_NAMES], 8);
+    if(res == FR_OK) res = preset_writeDrumsetData(presetNr, isMorph);
+    return preset_finishSave(res);
 #else
+    return FR_NOT_READY;
 #endif
 };
 
 //----------------------------------------------------
-static void preset_writeGlobalData()
+static FRESULT preset_writeGlobalData()
 {
-	unsigned int bytesWritten;
+	FRESULT res;
 	int i;
 	for(i=PAR_BEGINNING_OF_GLOBALS;(i<NUM_PARAMS);i++)
 	{
-		f_write((FIL*)&SDFile,&activeParameters[i],1,&bytesWritten);
+		res = preset_writeChecked(&activeParameters[i],1);
+		if(res != FR_OK) return res;
 	}
+    return FR_OK;
 }
 
 //----------------------------------------------------
 FRESULT preset_saveGlobals()
 {
 #if USE_SD_CARD
-	FRESULT res;
-/*
-	res = f_mount((FATFS*)&SDFatFS, (TCHAR const*)SDPath,1);
-	if( res != FR_OK)
-	{
-		return res;
-	}
-	*/
-	//open the file
-	res = f_open((FIL*)&SDFile,"glo.cfg",FA_CREATE_ALWAYS | FA_WRITE);
-	if(res != FR_OK) return res;
-	preset_writeGlobalData();
-
-	//close the file
-	f_close((FIL*)&SDFile);
-
-	//f_unmount((TCHAR const*)SDPath);
-	return FR_OK;
+    FRESULT res = preset_openShared((FIL*)&SDFile, "glo.cfg", FA_CREATE_ALWAYS | FA_WRITE);
+    if(res != FR_OK) return res;
+    return preset_finishSave(preset_writeGlobalData());
 #else
-#endif	
+    return FR_NOT_READY;
+#endif
 }
 //----------------------------------------------------
 // returns 1 on success
@@ -1006,17 +915,17 @@ uint8_t preset_loadGlobals()
 	*/
 
 	//open the file
-	res = f_open((FIL*)&SDFile,"glo.cfg",FA_OPEN_EXISTING | FA_READ);
+	res = preset_openShared((FIL*)&SDFile,"glo.cfg",FA_OPEN_EXISTING | FA_READ);
 	
 	if(res!=FR_OK)
 		return 0; //file open error... maybe the file does not exist?
 
 	if(!preset_readGlobalData())
 	{
-		f_close((FIL*)&SDFile);
+		preset_closeShared((FIL*)&SDFile);
 		return 0;
 	}
-	f_close((FIL*)&SDFile);
+	preset_closeShared((FIL*)&SDFile);
 	menu_sendAllGlobals();
 	
 	//f_unmount((TCHAR const*)SDPath);
@@ -1075,8 +984,10 @@ void preset_loadDefaultGlobals()
 //----------------------------------------------------
 void preset_createGlobals()
 {
-	preset_loadDefaultGlobals();
-	preset_saveGlobals();
+    FRESULT res;
+    preset_loadDefaultGlobals();
+    res = preset_saveGlobals();
+    if(res != FR_OK) menu_showSdError(res);
 }
 //----------------------------------------------------
 FRESULT preset_loadLastUsedProjectNrFromSD(uint8_t* projNr)
@@ -1086,17 +997,17 @@ FRESULT preset_loadLastUsedProjectNrFromSD(uint8_t* projNr)
     *projNr = 0;
     unsigned int bytesRead;
 
-    res = f_open((FIL*)&SDFile,"/proj.idx",FA_OPEN_EXISTING | FA_READ);
+    res = preset_openShared((FIL*)&SDFile,"/proj.idx",FA_OPEN_EXISTING | FA_READ);
     if(res != FR_OK)
     {
     	//close the file handle
-    	f_close((FIL*)&SDFile);
+    preset_closeShared((FIL*)&SDFile);
     	return res;
     }
 
     res=f_read((FIL*)&SDFile, projNr,1, &bytesRead);
 	//close the file handle
-	f_close((FIL*)&SDFile);
+	preset_closeShared((FIL*)&SDFile);
 
 
 	return res;
@@ -1105,32 +1016,11 @@ FRESULT preset_loadLastUsedProjectNrFromSD(uint8_t* projNr)
 FRESULT preset_saveLastUsedProjectNrToSD(uint8_t projNr)
 {
 #if USE_SD_CARD
-    FRESULT res;
-
-	//open the file
-	res = f_open((FIL*)&SDFile,"/proj.idx",FA_CREATE_ALWAYS | FA_WRITE);
-	if(res != FR_OK)
-	{
-		//close the file handle
-		f_close((FIL*)&SDFile);
-		return res;
-	}
-
-	unsigned int bytesWritten;
-	res = f_write((FIL*)&SDFile,&projNr,1,&bytesWritten);
-	if(res != FR_OK)
-	{
-		//close the file handle
-		f_close((FIL*)&SDFile);
-		return res;
-	}
-
-	//close the file
-	f_close((FIL*)&SDFile);
-
-	//f_unmount((TCHAR const*)SDPath);
-	return res;
+    FRESULT res = preset_openShared((FIL*)&SDFile, "/proj.idx", FA_CREATE_ALWAYS | FA_WRITE);
+    if(res != FR_OK) return res;
+    return preset_finishSave(preset_writeChecked(&projNr, 1));
 #else
+    return FR_NOT_READY;
 #endif
 }
 //----------------------------------------------------
@@ -1203,7 +1093,7 @@ FRESULT preset_loadDrumsetSD(uint8_t presetNr, uint8_t isMorph)
 	{
 		//try old filename
 		preset_makeFileNameOld(filename,presetNr,FEXT_SOUND);
-		res = f_open((FIL*)&SDFile,filename,FA_OPEN_EXISTING | FA_READ);
+		res = preset_openShared((FIL*)&SDFile,filename,FA_OPEN_EXISTING | FA_READ);
 		if(res!=FR_OK)
 			goto error; //file open error... maybe the file does not exist?
 	}
@@ -1237,7 +1127,7 @@ FRESULT preset_loadDrumsetSD(uint8_t presetNr, uint8_t isMorph)
 #endif
 closeFile:
 	//close the file handle
-	f_close((FIL*)&SDFile);
+	preset_closeShared((FIL*)&SDFile);
 
 	// update the soundengine with the new parameters
 	if(res==FR_OK) {
@@ -1592,19 +1482,22 @@ void preset_queryMainStepDataFromSeq(uint16_t stepNr, uint16_t *mainStepData, ui
 };
 
 //----------------------------------------------------
-static void preset_writePatternData(uint8_t patternNr)
+static FRESULT preset_writePatternData(uint8_t patternNr)
 {
 #if 0
 #else
-		UINT bytesWritten;
+		FRESULT res;
 		uint8_t length;
 
 		//---------------  write the step data (note, vol, prob, autom.) ---------------
 		for(uint8_t trk=0; trk<NUM_TRACKS;trk++)
 		{
-			f_write((FIL*)&SDFile,(const void*)&seq_patternSet.seq_subStepPattern[patternNr][trk][0],sizeof(Step)*STEPS_PER_PATTERN,&bytesWritten);
+			res = preset_writeChecked((const void*)&seq_patternSet.seq_subStepPattern[patternNr][trk][0],sizeof(Step)*STEPS_PER_PATTERN);
+			if(res != FR_OK) return res;
 
-			f_write((FIL*)&SDFile,(const void*)&seq_patternSet.seq_stepTiming[patternNr][trk][0],sizeof(uint8_t)*STEPS_PER_PATTERN,&bytesWritten);
+			res = preset_writeChecked((const void*)&seq_patternSet.seq_stepTiming[patternNr][trk][0],sizeof(uint8_t)*STEPS_PER_PATTERN);
+
+			if(res != FR_OK) return res;
 		}
 
 		//--------------- now the main step data ---------------
@@ -1613,7 +1506,8 @@ static void preset_writePatternData(uint8_t patternNr)
 			for(uint8_t bar=0;bar<NUM_BARS; bar++)
 			{
 				const uint16_t mainStepData = seq_patternSet.seq_mainSteps[bar][patternNr][trk];
-				f_write((FIL*)&SDFile,(const void*)&mainStepData,sizeof(uint16_t),&bytesWritten);
+				res = preset_writeChecked((const void*)&mainStepData,sizeof(uint16_t));
+				if(res != FR_OK) return res;
 			}
 		}
 
@@ -1621,7 +1515,8 @@ static void preset_writePatternData(uint8_t patternNr)
 
 
 		//f_write((FIL*)&SDFile,(const void*)&activeParameters[PAR_SHUFFLE],sizeof(uint8_t),&bytesWritten);
-		f_write((FIL*)&SDFile,(const void*)&seq_patternSet.shuffle[patternNr],sizeof(uint8_t),&bytesWritten);
+		res = preset_writeChecked((const void*)&seq_patternSet.shuffle[patternNr],sizeof(uint8_t));
+		if(res != FR_OK) return res;
 
 		//----- pattern/track lengths ------
 		// we reuse the same call from above (when saving main step data)
@@ -1632,13 +1527,16 @@ static void preset_writePatternData(uint8_t patternNr)
 		for(uint8_t trk=0; trk<NUM_TRACKS;trk++)
 		{
 				length = seq_patternSet.length[patternNr][trk] ;//seq_patternSet.seq_mainSteps[bar][pat][trk];
-				f_write((FIL*)&SDFile,(const void*)&length,sizeof(uint8_t),&bytesWritten);
+				res = preset_writeChecked((const void*)&length,sizeof(uint8_t));
+				if(res != FR_OK) return res;
 		}
 
 		//write associated kit nr
-		f_write((FIL*)&SDFile,&seq_patternSet.kitNr[patternNr],sizeof(uint8_t),&bytesWritten);
+		res = preset_writeChecked(&seq_patternSet.kitNr[patternNr],sizeof(uint8_t));
+		if(res != FR_OK) return res;
 
 #endif
+    return FR_OK;
 }
 
 //----------------------------------------------------
@@ -1676,39 +1574,22 @@ void preset_savePatternTemp(uint8_t presetNr)
 //----------------------------------------------------
 FRESULT preset_savePatternSD(uint8_t presetNr)
 {
-
-	FRESULT res;
-	UINT bytesWritten;
-	//lcd_clear();
-	//lcd_home();
-	//lcd_string(PSTR("Saving pattern"));
-	
-	
-	//filename in 8.3  format
-	char filename[13];
-	//sprintf(filename,"p%03d.pat",presetNr);
-	preset_makeFileNameSave(filename,presetNr,FEXT_PAT, savefileNames[presetNr][PATTERN_NAMES]);
-	//open the file
-	res = f_open((FIL*)&SDFile,filename,FA_CREATE_ALWAYS | FA_WRITE);
-	if(res != FR_OK) return res;
-
-	//write preset name to file
-	res = f_write((FIL*)&SDFile,(void*)savefileNames[presetNr][PATTERN_NAMES],8,&bytesWritten);
-	if(res != FR_OK) return res;
-	//write version tag
-	res = f_write((FIL*)&SDFile,"PatV03",6,&bytesWritten);
-	if(res != FR_OK) return res;
-
-	//write pattern data
-	preset_writePatternData(presetNr);
-
-	//close the file
-	f_close((FIL*)&SDFile);
-	
-	//reset the lcd
-	menu_repaintAll();
-	
-	return FR_OK;
+#if USE_SD_CARD
+    char filename[13];
+    FRESULT res;
+    if(presetNr >= NUM_PATTERN) return FR_INVALID_PARAMETER;
+    preset_makeFileNameSave(filename, presetNr, FEXT_PAT, savefileNames[presetNr][PATTERN_NAMES]);
+    res = preset_openShared((FIL*)&SDFile, filename, FA_CREATE_ALWAYS | FA_WRITE);
+    if(res != FR_OK) return res;
+    res = preset_writeChecked(savefileNames[presetNr][PATTERN_NAMES], 8);
+    if(res == FR_OK) res = preset_writeChecked("PatV03", 6);
+    if(res == FR_OK) res = preset_writePatternData(presetNr);
+    res = preset_finishSave(res);
+    if(res == FR_OK) menu_repaintAll();
+    return res;
+#else
+    return FR_NOT_READY;
+#endif
 }
 
 //----------------------------------------------------
@@ -2029,7 +1910,7 @@ FRESULT preset_loadPatternSD(uint8_t presetNr)
 	{
 		//try old filename
 		preset_makeFileNameOld(filename,presetNr,FEXT_PAT);
-		res = f_open((FIL*)&SDFile,filename,FA_OPEN_EXISTING | FA_READ);
+		res = preset_openShared((FIL*)&SDFile,filename,FA_OPEN_EXISTING | FA_READ);
 		if(res!=FR_OK)
 			return res; //file open error... maybe the file does not exist?
 	}
@@ -2072,7 +1953,7 @@ FRESULT preset_loadPatternSD(uint8_t presetNr)
 
 
 closeFile:
-	f_close((FIL*)&SDFile);
+	preset_closeShared((FIL*)&SDFile);
 	
 	//force complete repaint
 	menu_repaintAll();
@@ -2245,6 +2126,8 @@ uint8_t preset_getMorphValue(uint16_t index, uint8_t morph)
 
 FRESULT preset_createProject(uint8_t presetNr)
 {
+    FRESULT shared = preset_sharedStatus();
+    if(shared != FR_OK) return shared;
 
 
 	//create default globals
@@ -2293,6 +2176,8 @@ FRESULT preset_createProject(uint8_t presetNr)
 
 FRESULT preset_saveProject(uint8_t presetNr)
 {
+    FRESULT shared = preset_sharedStatus();
+    if(shared != FR_OK) return shared;
 	FRESULT res;
 	FILINFO fno;
 
@@ -2388,7 +2273,7 @@ FRESULT preset_saveProject(uint8_t presetNr)
 
 	//Save Project name
 	//open the file
-	res = f_open((FIL*)&SDFile,"prj.nfo",FA_CREATE_ALWAYS | FA_WRITE);
+	res = preset_openShared((FIL*)&SDFile,"prj.nfo",FA_CREATE_ALWAYS | FA_WRITE);
 	if(res != FR_OK) {
 		lcd_process_display_interrupt = 1;
 		preset_initTmpFolder();
@@ -2415,7 +2300,7 @@ FRESULT preset_saveProject(uint8_t presetNr)
 		return res;
 	}
 	//close the file
-	f_close((FIL*)&SDFile);
+	preset_closeShared((FIL*)&SDFile);
 
 //	soundengine_process();
 	//save globals
@@ -2571,7 +2456,7 @@ FRESULT preset_loadSongSD(uint8_t songNr)
 	{
 		//try old filename
 		preset_makeFileNameOld(filename,songNr,FEXT_SONG);
-		res = f_open((FIL*)&SDFile,filename,FA_OPEN_EXISTING | FA_READ);
+		res = preset_openShared((FIL*)&SDFile,filename,FA_OPEN_EXISTING | FA_READ);
 		if(res!=FR_OK)
 			return res; //file open error... maybe the file does not exist?
 	}
@@ -2592,45 +2477,28 @@ FRESULT preset_loadSongSD(uint8_t songNr)
 
 	closeFile:
 		//close the file handle
-		f_close((FIL*)&SDFile);
+		preset_closeShared((FIL*)&SDFile);
 		return res;
 }
 //----------------------------------------------------
 FRESULT preset_saveSongSD(uint8_t songNr)
 {
-	FRESULT res;
-	char filename[13];
-	unsigned int bytesWritten;
-	preset_makeFileNameSave(filename,songNr,FEXT_SONG, savefileNames[songNr][SONG_NAMES]);
-	//open the file
-	res = f_open((FIL*)&SDFile,filename,FA_CREATE_ALWAYS | FA_WRITE);
-	if(res!=FR_OK)
-		return res; //file open error... maybe the file does not exist?
-	//write name
-	res = f_write((FIL*)&SDFile,(void*)savefileNames[songNr][SONG_NAMES],8,&bytesWritten);
-	if (res != FR_OK)
-	{
-		f_close((FIL*)&SDFile);
-		return res;
-	}
-
-	//write song data
-	res = f_write((FIL*)&SDFile,seq_songData[songNr],MAX_SONG_LENGTH,&bytesWritten);
-	if (res != FR_OK)
-	{
-		f_close((FIL*)&SDFile);
-		return res;
-	}
-
-	//close the file handle
-	res = f_close((FIL*)&SDFile);
-	return res;
+    char filename[13];
+    FRESULT res;
+    if(songNr >= NUM_KIT_SLOTS) return FR_INVALID_PARAMETER;
+    preset_makeFileNameSave(filename, songNr, FEXT_SONG, savefileNames[songNr][SONG_NAMES]);
+    res = preset_openShared((FIL*)&SDFile, filename, FA_CREATE_ALWAYS | FA_WRITE);
+    if(res != FR_OK) return res;
+    res = preset_writeChecked(savefileNames[songNr][SONG_NAMES], 8);
+    if(res == FR_OK) res = preset_writeChecked(seq_songData[songNr], MAX_SONG_LENGTH);
+    return preset_finishSave(res);
 }
 
 
 //----------------------------------------------------
 void preset_loadProjectNames(uint8_t projectNr)
 {
+    if(preset_sharedStatus() != FR_OK) return;
 	FRESULT res;
 	FILINFO fno;
 
@@ -2653,7 +2521,7 @@ void preset_loadProjectNames(uint8_t projectNr)
 		UINT bytesRead;
 
 		//open the file
-		res = f_open((FIL*)&SDFile,"prj.nfo",FA_OPEN_EXISTING | FA_READ);
+		res = preset_openShared((FIL*)&SDFile,"prj.nfo",FA_OPEN_EXISTING | FA_READ);
 
 		//read preset name
 		//first the preset name
@@ -2666,13 +2534,15 @@ void preset_loadProjectNames(uint8_t projectNr)
 			sprintf((void*)savefileNames[projectNr][PROJECT_NAMES], "Empty");
 		}
 
-		f_close((FIL*)&SDFile);
+		preset_closeShared((FIL*)&SDFile);
 		preset_initTmpFolder();
 
 }
 //----------------------------------------------------
 FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
 {
+    FRESULT shared = preset_sharedStatus();
+    if(shared != FR_OK) return shared;
 	FRESULT res;
 	FILINFO fno;
 	char text[17];
@@ -2755,7 +2625,7 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
 	UINT bytesRead;
 
 	//open the file
-	res = f_open((FIL*)&SDFile,"prj.nfo",FA_OPEN_EXISTING | FA_READ);
+	res = preset_openShared((FIL*)&SDFile,"prj.nfo",FA_OPEN_EXISTING | FA_READ);
 	if (res != FR_OK)
 	{
 		lcd_process_display_interrupt = 1;
@@ -2779,7 +2649,7 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
 #else
 
 #endif
-		f_close((FIL*)&SDFile);
+		preset_closeShared((FIL*)&SDFile);
 		return res;
 	}
 
@@ -2803,7 +2673,7 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
 		sprintf((void*)savefileNames[presetNr][PROJECT_NAMES], "Empty");
 	}
 	//close the file
-	f_close((FIL*)&SDFile);
+	preset_closeShared((FIL*)&SDFile);
 
 	//load globals
 	preset_loadGlobals();
@@ -2821,7 +2691,7 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
 		{
 			lcd_process_display_interrupt = 1;
 			preset_initTmpFolder();
-			f_close((FIL*)&SDFile);
+			preset_closeShared((FIL*)&SDFile);
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
 			HAL_TIM_Base_Stop_IT(&htim2);	//calc sample interrupt - prio 1
 #else
@@ -2832,7 +2702,7 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
 		res = preset_loadPatternSD(i);
 		if ((res != FR_OK) && (res != FR_NO_FILE))
 		{
-			f_close((FIL*)&SDFile);
+			preset_closeShared((FIL*)&SDFile);
 			lcd_process_display_interrupt = 1;
 			preset_initTmpFolder();
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
@@ -2845,7 +2715,7 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
 		res = preset_loadSongSD(i);
 		if ((res != FR_OK) && (res != FR_NO_FILE))
 		{
-			f_close((FIL*)&SDFile);
+			preset_closeShared((FIL*)&SDFile);
 			lcd_process_display_interrupt = 1;
 			preset_initTmpFolder();
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
@@ -2884,7 +2754,8 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
 
 	}
 
-	preset_saveLastUsedProjectNrToSD(presetNr);
+	FRESULT indexResult = preset_saveLastUsedProjectNrToSD(presetNr);
+	if(res == FR_OK && indexResult != FR_OK) res = indexResult;
 
 	//change pattern to pat 1
 	seq_setNextPattern(0);
@@ -3045,6 +2916,8 @@ static void preset_makeFileNameOld(char *buf, uint8_t num, uint8_t type)
 //load uses wildcard to find a name of the pattern 00-*.ext
 static FRESULT preset_makeFileNameLoad(char *buf, uint8_t num, uint8_t type)
 {
+    FRESULT shared = preset_sharedStatus();
+    if(shared != FR_OK) return shared;
 
 	FRESULT fr;     /* Return value */
     DIR dj;         /* Directory object */
@@ -3082,7 +2955,7 @@ static FRESULT preset_makeFileNameLoad(char *buf, uint8_t num, uint8_t type)
     f_closedir(&dj);
     if(fr == FR_OK && fno.fname[0])
     {
-    	fr = f_open((FIL*)&SDFile,fno.fname,FA_OPEN_EXISTING | FA_READ);
+    fr = preset_openShared((FIL*)&SDFile,fno.fname,FA_OPEN_EXISTING | FA_READ);
     	return fr;
     }
 

@@ -2035,11 +2035,12 @@ void menu_handleLoadSaveMenu(int8_t inc, uint8_t btnClicked)
 						case SAVE_TYPE_SONG:
 							//nothing to do here
 							break;
-						case SAVE_TYPE_PATTERN:
+						case SAVE_TYPE_PATTERN: {
 
 
 
-							preset_savePatternRAM(menu_selectedPresetNr[SAVE_TYPE_PATTERN]);
+							FRESULT saveResult = preset_savePatternRAM(menu_selectedPresetNr[SAVE_TYPE_PATTERN]);
+							if(saveResult != FR_OK) { menu_showSdError(saveResult); return; }
 
 							//save to tmp folder
 										#if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
@@ -2047,17 +2048,20 @@ void menu_handleLoadSaveMenu(int8_t inc, uint8_t btnClicked)
 										#else
 
 										#endif
-											preset_savePatternSD(menu_selectedPresetNr[SAVE_TYPE_PATTERN]);
+											saveResult = preset_savePatternSD(menu_selectedPresetNr[SAVE_TYPE_PATTERN]);
 										#if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
 													HAL_TIM_Base_Stop_IT(&htim2);	//calc sample interrupt - prio 1
 										#else
 
 										#endif
+							if(saveResult != FR_OK) { menu_showSdError(saveResult); return; }
 							break;
+						}
 
-						case SAVE_TYPE_KIT:
+						case SAVE_TYPE_KIT: {
 
 
+							FRESULT saveResult;
 							preset_saveDrumsetRam(menu_selectedPresetNr[SAVE_TYPE_KIT],0);
 
 							//save to tmp folder
@@ -2066,19 +2070,21 @@ void menu_handleLoadSaveMenu(int8_t inc, uint8_t btnClicked)
 							#else
 
 							#endif
-														preset_saveDrumsetSD(menu_selectedPresetNr[SAVE_TYPE_KIT],0);
+														saveResult = preset_saveDrumsetSD(menu_selectedPresetNr[SAVE_TYPE_KIT],0);
 							#if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
 										HAL_TIM_Base_Stop_IT(&htim2);	//calc sample interrupt - prio 1
 							#else
 
 							#endif
 
+							if(saveResult != FR_OK) { menu_showSdError(saveResult); return; }
 							menu_loadedPresetNr[CURRENT_KIT] = menu_selectedPresetNr[SAVE_TYPE_KIT];
 							menu_activePage = KIT_SAVE_PAGE_OK;
 							sucessTimer = systick_ticks;
 							menu_repaint();
 
 							break;
+						}
 
 						case SAVE_TYPE_MORPH:
 							preset_saveDrumsetRam(menu_selectedPresetNr[SAVE_TYPE_MORPH],1);
@@ -2088,7 +2094,7 @@ void menu_handleLoadSaveMenu(int8_t inc, uint8_t btnClicked)
 						{
 							FRESULT res;
 							res = preset_saveGlobals();
-							if(res != FR_OK) menu_showSdError(res);
+							if(res != FR_OK) { menu_showSdError(res); return; }
 						}
 							break;
 

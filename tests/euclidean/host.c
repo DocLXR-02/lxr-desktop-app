@@ -38,6 +38,8 @@ uint8_t menu_selectedPresetNr[NUM_PRESET_LOCATIONS];
 char savefileNames[NUM_KIT_SLOTS][NUM_SAVEFILE_NAMES][8];
 TIM_HandleTypeDef htim2;
 FIL SDFile;
+static FATFS host_filesystem;
+static FRESULT preset_sharedFailure;
 #define STEPS_PER_PATTERN NUM_STEPS
 #define FEXT_PAT 1
 static uint8_t stream[65536], saved_stream[65536];
@@ -45,11 +47,11 @@ static size_t stream_pos, stream_size, error_at = SIZE_MAX;
 static float elapsed = 75.f;
 static unsigned triggers;
 FRESULT f_open(FIL *file, const TCHAR *name, BYTE flags) {
-    (void)name; stream_pos=0; file->fptr=0;
+    (void)name; stream_pos=0; file->fptr=0; file->obj.fs=&host_filesystem;
     if(flags & FA_CREATE_ALWAYS) stream_size=0;
     return FR_OK;
 }
-FRESULT f_close(FIL *file) { (void)file; return FR_OK; }
+FRESULT f_close(FIL *file) { file->obj.fs=0; return FR_OK; }
 FRESULT f_lseek(FIL *file, DWORD offset) {
     assert(offset<=stream_size); stream_pos=offset; file->fptr=offset; return FR_OK;
 }
@@ -93,6 +95,7 @@ void led_setValue(uint8_t value,uint8_t led) { (void)value; (void)led; }
 #include "functions.inc"
 
 static void reset(void) {
+    memset(&SDFile,0,sizeof SDFile); preset_sharedFailure=FR_OK;
     memset(&seq_patternSet,0,sizeof(seq_patternSet));
     for(unsigned p=0;p<NUM_PATTERN;p++) for(unsigned t=0;t<NUM_TRACKS;t++)
         seq_patternSet.length[p][t]=16;
