@@ -52,13 +52,24 @@ DSTATUS disk_initialize (
 	BYTE pdrv				/* Physical drive nmuber to identify the drive */
 )
 {
-  DSTATUS stat = RES_OK;
+  DSTATUS stat;
+
+  if(pdrv >= _VOLUMES || disk.drv[pdrv] == 0 ||
+     disk.drv[pdrv]->disk_initialize == 0 || disk.drv[pdrv]->disk_status == 0)
+    return STA_NOINIT;
 
   if(disk.is_initialized[pdrv] == 0)
-  {
-    disk.is_initialized[pdrv] = 1;
     stat = disk.drv[pdrv]->disk_initialize(disk.lun[pdrv]);
-  }
+  else
+    stat = disk.drv[pdrv]->disk_status(disk.lun[pdrv]);
+
+  if(stat & STA_NODISK) stat |= STA_NOINIT; /* No medium cannot be initialized. */
+
+  /* Cache confirmed availability only; never manufacture a successful status.
+   * A subsequent explicit call may initialize again. The SD driver's persistent
+   * fault latch remains authoritative and cannot be cleared by this wrapper.
+   */
+  disk.is_initialized[pdrv] = (stat & (STA_NOINIT | STA_NODISK)) == 0;
   return stat;
 }
 

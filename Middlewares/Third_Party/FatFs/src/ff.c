@@ -894,13 +894,15 @@ FRESULT sync_window (	/* Returns FR_OK or FR_DISK_ERROR */
 		if (disk_write(fs->drv, fs->win, wsect, 1) != RES_OK) {
 			res = FR_DISK_ERR;
 		} else {
-			fs->wflag = 0;
 			if (wsect - fs->fatbase < fs->fsize) {		/* Is it in the FAT area? */
 				for (nf = fs->n_fats; nf >= 2; nf--) {	/* Reflect the change to all FAT copies */
 					wsect += fs->fsize;
-					disk_write(fs->drv, fs->win, wsect, 1);
+					if (disk_write(fs->drv, fs->win, wsect, 1) != RES_OK) {
+						return FR_DISK_ERR; /* Stop; retain the unverified dirty window. */
+					}
 				}
 			}
+			fs->wflag = 0; /* All required copies were acknowledged. */
 		}
 	}
 	return res;
@@ -961,7 +963,9 @@ FRESULT sync_fs (	/* FR_OK:succeeded, !=0:error */
 			st_dword(fs->win + FSI_Nxt_Free, fs->last_clst);
 			/* Write it into the FSInfo sector */
 			fs->winsect = fs->volbase + 1;
-			disk_write(fs->drv, fs->win, fs->winsect, 1);
+			if (disk_write(fs->drv, fs->win, fs->winsect, 1) != RES_OK) {
+				return FR_DISK_ERR; /* Keep the pending FSInfo update; do not sync past failure. */
+			}
 			fs->fsi_flag = 0;
 		}
 		/* Make sure that no pending write process in the physical drive */
@@ -3744,10 +3748,11 @@ FRESULT f_sync (
 
 	res = validate(&fp->obj, &fs);	/* Check validity of the file object */
 	if (res == FR_OK) {
+		if (fp->err) LEAVE_FF(fs, (FRESULT)fp->err);
 		if (fp->flag & FA_MODIFIED) {	/* Is there any change to the file? */
 #if !_FS_TINY
 			if (fp->flag & FA_DIRTY) {	/* Write-back cached data if needed */
-				if (disk_write(fs->drv, fp->buf, fp->sect, 1) != RES_OK) LEAVE_FF(fs, FR_DISK_ERR);
+				if (disk_write(fs->drv, fp->buf, fp->sect, 1) != RES_OK) ABORT(fs, FR_DISK_ERR);
 				fp->flag &= (BYTE)~FA_DIRTY;
 			}
 #endif
@@ -3774,7 +3779,7 @@ FRESULT f_sync (
 						res = store_xdir(&dj);	/* Restore it to the directory */
 						if (res == FR_OK) {
 							res = sync_fs(fs);
-							fp->flag &= (BYTE)~FA_MODIFIED;
+							if (res == FR_OK) fp->flag &= (BYTE)~FA_MODIFIED;
 						}
 					}
 					FREE_NAMBUF();
@@ -3792,10 +3797,12 @@ FRESULT f_sync (
 					st_word(dir + DIR_LstAccDate, 0);
 					fs->wflag = 1;
 					res = sync_fs(fs);					/* Restore it to the directory */
-					fp->flag &= (BYTE)~FA_MODIFIED;
+					if (res == FR_OK) fp->flag &= (BYTE)~FA_MODIFIED;
 				}
 			}
 		}
+		/* A later close/sync must not hide this failure or replay uncertain writes. */
+		if (res == FR_DISK_ERR) fp->err = (BYTE)res;
 	}
 
 	LEAVE_FF(fs, res);
