@@ -46,42 +46,28 @@
 *****************************************************************************
 */
 
-/* Includes */
+/* Runtime stack is in DTCM (Reset_Handler). General SRAM after _end is heap.
+ * _estack is the existing end-of-SRAM symbol, not the active runtime stack.
+ * This bounds the break only; concurrent newlib allocator access remains unresolved.
+ */
 #include <errno.h>
-#include <stdio.h>
+#include <stdint.h>
+#include <sys/types.h>
+#include "safety/heapBounds.h"
 
-/* Variables */
-extern int errno;
-register char * stack_ptr asm("sp");
-
-/* Functions */
-
-/**
- _sbrk
- Increase program data space. Malloc and related functions depend on this
-**/
-#if 0
-caddr_t _sbrk(int incr)
+caddr_t _sbrk(int increment)
 {
-	extern char end asm("end");
-	static char *heap_end;
-	char *prev_heap_end;
-
-	if (heap_end == 0)
-		heap_end = &end;
-
-	prev_heap_end = heap_end;
-	/*//does not work with CCM stack - removed as I have no idea ATM how to fix it
-	if (heap_end + incr > stack_ptr)
-	{
-		errno = ENOMEM;
-		return (caddr_t) -1;
-	}
-	*/
-
-	heap_end += incr;
-
-	return (caddr_t) prev_heap_end;
+    extern char _end, _estack;
+    static uintptr_t current;
+    uintptr_t start = (uintptr_t)&_end;
+    const uintptr_t limit = (uintptr_t)&_estack;
+    if(start > UINTPTR_MAX - 7u) { errno = ENOMEM; return (caddr_t)-1; }
+    start = (start + 7u) & ~(uintptr_t)7u;
+    if(current == 0) current = start;
+    const uintptr_t previous = current;
+    if(!lxr_heap_move(start, limit, &current, increment)) {
+        errno = ENOMEM;
+        return (caddr_t)-1;
+    }
+    return (caddr_t)previous;
 }
-#endif
-

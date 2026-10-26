@@ -26,6 +26,7 @@ add_library(lxr_platform OBJECT
     Src/system_stm32f7xx.c
     Src/syscalls.c
     Src/sysmem.c
+    Src/safety/runtimeDiagnostics.c
     Src/delay.c
     Src/flash_if.c
 )

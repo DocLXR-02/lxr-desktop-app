@@ -69,6 +69,11 @@ target_compile_options(lxr_board_config INTERFACE
     $<$<COMPILE_LANGUAGE:C>:-ffast-math -freciprocal-math -mfp16-format=ieee -fomit-frame-pointer>
 )
 
+option(LXR_RUNTIME_DIAGNOSTICS "Enable optional DWT/audio diagnostics (no hardware validation implied)" OFF)
+if(LXR_RUNTIME_DIAGNOSTICS)
+    target_compile_definitions(lxr_board_config INTERFACE LXR_RUNTIME_DIAGNOSTICS=1)
+endif()
+
 add_subdirectory(Drivers)
 add_subdirectory(Middlewares)
 add_subdirectory(Core)

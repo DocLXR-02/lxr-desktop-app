@@ -10,6 +10,7 @@
  */
 
 
+#include "safety/runtimeDiagnostics.h"
 #include "Soundengine/cs4344_cs5343.h"
 #include "Soundengine/globals.h"
 #include "main.h"
@@ -93,6 +94,7 @@ IN_ITCM_RAM void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
 
 	if(hi2s->Instance == SPI2)
 	{
+		LXR_DIAG_CALLBACK(0, bCurrentSampleValid == SAMPLE_VALID);
 
 		//Master Out
 		dmaPtr2++;
@@ -113,7 +115,7 @@ IN_ITCM_RAM void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
 
 		   /* Enable the I2S DMA Stream*/
 		   //DMA_Cmd(DMA1_Stream7, ENABLE);
-		   HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)&dma_buffer2[(OUTPUT_DMA_SIZE*2)*(dmaPtr2&0x1)], OUTPUT_DMA_SIZE*2);
+		   LXR_DIAG_REARM(0, HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)&dma_buffer2[(OUTPUT_DMA_SIZE*2)*(dmaPtr2&0x1)], OUTPUT_DMA_SIZE*2));
 
 
 #if !SWITCH_FLAG
@@ -127,9 +129,10 @@ IN_ITCM_RAM void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
 	}
 	else if(hi2s->Instance == SPI3)
 	{
+		LXR_DIAG_CALLBACK(1, bCurrentSampleValid == SAMPLE_VALID);
 		//Out 2
 		dmaPtr++;
-		HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t*)&dma_buffer[(OUTPUT_DMA_SIZE*2)*(dmaPtr&0x1)], OUTPUT_DMA_SIZE*2);
+		LXR_DIAG_REARM(1, HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t*)&dma_buffer[(OUTPUT_DMA_SIZE*2)*(dmaPtr&0x1)], OUTPUT_DMA_SIZE*2));
 
 #if SWITCH_FLAG
 		   //now start next sample block calculation

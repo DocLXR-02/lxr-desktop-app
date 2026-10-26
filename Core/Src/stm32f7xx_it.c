@@ -19,6 +19,7 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
+#include "safety/runtimeDiagnostics.h"
 #include "main.h"
 #include "stm32f7xx_it.h"
 /* Private includes ----------------------------------------------------------*/
@@ -268,9 +269,11 @@ void TIM2_IRQHandler(void)
 //#ifndef DEBUG
 
   HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2, GPIO_PIN_SET);
+	LXR_DIAG_START(timer_begin);
 	seq_tick();
 	soundengine_calcNextSampleBlock();
   uart_processMidi();
+  LXR_DIAG_END(1, timer_begin);
   HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2, GPIO_PIN_RESET);
 
 

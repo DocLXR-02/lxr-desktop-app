@@ -11,6 +11,7 @@
  * Public License version 3, with the additional permission and terms in
  * NOTICE.md. See LICENSE and NOTICE.md in the root of the repository.
  */
+#include "safety/runtimeDiagnostics.h"
 #include "Soundengine/Soundengine.h"
 #include "Soundengine/AudioCodecManager.h"
 #include "Preset/PresetManager.h"
@@ -22,12 +23,14 @@ uint8_t soundengine_calcNextSampleBlock()
 {
 	if(bCurrentSampleValid!= SAMPLE_VALID)
 	{
+		LXR_DIAG_START(render_begin);
 	#if USE_DAC2
 		mixer_calcNextSampleBlock((int16_t*)&dma_buffer[bCurrentSampleValid*(OUTPUT_DMA_SIZE*2)],(int16_t*)&dma_buffer2[bCurrentSampleValid*(OUTPUT_DMA_SIZE*2)]);
 	#else
 		mixer_calcNextSampleBlock(&dma_buffer[bCurrentSampleValid*(OUTPUT_DMA_SIZE*2)],&dma_buffer2[(1-bCurrentSampleValid)*(OUTPUT_DMA_SIZE*2)]);
 	#endif
 		bCurrentSampleValid = SAMPLE_VALID;
+		LXR_DIAG_END(0, render_begin);
 
 		return 1;
 	}
@@ -37,6 +40,7 @@ uint8_t soundengine_calcNextSampleBlock()
 
 void soundengine_init()
 {
+	LXR_DIAG_INIT();
 	mixer_init();
 
 
