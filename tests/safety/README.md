@@ -13,11 +13,11 @@ granular, as required by sbrk; malloc owns chunk alignment. Invalid growth,
 shrink below start, corrupted bounds and integer wrap are rejected with
 `(caddr_t)-1` and `errno=ENOMEM`, leaving the break unchanged. This does not make
 newlib reentrant or make formatting on allocation failure safe. No allocator or
-formatting call is added to interrupt handlers. Existing USB configuration can allocate/free in USB interrupt context while main
-formatting may allocate. Newlib locks remain no-ops: concurrent allocator access
-is an unresolved deployment blocker. This patch bounds the program break only;
-it does not make allocator metadata or `_sbrk` calls reentrant. Do not enable
-concurrent allocation workloads without a separately reviewed solution.
+formatting call is added to interrupt handlers. The Phase B baseline used heap allocation during USB configuration in interrupt
+context, while main formatting could allocate with no-op newlib locks. The fixed
+USB class storage introduced in Phase C removes that identified asynchronous heap
+caller. This bounds-checking allocator itself is still not reentrant: do not add
+new concurrent allocation workloads without a separately reviewed solution.
 
 Diagnostics default OFF in CMake (`LXR_RUNTIME_DIAGNOSTICS`) and in the header.
 Normal presets remain unchanged. Example isolated build:

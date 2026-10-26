@@ -688,108 +688,88 @@ __ALIGN_BEGIN uint8_t USBD_CDC_OtherSpeedCfgDesc[USB_CDC_CONFIG_DESC_SIZ] __ALIG
   * @param  cfgidx: Configuration index
   * @retval status
   */
-static uint8_t  USBD_CDC_Init (USBD_HandleTypeDef *pdev, uint8_t cfgidx)
+/* One registered device/class instance: typed storage supplies size and alignment.
+ * The USB core serializes lifecycle calls. busy rejects callback re-entry; it is
+ * not a thread lock. Never allocate, free, mask interrupts or wait here.
+ */
+static USBD_CDC_HandleTypeDef cdc_storage;
+static USBD_HandleTypeDef *cdc_owner;
+static uint8_t cdc_busy;
+static uint8_t cdc_app_started;
+
+static uint8_t USBD_CDC_Release(USBD_HandleTypeDef *pdev)
 {
-  uint8_t ret = 0U;
-  USBD_CDC_HandleTypeDef   *hcdc;
-
-  if(pdev->dev_speed == USBD_SPEED_HIGH)
+  const uint8_t endpoints[3] = {CDC_IN_EP, CDC_OUT_EP, CDC_CMD_EP};
+  uint8_t failed = 0U;
+  for(uint8_t i = 0U; i < 3U; ++i)
   {
-    /* Open EP IN */
-    USBD_LL_OpenEP(pdev, CDC_IN_EP, USBD_EP_TYPE_BULK,
-                   CDC_DATA_HS_IN_PACKET_SIZE);
-
-    pdev->ep_in[CDC_IN_EP & 0xFU].is_used = 1U;
-
-    /* Open EP OUT */
-    USBD_LL_OpenEP(pdev, CDC_OUT_EP, USBD_EP_TYPE_BULK,
-                   CDC_DATA_HS_OUT_PACKET_SIZE);
-
-    pdev->ep_out[CDC_OUT_EP & 0xFU].is_used = 1U;
-
-  }
-  else
-  {
-    /* Open EP IN */
-    USBD_LL_OpenEP(pdev, CDC_IN_EP, USBD_EP_TYPE_BULK,
-                   CDC_DATA_FS_IN_PACKET_SIZE);
-
-    pdev->ep_in[CDC_IN_EP & 0xFU].is_used = 1U;
-
-    /* Open EP OUT */
-    USBD_LL_OpenEP(pdev, CDC_OUT_EP, USBD_EP_TYPE_BULK,
-                   CDC_DATA_FS_OUT_PACKET_SIZE);
-
-    pdev->ep_out[CDC_OUT_EP & 0xFU].is_used = 1U;
-  }
-  /* Open Command IN EP */
-  USBD_LL_OpenEP(pdev, CDC_CMD_EP, USBD_EP_TYPE_INTR, CDC_CMD_PACKET_SIZE);
-  pdev->ep_in[CDC_CMD_EP & 0xFU].is_used = 1U;
-
-  pdev->pClassData = USBD_malloc(sizeof (USBD_CDC_HandleTypeDef));
-
-  if(pdev->pClassData == NULL)
-  {
-    ret = 1U;
-  }
-  else
-  {
-    hcdc = (USBD_CDC_HandleTypeDef*) pdev->pClassData;
-
-    /* Init  physical Interface components */
-    ((USBD_CDC_ItfTypeDef *)pdev->pUserData)->Init();
-
-    /* Init Xfer states */
-    hcdc->TxState = 0U;
-    hcdc->RxState = 0U;
-
-    if(pdev->dev_speed == USBD_SPEED_HIGH)
+    uint8_t ep = endpoints[i];
+    uint8_t used = (ep & 0x80U) ? pdev->ep_in[ep & 0x0FU].is_used : pdev->ep_out[ep & 0x0FU].is_used;
+    if(used)
     {
-      /* Prepare Out endpoint to receive next packet */
-      USBD_LL_PrepareReceive(pdev, CDC_OUT_EP, hcdc->RxBuffer,
-                             CDC_DATA_HS_OUT_PACKET_SIZE);
-    }
-    else
-    {
-      /* Prepare Out endpoint to receive next packet */
-      USBD_LL_PrepareReceive(pdev, CDC_OUT_EP, hcdc->RxBuffer,
-                             CDC_DATA_FS_OUT_PACKET_SIZE);
+      if(USBD_LL_CloseEP(pdev, ep) != USBD_OK) failed = 1U;
+      else if(ep & 0x80U) pdev->ep_in[ep & 0x0FU].is_used = 0U;
+      else pdev->ep_out[ep & 0x0FU].is_used = 0U;
     }
   }
-  return ret;
+  /* Retain the object if resources may still be active. DeInit may retry. */
+  if(failed) return USBD_FAIL;
+  if(cdc_app_started)
+  {
+    USBD_CDC_ItfTypeDef *fops = (USBD_CDC_ItfTypeDef *)pdev->pUserData;
+    if(fops == NULL || fops->DeInit == NULL || fops->DeInit() != 0) return USBD_FAIL;
+    cdc_app_started = 0U;
+  }
+  pdev->pClassData = NULL;
+  USBD_memset(&cdc_storage, 0, sizeof(cdc_storage));
+  cdc_owner = NULL;
+  return USBD_OK;
 }
 
-/**
-  * @brief  USBD_CDC_Init
-  *         DeInitialize the CDC layer
-  * @param  pdev: device instance
-  * @param  cfgidx: Configuration index
-  * @retval status
-  */
-static uint8_t  USBD_CDC_DeInit (USBD_HandleTypeDef *pdev, uint8_t cfgidx)
+static uint8_t USBD_CDC_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 {
-  uint8_t ret = 0U;
+  (void)cfgidx;
+  if(pdev == NULL || cdc_owner != NULL || cdc_busy || pdev->pClassData != NULL) return USBD_FAIL;
+  USBD_CDC_ItfTypeDef *fops = (USBD_CDC_ItfTypeDef *)pdev->pUserData;
+  if(fops == NULL || fops->Init == NULL || fops->DeInit == NULL) return USBD_FAIL;
+  if(pdev->ep_in[CDC_IN_EP & 0xFU].is_used || pdev->ep_out[CDC_OUT_EP & 0xFU].is_used ||
+     pdev->ep_in[CDC_CMD_EP & 0xFU].is_used) return USBD_FAIL;
 
-  /* Close EP IN */
-  USBD_LL_CloseEP(pdev, CDC_IN_EP);
-  pdev->ep_in[CDC_IN_EP & 0xFU].is_used = 0U;
+  cdc_busy = 1U;
+  cdc_owner = pdev;
+  USBD_memset(&cdc_storage, 0, sizeof(cdc_storage));
+  pdev->pClassData = &cdc_storage;
+  uint16_t packet = pdev->dev_speed == USBD_SPEED_HIGH ? CDC_DATA_HS_IN_PACKET_SIZE : CDC_DATA_FS_IN_PACKET_SIZE;
+  pdev->ep_in[CDC_IN_EP & 0xFU].is_used = 1U; /* Include a partially opened endpoint in cleanup. */
+  if(USBD_LL_OpenEP(pdev, CDC_IN_EP, USBD_EP_TYPE_BULK, packet) != USBD_OK) goto fail;
+  packet = pdev->dev_speed == USBD_SPEED_HIGH ? CDC_DATA_HS_OUT_PACKET_SIZE : CDC_DATA_FS_OUT_PACKET_SIZE;
+  pdev->ep_out[CDC_OUT_EP & 0xFU].is_used = 1U; /* Include a partially opened endpoint in cleanup. */
+  if(USBD_LL_OpenEP(pdev, CDC_OUT_EP, USBD_EP_TYPE_BULK, packet) != USBD_OK) goto fail;
+  pdev->ep_in[CDC_CMD_EP & 0xFU].is_used = 1U; /* Include a partially opened endpoint in cleanup. */
+  if(USBD_LL_OpenEP(pdev, CDC_CMD_EP, USBD_EP_TYPE_INTR, CDC_CMD_PACKET_SIZE) != USBD_OK) goto fail;
 
-  /* Close EP OUT */
-  USBD_LL_CloseEP(pdev, CDC_OUT_EP);
-  pdev->ep_out[CDC_OUT_EP & 0xFU].is_used = 0U;
+  cdc_app_started = 1U; /* Failed application init may still need cleanup. */
+  if(fops->Init() != 0 || cdc_storage.RxBuffer == NULL) goto fail;
+  cdc_storage.TxState = 0U;
+  cdc_storage.RxState = 0U;
+  if(USBD_LL_PrepareReceive(pdev, CDC_OUT_EP, cdc_storage.RxBuffer, packet) != USBD_OK) goto fail;
+  cdc_busy = 0U;
+  return USBD_OK;
+fail:
+  (void)USBD_CDC_Release(pdev);
+  cdc_busy = 0U;
+  return USBD_FAIL;
+}
 
-  /* Close Command IN EP */
-  USBD_LL_CloseEP(pdev, CDC_CMD_EP);
-  pdev->ep_in[CDC_CMD_EP & 0xFU].is_used = 0U;
-
-  /* DeInit  physical Interface components */
-  if(pdev->pClassData != NULL)
-  {
-    ((USBD_CDC_ItfTypeDef *)pdev->pUserData)->DeInit();
-    USBD_free(pdev->pClassData);
-    pdev->pClassData = NULL;
-  }
-
+static uint8_t USBD_CDC_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
+{
+  (void)cfgidx;
+  if(pdev == NULL || cdc_busy) return USBD_FAIL;
+  if(cdc_owner == NULL) return pdev->pClassData == NULL ? USBD_OK : USBD_FAIL;
+  if(cdc_owner != pdev || pdev->pClassData != &cdc_storage) return USBD_FAIL;
+  cdc_busy = 1U;
+  uint8_t ret = USBD_CDC_Release(pdev);
+  cdc_busy = 0U;
   return ret;
 }
 
