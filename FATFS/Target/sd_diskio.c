@@ -25,237 +25,152 @@
 /* can be used to modify / undefine following code or add new definitions */
 /* USER CODE END firstSection*/
 
-/* Includes ------------------------------------------------------------------*/
 #include "ff_gen_drv.h"
 #include "sd_diskio.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* use the default SD timout as defined in the platform BSP driver*/
-#if defined(SDMMC_DATATIMEOUT)
-#define SD_TIMEOUT SDMMC_DATATIMEOUT
-#elif defined(SD_DATATIMEOUT)
-#define SD_TIMEOUT SD_DATATIMEOUT
-#else
-#define SD_TIMEOUT 30 * 1000
-#endif
-
-#define SD_DEFAULT_BLOCK_SIZE 512
-
-/*
- * Depending on the use case, the SD card initialization could be done at the
- * application level: if it is the case define the flag below to disable
- * the BSP_SD_Init() call in the SD_Initialize() and add a call to
- * BSP_SD_Init() elsewhere in the application.
+/* Software milliseconds, not the SDMMC hardware data-timeout register.
+ * Up to 128 sectors (64 KiB): allow 5 s for the polling transfer and another
+ * 5 s for card programming/readiness. Conservative development policy, not a
+ * guarantee for every card. Inner HAL command waits remain outside this bound.
  */
-/* USER CODE BEGIN disableSDInit */
-/* #define DISABLE_SD_INIT */
-/* USER CODE END disableSDInit */
+#define SD_TRANSFER_TIMEOUT_MS 5000u
+#define SD_READY_TIMEOUT_MS 5000u
+#define SD_MAX_SECTORS 128u
+#define SD_DEFAULT_BLOCK_SIZE 512u
 
-/* Private variables ---------------------------------------------------------*/
-/* Disk status */
 static volatile DSTATUS Stat = STA_NOINIT;
+/* Cleared only by C runtime initialization at reboot; never by mount/init. */
+static uint8_t Fault;
 
-/* Private function prototypes -----------------------------------------------*/
-static DSTATUS SD_CheckStatus(BYTE lun);
-DSTATUS SD_initialize (BYTE);
-DSTATUS SD_status (BYTE);
-DRESULT SD_read (BYTE, BYTE*, DWORD, UINT);
-#if _USE_WRITE == 1
-DRESULT SD_write (BYTE, const BYTE*, DWORD, UINT);
-#endif /* _USE_WRITE == 1 */
-#if _USE_IOCTL == 1
-DRESULT SD_ioctl (BYTE, BYTE, void*);
-#endif  /* _USE_IOCTL == 1 */
-
-const Diskio_drvTypeDef  SD_Driver =
+static int SD_ContextOK(void)
 {
-  SD_initialize,
-  SD_status,
-  SD_read,
-#if  _USE_WRITE == 1
-  SD_write,
-#endif /* _USE_WRITE == 1 */
-
-#if  _USE_IOCTL == 1
-  SD_ioctl,
-#endif /* _USE_IOCTL == 1 */
-};
-
-/* USER CODE BEGIN beforeFunctionSection */
-/* can be used to modify / undefine following code or add new code */
-/* USER CODE END beforeFunctionSection */
-
-/* Private functions ---------------------------------------------------------*/
-
-static DSTATUS SD_CheckStatus(BYTE lun)
-{
-  Stat = STA_NOINIT;
-
-  if(BSP_SD_GetCardState() == MSD_OK)
-  {
-    Stat &= ~STA_NOINIT;
-  }
-
-  return Stat;
+  /* HAL's millisecond tick must be able to preempt this foreground caller. */
+  return __get_IPSR() == 0u && __get_PRIMASK() == 0u &&
+         __get_BASEPRI() == 0u && __get_FAULTMASK() == 0u &&
+         (SysTick->CTRL & (SysTick_CTRL_ENABLE_Msk | SysTick_CTRL_TICKINT_Msk)) ==
+         (SysTick_CTRL_ENABLE_Msk | SysTick_CTRL_TICKINT_Msk);
 }
 
-/**
-  * @brief  Initializes a Drive
-  * @param  lun : not used
-  * @retval DSTATUS: Operation status
-  */
-DSTATUS SD_initialize(BYTE lun)
+static DRESULT SD_Fail(void)
 {
-Stat = STA_NOINIT;
-
-#if !defined(DISABLE_SD_INIT)
-
-  if(BSP_SD_Init() == MSD_OK)
-  {
-    Stat = SD_CheckStatus(lun);
-  }
-
-#else
-  Stat = SD_CheckStatus(lun);
-#endif
-
-  return Stat;
+  Fault = 1u;
+  Stat |= STA_NOINIT;
+  return RES_ERROR;
 }
 
-/**
-  * @brief  Gets Disk Status
-  * @param  lun : not used
-  * @retval DSTATUS: Operation status
-  */
+static DRESULT SD_Access(BYTE lun)
+{
+  if(lun != 0u) return RES_PARERR;
+  if(!SD_ContextOK() || Fault || (Stat & STA_NOINIT)) return RES_NOTRDY;
+  if(BSP_SD_IsDetected() != SD_PRESENT) {
+    (void)SD_Fail();
+    Stat |= STA_NODISK;
+    return RES_NOTRDY;
+  }
+  return RES_OK;
+}
+
+static DRESULT SD_WaitReady(void)
+{
+  uint32_t start = HAL_GetTick();
+  for(;;) {
+    if(BSP_SD_IsDetected() != SD_PRESENT) {
+      (void)SD_Fail();
+      Stat |= STA_NODISK;
+      return RES_NOTRDY;
+    }
+    if(BSP_SD_GetCardState() == MSD_OK) return RES_OK;
+    if((uint32_t)(HAL_GetTick() - start) >= SD_READY_TIMEOUT_MS)
+      return SD_Fail();
+  }
+}
+
 DSTATUS SD_status(BYTE lun)
 {
-  return SD_CheckStatus(lun);
+  if(lun != 0u || !SD_ContextOK()) return STA_NOINIT;
+  if(Fault || (Stat & STA_NOINIT)) return Stat;
+  if(SD_Access(lun) == RES_OK) (void)SD_WaitReady();
+  return Stat;
 }
 
-/* USER CODE BEGIN beforeReadSection */
-/* can be used to modify previous code / undefine following code / add new code */
-/* USER CODE END beforeReadSection */
-/**
-  * @brief  Reads Sector(s)
-  * @param  lun : not used
-  * @param  *buff: Data buffer to store read data
-  * @param  sector: Sector address (LBA)
-  * @param  count: Number of sectors to read (1..128)
-  * @retval DRESULT: Operation result
-  */
+DSTATUS SD_initialize(BYTE lun)
+{
+  if(lun != 0u || !SD_ContextOK()) return STA_NOINIT;
+  if(Fault) return Stat;
+  if(!(Stat & STA_NOINIT)) return SD_status(lun);
+  /* An absent card at startup has not created an uncertain transfer. */
+  if(BSP_SD_IsDetected() != SD_PRESENT) return (Stat = STA_NOINIT | STA_NODISK);
+  Stat = STA_NOINIT;
+  if(BSP_SD_Init() != MSD_OK) {
+    (void)SD_Fail();
+    return Stat;
+  }
+  if(SD_WaitReady() == RES_OK) Stat = 0u;
+  return Stat;
+}
+
+static int SD_ValidRange(DWORD sector, UINT count)
+{
+  BSP_SD_CardInfo info;
+  BSP_SD_GetCardInfo(&info);
+  return count <= info.LogBlockNbr && sector <= info.LogBlockNbr - count;
+}
 
 DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
 {
-  DRESULT res = RES_ERROR;
-
-  if(BSP_SD_ReadBlocks((uint32_t*)buff,
-                       (uint32_t) (sector),
-                       count, SD_TIMEOUT) == MSD_OK)
-  {
-    /* wait until the read operation is finished */
-    while(BSP_SD_GetCardState()!= MSD_OK)
-    {
-    }
-    res = RES_OK;
-  }
-
-  return res;
+  DRESULT result;
+  if(!buff || count == 0u || count > SD_MAX_SECTORS) return RES_PARERR;
+  result = SD_Access(lun);
+  if(result != RES_OK) return result;
+  if(!SD_ValidRange(sector, count)) return RES_PARERR;
+  if(BSP_SD_ReadBlocks((uint32_t*)buff, sector, count, SD_TRANSFER_TIMEOUT_MS) != MSD_OK)
+    return SD_Fail();
+  return SD_WaitReady();
 }
 
-/* USER CODE BEGIN beforeWriteSection */
-/* can be used to modify previous code / undefine following code / add new code */
-/* USER CODE END beforeWriteSection */
-/**
-  * @brief  Writes Sector(s)
-  * @param  lun : not used
-  * @param  *buff: Data to be written
-  * @param  sector: Sector address (LBA)
-  * @param  count: Number of sectors to write (1..128)
-  * @retval DRESULT: Operation result
-  */
 #if _USE_WRITE == 1
-
 DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
 {
-  DRESULT res = RES_ERROR;
-
-  if(BSP_SD_WriteBlocks((uint32_t*)buff,
-                        (uint32_t)(sector),
-                        count, SD_TIMEOUT) == MSD_OK)
-  {
-	/* wait until the Write operation is finished */
-    while(BSP_SD_GetCardState() != MSD_OK)
-    {
-    }
-    res = RES_OK;
-  }
-
-  return res;
+  DRESULT result;
+  if(!buff || count == 0u || count > SD_MAX_SECTORS) return RES_PARERR;
+  result = SD_Access(lun);
+  if(result != RES_OK) return result;
+  if(!SD_ValidRange(sector, count)) return RES_PARERR;
+  if(BSP_SD_WriteBlocks((uint32_t*)buff, sector, count, SD_TRANSFER_TIMEOUT_MS) != MSD_OK)
+    return SD_Fail();
+  return SD_WaitReady();
 }
-#endif /* _USE_WRITE == 1 */
+#endif
 
-/* USER CODE BEGIN beforeIoctlSection */
-/* can be used to modify previous code / undefine following code / add new code */
-/* USER CODE END beforeIoctlSection */
-/**
-  * @brief  I/O control operation
-  * @param  lun : not used
-  * @param  cmd: Control code
-  * @param  *buff: Buffer to send/receive control data
-  * @retval DRESULT: Operation result
-  */
 #if _USE_IOCTL == 1
 DRESULT SD_ioctl(BYTE lun, BYTE cmd, void *buff)
 {
-  DRESULT res = RES_ERROR;
-  BSP_SD_CardInfo CardInfo;
-
-  if (Stat & STA_NOINIT) return RES_NOTRDY;
-
-  switch (cmd)
-  {
-  /* Make sure that no pending write process */
-  case CTRL_SYNC :
-    res = RES_OK;
-    break;
-
-  /* Get number of sectors on the disk (DWORD) */
-  case GET_SECTOR_COUNT :
-    BSP_SD_GetCardInfo(&CardInfo);
-    *(DWORD*)buff = CardInfo.LogBlockNbr;
-    res = RES_OK;
-    break;
-
-  /* Get R/W sector size (WORD) */
-  case GET_SECTOR_SIZE :
-    BSP_SD_GetCardInfo(&CardInfo);
-    *(WORD*)buff = CardInfo.LogBlockSize;
-    res = RES_OK;
-    break;
-
-  /* Get erase block size in unit of sector (DWORD) */
-  case GET_BLOCK_SIZE :
-    BSP_SD_GetCardInfo(&CardInfo);
-    *(DWORD*)buff = CardInfo.LogBlockSize / SD_DEFAULT_BLOCK_SIZE;
-    res = RES_OK;
-    break;
-
-  default:
-    res = RES_PARERR;
+  BSP_SD_CardInfo info;
+  DRESULT result;
+  if(cmd != CTRL_SYNC && cmd != GET_SECTOR_COUNT && cmd != GET_SECTOR_SIZE &&
+     cmd != GET_BLOCK_SIZE) return RES_PARERR;
+  if(cmd != CTRL_SYNC && !buff) return RES_PARERR;
+  result = SD_Access(lun);
+  if(result != RES_OK) return result;
+  if(cmd == CTRL_SYNC) return SD_WaitReady();
+  BSP_SD_GetCardInfo(&info);
+  switch(cmd) {
+  case GET_SECTOR_COUNT: *(DWORD*)buff = info.LogBlockNbr; break;
+  case GET_SECTOR_SIZE: *(WORD*)buff = info.LogBlockSize; break;
+  /* Preserve the existing block-size reporting convention. */
+  case GET_BLOCK_SIZE: *(DWORD*)buff = info.LogBlockSize / SD_DEFAULT_BLOCK_SIZE; break;
+  default: return RES_PARERR;
   }
-
-  return res;
+  return RES_OK;
 }
-#endif /* _USE_IOCTL == 1 */
+#endif
 
-/* USER CODE BEGIN afterIoctlSection */
-/* can be used to modify previous code / undefine following code / add new code */
-/* USER CODE END afterIoctlSection */
-
-/* USER CODE BEGIN lastSection */
-/* can be used to modify / undefine previous code or add new code */
-/* USER CODE END lastSection */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
-
+const Diskio_drvTypeDef SD_Driver = {
+  SD_initialize, SD_status, SD_read,
+#if _USE_WRITE == 1
+  SD_write,
+#endif
+#if _USE_IOCTL == 1
+  SD_ioctl,
+#endif
+};
