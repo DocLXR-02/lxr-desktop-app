@@ -73,13 +73,16 @@ static DRESULT SD_Access(BYTE lun)
 static DRESULT SD_WaitReady(void)
 {
   uint32_t start = HAL_GetTick();
+  uint8_t state;
   for(;;) {
     if(BSP_SD_IsDetected() != SD_PRESENT) {
       (void)SD_Fail();
       Stat |= STA_NODISK;
       return RES_NOTRDY;
     }
-    if(BSP_SD_GetCardState() == MSD_OK) return RES_OK;
+    state = BSP_SD_GetCardState();
+    if(state == SD_TRANSFER_OK) return RES_OK;
+    if(state == SD_TRANSFER_ERROR) return SD_Fail();
     if((uint32_t)(HAL_GetTick() - start) >= SD_READY_TIMEOUT_MS)
       return SD_Fail();
   }

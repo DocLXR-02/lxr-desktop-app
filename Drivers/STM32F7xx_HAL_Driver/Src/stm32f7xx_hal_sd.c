@@ -631,8 +631,8 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
       /* Clear all the static flags */
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= errorstate;
-      hsd->State = HAL_SD_STATE_READY;
-      hsd->Context = SD_CONTEXT_NONE;
+      hsd->State = HAL_SD_STATE_ERROR;
+      /* Retain attempted-transfer context; physical quiescence is unproven. */
       return HAL_ERROR;
     }
 
@@ -666,8 +666,8 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
         /* Clear all the static flags */
         __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
         hsd->ErrorCode |= HAL_SD_ERROR_TIMEOUT;
-        hsd->State= HAL_SD_STATE_READY;
-        hsd->Context = SD_CONTEXT_NONE;
+        hsd->State = HAL_SD_STATE_TIMEOUT;
+        /* Retain attempted-transfer context; physical quiescence is unproven. */
         return HAL_TIMEOUT;
       }
     }
@@ -684,8 +684,8 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
           /* Clear all the static flags */
           __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
           hsd->ErrorCode |= errorstate;
-          hsd->State = HAL_SD_STATE_READY;
-          hsd->Context = SD_CONTEXT_NONE;
+          hsd->State = HAL_SD_STATE_ERROR;
+          /* Retain attempted-transfer context; physical quiescence is unproven. */
           return HAL_ERROR;
         }
       }
@@ -697,8 +697,8 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
       /* Clear all the static flags */
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= HAL_SD_ERROR_DATA_TIMEOUT;
-      hsd->State = HAL_SD_STATE_READY;
-      hsd->Context = SD_CONTEXT_NONE;
+      hsd->State = HAL_SD_STATE_ERROR;
+      /* Retain attempted-transfer context; physical quiescence is unproven. */
       return HAL_ERROR;
     }
     else if(__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DCRCFAIL))
@@ -706,8 +706,8 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
       /* Clear all the static flags */
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= HAL_SD_ERROR_DATA_CRC_FAIL;
-      hsd->State = HAL_SD_STATE_READY;
-      hsd->Context = SD_CONTEXT_NONE;
+      hsd->State = HAL_SD_STATE_ERROR;
+      /* Retain attempted-transfer context; physical quiescence is unproven. */
       return HAL_ERROR;
     }
     else if(__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_RXOVERR))
@@ -715,8 +715,8 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
       /* Clear all the static flags */
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= HAL_SD_ERROR_RX_OVERRUN;
-      hsd->State = HAL_SD_STATE_READY;
-      hsd->Context = SD_CONTEXT_NONE;
+      hsd->State = HAL_SD_STATE_ERROR;
+      /* Retain attempted-transfer context; physical quiescence is unproven. */
       return HAL_ERROR;
     }
     else
@@ -746,9 +746,9 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
         /* Clear all the static flags */
         __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
         hsd->ErrorCode |= HAL_SD_ERROR_TIMEOUT;
-        hsd->State= HAL_SD_STATE_READY;
-        hsd->Context = SD_CONTEXT_NONE;
-        return HAL_ERROR;
+        hsd->State = HAL_SD_STATE_TIMEOUT;
+        /* Retain attempted-transfer context; physical quiescence is unproven. */
+        return HAL_TIMEOUT;
       }
     }
 
@@ -756,6 +756,7 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_DATA_FLAGS);
 
     hsd->State = HAL_SD_STATE_READY;
+    hsd->Context = SD_CONTEXT_NONE;
 
     return HAL_OK;
   }
@@ -842,8 +843,8 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint
       /* Clear all the static flags */
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= errorstate;
-      hsd->State = HAL_SD_STATE_READY;
-      hsd->Context = SD_CONTEXT_NONE;
+      hsd->State = HAL_SD_STATE_ERROR;
+      /* Retain attempted-transfer context; physical quiescence is unproven. */
       return HAL_ERROR;
     }
 
@@ -876,9 +877,9 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint
       {
         /* Clear all the static flags */
         __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
-        hsd->ErrorCode |= errorstate;
-        hsd->State = HAL_SD_STATE_READY;
-        hsd->Context = SD_CONTEXT_NONE;
+        hsd->ErrorCode |= HAL_SD_ERROR_TIMEOUT;
+        hsd->State = HAL_SD_STATE_TIMEOUT;
+        /* Retain attempted-transfer context; physical quiescence is unproven. */
         return HAL_TIMEOUT;
       }
     }
@@ -895,8 +896,8 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint
           /* Clear all the static flags */
           __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
           hsd->ErrorCode |= errorstate;
-          hsd->State = HAL_SD_STATE_READY;
-          hsd->Context = SD_CONTEXT_NONE;
+          hsd->State = HAL_SD_STATE_ERROR;
+          /* Retain attempted-transfer context; physical quiescence is unproven. */
           return HAL_ERROR;
         }
       }
@@ -908,8 +909,8 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint
       /* Clear all the static flags */
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= HAL_SD_ERROR_DATA_TIMEOUT;
-      hsd->State = HAL_SD_STATE_READY;
-      hsd->Context = SD_CONTEXT_NONE;
+      hsd->State = HAL_SD_STATE_ERROR;
+      /* Retain attempted-transfer context; physical quiescence is unproven. */
       return HAL_ERROR;
     }
     else if(__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DCRCFAIL))
@@ -917,8 +918,8 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint
       /* Clear all the static flags */
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= HAL_SD_ERROR_DATA_CRC_FAIL;
-      hsd->State = HAL_SD_STATE_READY;
-      hsd->Context = SD_CONTEXT_NONE;
+      hsd->State = HAL_SD_STATE_ERROR;
+      /* Retain attempted-transfer context; physical quiescence is unproven. */
       return HAL_ERROR;
     }
     else if(__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_TXUNDERR))
@@ -926,8 +927,8 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint
       /* Clear all the static flags */
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= HAL_SD_ERROR_TX_UNDERRUN;
-      hsd->State = HAL_SD_STATE_READY;
-      hsd->Context = SD_CONTEXT_NONE;
+      hsd->State = HAL_SD_STATE_ERROR;
+      /* Retain attempted-transfer context; physical quiescence is unproven. */
       return HAL_ERROR;
     }
     else
@@ -939,6 +940,7 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint
     __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_DATA_FLAGS);
 
     hsd->State = HAL_SD_STATE_READY;
+    hsd->Context = SD_CONTEXT_NONE;
 
     return HAL_OK;
   }
@@ -2273,6 +2275,7 @@ HAL_SD_CardStateTypeDef HAL_SD_GetCardState(SD_HandleTypeDef *hsd)
   if(errorstate != HAL_SD_ERROR_NONE)
   {
     hsd->ErrorCode |= errorstate;
+    return HAL_SD_CARD_ERROR;
   }
 
   cardstate = ((resp1 >> 9U) & 0x0FU);
@@ -2711,6 +2714,7 @@ static uint32_t SD_PowerON(SD_HandleTypeDef *hsd)
   __IO uint32_t count = 0U;
   uint32_t response = 0U, validvoltage = 0U;
   uint32_t errorstate;
+  uint32_t voltage_start;
 
   /* CMD0: GO_IDLE_STATE */
   errorstate = SDMMC_CmdGoIdleState(hsd->Instance);
@@ -2748,6 +2752,7 @@ static uint32_t SD_PowerON(SD_HandleTypeDef *hsd)
   }
   /* SD CARD */
   /* Send ACMD41 SD_APP_OP_COND with Argument 0x80100000 */
+  voltage_start = HAL_GetTick();
   while((count < SDMMC_MAX_VOLT_TRIAL) && (validvoltage == 0U))
   {
     /* SEND CMD55 APP_CMD with RCA as 0 */
@@ -2771,6 +2776,9 @@ static uint32_t SD_PowerON(SD_HandleTypeDef *hsd)
     validvoltage = (((response >> 31U) == 1U) ? 1U : 0U);
 
     count++;
+    /* Bound repeated successful commands that never establish voltage readiness. */
+    if(validvoltage == 0U && (uint32_t)(HAL_GetTick() - voltage_start) >= SDMMC_CMDTIMEOUT)
+      return HAL_SD_ERROR_TIMEOUT;
   }
 
   if(count >= SDMMC_MAX_VOLT_TRIAL)

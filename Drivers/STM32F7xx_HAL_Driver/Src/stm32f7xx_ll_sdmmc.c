@@ -1188,24 +1188,37 @@ uint32_t SDMMC_CmdSendEXTCSD(SDMMC_TypeDef *SDMMCx, uint32_t Argument)
   * @param  SD_CMD: The sent command index  
   * @retval SD Card error state
   */
+/* Command-response software milliseconds, independent of SDMMC DTIMER.
+ * Active firmware callers run after HAL_Init with an advancing SysTick.
+ * Reject pre-tick/masked/ISR calls; no unbounded or cycle-count fallback.
+ * The cap also protects direct callers passing oversized timeout values.
+ */
+static uint32_t SDMMC_WaitCommand(SDMMC_TypeDef *SDMMCx, uint32_t flags, uint32_t timeout)
+{
+  uint32_t start;
+  if(timeout == 0U || __get_IPSR() != 0U || __get_PRIMASK() != 0U ||
+     __get_BASEPRI() != 0U || __get_FAULTMASK() != 0U ||
+     (SysTick->CTRL & (SysTick_CTRL_ENABLE_Msk | SysTick_CTRL_TICKINT_Msk)) !=
+     (SysTick_CTRL_ENABLE_Msk | SysTick_CTRL_TICKINT_Msk))
+    return SDMMC_ERROR_TIMEOUT;
+  if(timeout > SDMMC_CMDTIMEOUT) timeout = SDMMC_CMDTIMEOUT;
+  start = HAL_GetTick();
+  for(;;) {
+    uint32_t status = SDMMCx->STA;
+    if((status & flags) != 0U &&
+       (flags == SDMMC_FLAG_CMDSENT || (status & SDMMC_FLAG_CMDACT) == 0U))
+      return SDMMC_ERROR_NONE;
+    if((uint32_t)(HAL_GetTick() - start) >= timeout)
+      return SDMMC_ERROR_TIMEOUT;
+  }
+}
+
 uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_t Timeout)
 {
   uint32_t response_r1;
-  uint32_t sta_reg;
-  
-  /* 8 is the number of required instructions cycles for the below loop statement.
-  The Timeout is expressed in ms */
-  uint32_t count = Timeout * (SystemCoreClock / 8U /1000U);
-  
-  do
-  {
-    if (count-- == 0U)
-    {
-      return SDMMC_ERROR_TIMEOUT;
-    }
-    sta_reg = SDMMCx->STA;
-  }while(((sta_reg & (SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND | SDMMC_FLAG_CTIMEOUT)) == 0U) ||
-         ((sta_reg & SDMMC_FLAG_CMDACT) != 0U ));
+  if(SDMMC_WaitCommand(SDMMCx, SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND |
+                       SDMMC_FLAG_CTIMEOUT, Timeout) != SDMMC_ERROR_NONE)
+    return SDMMC_ERROR_TIMEOUT;
     
   if(__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CTIMEOUT))
   {
@@ -1325,20 +1338,9 @@ uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_t Timeo
   */
 uint32_t SDMMC_GetCmdResp2(SDMMC_TypeDef *SDMMCx)
 {
-  uint32_t sta_reg;
-  /* 8 is the number of required instructions cycles for the below loop statement.
-  The SDMMC_CMDTIMEOUT is expressed in ms */
-  uint32_t count = SDMMC_CMDTIMEOUT * (SystemCoreClock / 8U /1000U);
-  
-  do
-  {
-    if (count-- == 0U)
-    {
-      return SDMMC_ERROR_TIMEOUT;
-    }
-    sta_reg = SDMMCx->STA;
-  }while(((sta_reg & (SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND | SDMMC_FLAG_CTIMEOUT)) == 0U) ||
-         ((sta_reg & SDMMC_FLAG_CMDACT) != 0U ));
+  if(SDMMC_WaitCommand(SDMMCx, SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND |
+                       SDMMC_FLAG_CTIMEOUT, SDMMC_CMDTIMEOUT) != SDMMC_ERROR_NONE)
+    return SDMMC_ERROR_TIMEOUT;
     
   if (__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CTIMEOUT))
   {
@@ -1369,20 +1371,9 @@ uint32_t SDMMC_GetCmdResp2(SDMMC_TypeDef *SDMMCx)
   */
 uint32_t SDMMC_GetCmdResp3(SDMMC_TypeDef *SDMMCx)
 {
-  uint32_t sta_reg;
-  /* 8 is the number of required instructions cycles for the below loop statement.
-  The SDMMC_CMDTIMEOUT is expressed in ms */
-  uint32_t count = SDMMC_CMDTIMEOUT * (SystemCoreClock / 8U /1000U);
-  
-  do
-  {
-    if (count-- == 0U)
-    {
-      return SDMMC_ERROR_TIMEOUT;
-    }
-    sta_reg = SDMMCx->STA;
-  }while(((sta_reg & (SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND | SDMMC_FLAG_CTIMEOUT)) == 0U) ||
-         ((sta_reg & SDMMC_FLAG_CMDACT) != 0U ));
+  if(SDMMC_WaitCommand(SDMMCx, SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND |
+                       SDMMC_FLAG_CTIMEOUT, SDMMC_CMDTIMEOUT) != SDMMC_ERROR_NONE)
+    return SDMMC_ERROR_TIMEOUT;
     
   if(__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CTIMEOUT))
   {
@@ -1410,21 +1401,9 @@ uint32_t SDMMC_GetCmdResp3(SDMMC_TypeDef *SDMMCx)
 uint32_t SDMMC_GetCmdResp6(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint16_t *pRCA)
 {
   uint32_t response_r1;
-  uint32_t sta_reg;
-
-  /* 8 is the number of required instructions cycles for the below loop statement.
-  The SDMMC_CMDTIMEOUT is expressed in ms */
-  uint32_t count = SDMMC_CMDTIMEOUT * (SystemCoreClock / 8U /1000U);
-  
-  do
-  {
-    if (count-- == 0U)
-    {
-      return SDMMC_ERROR_TIMEOUT;
-    }
-    sta_reg = SDMMCx->STA;
-  }while(((sta_reg & (SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND | SDMMC_FLAG_CTIMEOUT)) == 0U) ||
-         ((sta_reg & SDMMC_FLAG_CMDACT) != 0U ));
+  if(SDMMC_WaitCommand(SDMMCx, SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND |
+                       SDMMC_FLAG_CTIMEOUT, SDMMC_CMDTIMEOUT) != SDMMC_ERROR_NONE)
+    return SDMMC_ERROR_TIMEOUT;
     
   if(__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CTIMEOUT))
   {
@@ -1482,20 +1461,9 @@ uint32_t SDMMC_GetCmdResp6(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint16_t *pRCA
   */
 uint32_t SDMMC_GetCmdResp7(SDMMC_TypeDef *SDMMCx)
 {
-  uint32_t sta_reg;
-  /* 8 is the number of required instructions cycles for the below loop statement.
-  The SDMMC_CMDTIMEOUT is expressed in ms */
-  uint32_t count = SDMMC_CMDTIMEOUT * (SystemCoreClock / 8U /1000U);
-  
-  do
-  {
-    if (count-- == 0U)
-    {
-      return SDMMC_ERROR_TIMEOUT;
-    }
-    sta_reg = SDMMCx->STA;
-  }while(((sta_reg & (SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND | SDMMC_FLAG_CTIMEOUT)) == 0U) ||
-         ((sta_reg & SDMMC_FLAG_CMDACT) != 0U ));
+  if(SDMMC_WaitCommand(SDMMCx, SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND |
+                       SDMMC_FLAG_CTIMEOUT, SDMMC_CMDTIMEOUT) != SDMMC_ERROR_NONE)
+    return SDMMC_ERROR_TIMEOUT;
     
   if(__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CTIMEOUT))
   {
@@ -1542,18 +1510,8 @@ uint32_t SDMMC_GetCmdResp7(SDMMC_TypeDef *SDMMCx)
   */
 static uint32_t SDMMC_GetCmdError(SDMMC_TypeDef *SDMMCx)
 {
-  /* 8 is the number of required instructions cycles for the below loop statement.
-  The SDMMC_CMDTIMEOUT is expressed in ms */
-  uint32_t count = SDMMC_CMDTIMEOUT * (SystemCoreClock / 8U /1000U);
-  
-  do
-  {
-    if (count-- == 0U)
-    {
-      return SDMMC_ERROR_TIMEOUT;
-    }
-    
-  }while(!__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CMDSENT));
+  if(SDMMC_WaitCommand(SDMMCx, SDMMC_FLAG_CMDSENT, SDMMC_CMDTIMEOUT) != SDMMC_ERROR_NONE)
+    return SDMMC_ERROR_TIMEOUT;
   
   /* Clear all the static flags */
   __SDMMC_CLEAR_FLAG(SDMMCx, SDMMC_STATIC_CMD_FLAGS);

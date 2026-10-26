@@ -90,14 +90,11 @@ __weak uint8_t BSP_SD_ITConfig(void)
   */
 __weak uint8_t BSP_SD_ReadBlocks(uint32_t *pData, uint32_t ReadAddr, uint32_t NumOfBlocks, uint32_t Timeout)
 {
-  uint8_t sd_state = MSD_OK;
-
-  if (HAL_SD_ReadBlocks(&hsd1, (uint8_t *)pData, ReadAddr, NumOfBlocks, Timeout) != HAL_OK)
-  {
-    sd_state = MSD_ERROR;
-  }
-
-  return sd_state;
+  HAL_StatusTypeDef status = HAL_SD_ReadBlocks(&hsd1, (uint8_t *)pData, ReadAddr, NumOfBlocks, Timeout);
+  if(status == HAL_OK) return MSD_OK;
+  if(status == HAL_TIMEOUT) return MSD_TIMEOUT;
+  if(status == HAL_BUSY) return MSD_BUSY;
+  return MSD_ERROR;
 }
 
 /* USER CODE BEGIN BeforeWriteBlocksSection */
@@ -113,14 +110,11 @@ __weak uint8_t BSP_SD_ReadBlocks(uint32_t *pData, uint32_t ReadAddr, uint32_t Nu
   */
 __weak uint8_t BSP_SD_WriteBlocks(uint32_t *pData, uint32_t WriteAddr, uint32_t NumOfBlocks, uint32_t Timeout)
 {
-  uint8_t sd_state = MSD_OK;
-
-  if (HAL_SD_WriteBlocks(&hsd1, (uint8_t *)pData, WriteAddr, NumOfBlocks, Timeout) != HAL_OK)
-  {
-    sd_state = MSD_ERROR;
-  }
-
-  return sd_state;
+  HAL_StatusTypeDef status = HAL_SD_WriteBlocks(&hsd1, (uint8_t *)pData, WriteAddr, NumOfBlocks, Timeout);
+  if(status == HAL_OK) return MSD_OK;
+  if(status == HAL_TIMEOUT) return MSD_TIMEOUT;
+  if(status == HAL_BUSY) return MSD_BUSY;
+  return MSD_ERROR;
 }
 
 /* USER CODE BEGIN BeforeReadDMABlocksSection */
@@ -204,7 +198,15 @@ __weak uint8_t BSP_SD_Erase(uint32_t StartAddr, uint32_t EndAddr)
   */
 __weak uint8_t BSP_SD_GetCardState(void)
 {
-  return ((HAL_SD_GetCardState(&hsd1) == HAL_SD_CARD_TRANSFER ) ? SD_TRANSFER_OK : SD_TRANSFER_BUSY);
+  HAL_SD_CardStateTypeDef state = HAL_SD_GetCardState(&hsd1);
+  /* Do not erase prior relevant errors merely because a later command succeeds. */
+  if(hsd1.ErrorCode != HAL_SD_ERROR_NONE || state == HAL_SD_CARD_ERROR)
+    return SD_TRANSFER_ERROR;
+  if(state == HAL_SD_CARD_TRANSFER) return SD_TRANSFER_OK;
+  /* Valid transitional states are not evidence of a failed status command. */
+  if(state >= HAL_SD_CARD_READY && state <= HAL_SD_CARD_DISCONNECTED)
+    return SD_TRANSFER_BUSY;
+  return SD_TRANSFER_ERROR;
 }
 
 /**

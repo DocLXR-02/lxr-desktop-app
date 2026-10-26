@@ -320,7 +320,7 @@ typedef struct
 
 #define SDMMC_CMDTIMEOUT                       5000U         /* Command send and response timeout */
 #define SDMMC_MAXERASETIMEOUT                  63000U        /* Max erase Timeout 63 s            */
-#define SDMMC_STOPTRANSFERTIMEOUT              100000000U    /* Timeout for STOP TRANSMISSION command */
+#define SDMMC_STOPTRANSFERTIMEOUT              5000U    /* Timeout for STOP TRANSMISSION command */
 
 /** @defgroup SDMMC_LL_Clock_Edge Clock Edge
   * @{

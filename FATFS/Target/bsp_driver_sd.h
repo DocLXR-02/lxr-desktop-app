@@ -42,12 +42,15 @@
 #define   MSD_OK                        ((uint8_t)0x00)
 #define   MSD_ERROR                     ((uint8_t)0x01)
 #define   MSD_ERROR_SD_NOT_PRESENT      ((uint8_t)0x02)
+#define   MSD_TIMEOUT                   ((uint8_t)0x03)
+#define   MSD_BUSY                      ((uint8_t)0x04)
 
 /**
   * @brief  SD transfer state definition
   */
 #define   SD_TRANSFER_OK                ((uint8_t)0x00)
 #define   SD_TRANSFER_BUSY              ((uint8_t)0x01)
+#define   SD_TRANSFER_ERROR             ((uint8_t)0x02)
 
 #define SD_PRESENT               ((uint8_t)0x01)
 #define SD_NOT_PRESENT           ((uint8_t)0x00)

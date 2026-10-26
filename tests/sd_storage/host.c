@@ -5,12 +5,12 @@
 SysTick_Type host_systick;
 uint32_t host_ipsr,host_primask,host_basepri,host_faultmask;
 static uint32_t tick, step, busy, polls, reads, writes, inits, infos;
-static uint8_t present, transfer_result, init_result;
+static uint8_t present, transfer_result, init_result, state_error;
 static uint32_t last_count, last_sector, last_timeout, remove_at;
 uint32_t HAL_GetTick(void) { uint32_t n=tick; tick+=step; return n; }
 uint8_t BSP_SD_IsDetected(void) { return polls >= remove_at ? SD_NOT_PRESENT : present; }
 uint8_t BSP_SD_Init(void) { ++inits; return init_result; }
-uint8_t BSP_SD_GetCardState(void) { ++polls; assert(polls<100000); return polls<=busy?SD_TRANSFER_BUSY:MSD_OK; }
+uint8_t BSP_SD_GetCardState(void) { ++polls; assert(polls<100000); if(state_error) return SD_TRANSFER_ERROR; return polls<=busy?SD_TRANSFER_BUSY:MSD_OK; }
 void BSP_SD_GetCardInfo(BSP_SD_CardInfo *i) { ++infos; i->LogBlockNbr=1024; i->LogBlockSize=512; }
 uint8_t BSP_SD_ReadBlocks(uint32_t *b,uint32_t s,uint32_t n,uint32_t t)
 { assert(b);++reads;last_count=n;last_sector=s;last_timeout=t;return transfer_result; }
@@ -23,7 +23,7 @@ static void reboot(void)
  Stat=STA_NOINIT;Fault=0;host_systick.CTRL=3;
  host_ipsr=host_primask=host_basepri=host_faultmask=0;
  tick=0;step=1;busy=polls=reads=writes=inits=infos=0;
- present=SD_PRESENT;transfer_result=init_result=MSD_OK;remove_at=UINT32_MAX;
+ present=SD_PRESENT;transfer_result=init_result=MSD_OK;remove_at=UINT32_MAX;state_error=0;
 }
 static void start(void) { reboot();assert(SD_initialize(0)==0 && inits==1);polls=0; }
 static void locked(void)
@@ -65,7 +65,9 @@ int main(void)
  assert(SD_ioctl(0,CTRL_SYNC,0)==RES_OK && polls==4);
  polls=0;busy=UINT32_MAX;assert(SD_ioctl(0,CTRL_SYNC,0)==RES_ERROR);locked();
  start();busy=UINT32_MAX;assert(SD_status(0)&STA_NOINIT);locked();
- puts("PASS CTRL_SYNC ready/delayed/timeout/fault; status cannot clear or bypass fault");
+ start();state_error=1;assert(SD_ioctl(0,CTRL_SYNC,0)==RES_ERROR && polls==1);locked();
+ start();state_error=1;assert(SD_status(0)&STA_NOINIT);assert(polls==1);locked();
+ puts("PASS CTRL_SYNC ready/delayed/timeout/fault and explicit BSP status error; status cannot clear or bypass fault");
  start();DWORD v=0;WORD size=0;
  assert(SD_ioctl(0,GET_SECTOR_COUNT,&v)==RES_OK && v==1024);
  assert(SD_ioctl(0,GET_SECTOR_SIZE,&size)==RES_OK && size==512);
