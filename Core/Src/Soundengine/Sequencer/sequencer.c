@@ -273,11 +273,9 @@ void seq_setShuffle(float shuffle)
 //------------------------------------------------------------------------------
 void seq_setTrackLength(uint8_t trackNr, uint8_t length)
 {
-	//set new end marker
-	/*
-	if(length == 16)
-		length=0;
-	*/
+	if(trackNr >= NUM_TRACKS || frontParser_shownPattern >= NUM_PATTERN) return;
+	if(length == 0) length = 16; // legacy input encoding
+	if(length > NUM_STEPS) return;
 	// **PATROT this was changed from setting length on seq_activePattern to shown (or edited) pattern
 
 #if USE_PATTERN_EDIT_BUFFER
@@ -292,6 +290,7 @@ void seq_setTrackLength(uint8_t trackNr, uint8_t length)
 //------------------------------------------------------------------------------
 uint8_t seq_getTrackLength(uint8_t trackNr)
 {
+	if(trackNr >= NUM_TRACKS || frontParser_shownPattern >= NUM_PATTERN) return 16;
 	// **PATROT this was changed from getting seq_activePattern to shown (or edited) pattern
 #if USE_PATTERN_EDIT_BUFFER
 	uint8_t r=patternBackupBuffer.length[trackNr];

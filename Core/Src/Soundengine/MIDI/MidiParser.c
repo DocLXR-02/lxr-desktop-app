@@ -133,6 +133,9 @@ float midiParser_calcDetune(uint8_t value)
 //-----------------------------------------------------------
 static void midiParser_nrpnHandler(uint16_t value)
 {
+	// Reject unsupported 14-bit selections before narrowing to a MIDI byte.
+	if(midiParser_activeNrpnNumber > UINT8_MAX) return;
+
 	MidiMsg msg2;
 	msg2.status = MIDI_CC2;
 	msg2.data1 = midiParser_activeNrpnNumber;
@@ -164,6 +167,10 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue, uint8_t isFl
 	if((msg.status &0xF0) == MIDI_CC)
 	{
 
+		// Bank changes are forwarded to the UI by parseMidiMessage(). They have
+		// no sound parameter and must not enter the cache or modulation path.
+		if(msg.data1 == CC_BANK_CHANGE || msg.data1 > 127) return;
+
 		const uint16_t paramNr = msg.data1-1;
 		if(updateOriginalValue && !isFloatModulator) {
 			midiParser_originalCcValues[paramNr+1] = value.itg;
@@ -174,16 +181,6 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue, uint8_t isFl
 
 		case CC_MOD_WHEEL:
 
-			break;
-
-		case CC_BANK_CHANGE:
-			// bank change (coarse) selects kit (sound)
-			/*
-			 * already send in parseMidiMessage()
-			uart_sendFrontpanelByte(MIDI_CC);
-			uart_sendFrontpanelByte(CC_BANK_CHANGE);
-			uart_sendFrontpanelByte(value.itg);
-			*/
 			break;
 
 		case NRPN_DATA_ENTRY_COARSE:
@@ -906,8 +903,13 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue, uint8_t isFl
 	else //MIDI_CC2
 	{
 		const uint16_t paramNr = msg.data1 + 1 + 127;
+		// External NRPN mute commands are not sound parameters and have no
+		// cache entry or modulation target. Preserve their command handling.
+		const uint8_t isMuteCommand = msg.data1 >= CC2_MUTE_1 && msg.data1 <= CC2_MUTE_7;
+		if(!isMuteCommand && (paramNr >= END_OF_SOUND_PARAMETERS ||
+			paramNr >= sizeof(midiParser_originalCcValues))) return;
 
-		if(updateOriginalValue && !isFloatModulator) {
+		if(updateOriginalValue && !isFloatModulator && !isMuteCommand) {
 			midiParser_originalCcValues[paramNr] = value.itg;
 		}
 		switch(msg.data1)
@@ -1433,7 +1435,7 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue, uint8_t isFl
 			default:
 				break;
 		}
-		if(!isFloatModulator)
+		if(!isFloatModulator && !isMuteCommand)
 		{
 			modNode_originalValueChanged(paramNr);
 		}
