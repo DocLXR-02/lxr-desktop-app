@@ -97,7 +97,7 @@ DSTATUS SD_initialize(BYTE lun)
 {
   if(lun != 0u || !SD_ContextOK()) return STA_NOINIT;
   if(Fault) return Stat;
-  if(!(Stat & STA_NOINIT)) return SD_status(lun);
+  /* Preserve explicit healthy remount initialization; faults never reach BSP. */
   /* An absent card at startup has not created an uncertain transfer. */
   if(BSP_SD_IsDetected() != SD_PRESENT) return (Stat = STA_NOINIT | STA_NODISK);
   Stat = STA_NOINIT;

@@ -46,7 +46,7 @@ int main(void)
   start();assert(SD_read(0,data,1024-n,n)==RES_OK && reads==1);
   assert(last_count==n && last_sector==1024-n && last_timeout==5000);
   assert(SD_write(0,data,1024-n,n)==RES_OK && writes==1 && last_count==n);
-  assert(SD_initialize(0)==0 && inits==1);
+  assert(SD_initialize(0)==0 && inits==2);
  }
  puts("PASS all 1..128 sector read/write counts; exact range edge and 5000ms HAL argument");
  start();busy=4;assert(SD_write(0,data,0,1)==RES_OK && polls==5);
