@@ -18,7 +18,7 @@ typedef uint64_t QWORD;
 _Static_assert(sizeof(DWORD)==4 && sizeof(WORD)==2,"target integer widths");
 SysTick_Type host_systick={3};
 uint32_t host_ipsr,host_primask,host_basepri,host_faultmask;
-static uint32_t tick,physical_writes,physical_inits;
+static uint32_t tick,physical_writes,physical_inits,physical_fail_write;
 static uint8_t card_present=SD_PRESENT,bsp_result=MSD_OK;
 uint32_t HAL_GetTick(void){return tick++;}
 uint8_t BSP_SD_IsDetected(void){return card_present;}
@@ -28,7 +28,7 @@ void BSP_SD_GetCardInfo(BSP_SD_CardInfo *i){i->LogBlockNbr=256;i->LogBlockSize=5
 uint8_t BSP_SD_ReadBlocks(uint32_t *p,uint32_t s,uint32_t n,uint32_t timeout)
 {(void)p;(void)s;(void)n;(void)timeout;return bsp_result;}
 uint8_t BSP_SD_WriteBlocks(uint32_t *p,uint32_t s,uint32_t n,uint32_t timeout)
-{(void)p;(void)s;(void)n;(void)timeout;physical_writes++;return bsp_result;}
+{(void)p;(void)s;(void)n;(void)timeout;physical_writes++;return physical_writes==physical_fail_write?MSD_ERROR:bsp_result;}
 static BYTE media[256][512];
 static DWORD sectors[16];
 static unsigned writes,reads,syncs,fail_write,init_calls,status_calls;
@@ -135,6 +135,15 @@ static void public_sync(void)
  assert(f_close(&file)==FR_OK && file.obj.fs==0);
  setup();file.flag=FA_WRITE|FA_MODIFIED;fs.fs_type=FS_FAT32;fs.fsi_flag=1;fail_write=2;
  assert(f_close(&file)==FR_DISK_ERR && file.err==FR_DISK_ERR && file.obj.fs==&fs);
+ /* Same public failure path through the real S1 disk driver, not the RAM stub. */
+ setup();disk.drv[0]=&SD_Driver;disk.is_initialized[0]=0;
+ Stat=STA_NOINIT;Fault=0;physical_writes=physical_inits=0;physical_fail_write=2;
+ card_present=SD_PRESENT;bsp_result=MSD_OK;assert(disk_initialize(0)==0);
+ file.flag=FA_WRITE|FA_MODIFIED;fs.winsect=9;fs.wflag=1;
+ assert(f_sync(&file)==FR_DISK_ERR && Fault && file.err==FR_DISK_ERR && physical_writes==2);
+ assert(f_close(&file)==FR_INVALID_OBJECT && file.obj.fs==&fs && physical_writes==2);
+ physical_fail_write=0;
+ puts("PASS whole public sync/close through S1: mirror failure latches driver, first FR_DISK_ERR then invalid-object close, no extra physical writes");
  puts("PASS full production f_sync/f_close: primary/mirror/FSInfo/data/sync errors stay sticky, modified state and handle retained, no implicit replay with healthy stub; success closes normally");
 }
 #endif
@@ -153,7 +162,7 @@ static void initialization(void)
  for(unsigned n=1;n<256;n++)assert(disk_initialize((BYTE)n)&STA_NOINIT);
  /* Actual S1 driver behind the actual generic wrapper and registration code. */
  memset(&disk,0,sizeof disk);Stat=STA_NOINIT;Fault=0;physical_writes=physical_inits=tick=0;
- card_present=SD_NOT_PRESENT;bsp_result=MSD_OK;assert(FATFS_LinkDriver(&SD_Driver,drive)==0);
+ card_present=SD_NOT_PRESENT;bsp_result=MSD_OK;physical_fail_write=0;assert(FATFS_LinkDriver(&SD_Driver,drive)==0);
  assert(disk_initialize(0)==(STA_NOINIT|STA_NODISK) && !physical_inits && !disk.is_initialized[0]);
  card_present=SD_PRESENT;assert(disk_initialize(0)==0 && physical_inits==1 && disk.is_initialized[0]);
  BYTE buffer[512]={0};bsp_result=MSD_ERROR;

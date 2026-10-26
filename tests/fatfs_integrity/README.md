@@ -17,7 +17,10 @@ independent of the production SD latch. An explicit separate sync_fs call can
 retry pending FSInfo with this stub; that is not automatic retry inside the
 function. In production, serious errors additionally latch the S1 driver, which
 rejects subsequent physical I/O. Tests wire that actual driver through actual
-registration/disk initialization to prove remount cannot clear the latch.
+registration/disk initialization to prove remount cannot clear the latch. The
+public mirror-failure path is also wired through that driver: f_sync returns
+FR_DISK_ERR, and later f_close returns FR_INVALID_OBJECT because S1 marks the
+volume unavailable. It retains the handle and issues no extra physical write.
 
 Coverage: primary/secondary/later FAT failures and success for 1–4 synthetic FAT
 copies; dirty retention; FSInfo bytes, pending flag, no-update and sync errors;
