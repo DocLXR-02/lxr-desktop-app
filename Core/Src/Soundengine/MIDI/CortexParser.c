@@ -255,10 +255,20 @@ static void frontParser_handleSysexData(unsigned char data)
 	case SYSEX_RECEIVE_PAT_LEN_DATA:
 		// same as above but we are receiving length data for each pattern
 		{
+			// Saturate at the end of the length stream; never wrap the receive counter.
+			if(frontParser_sysexSeqStepNr >= NUM_PATTERN * NUM_TRACKS) break;
 			//calculate the step pattern and track indices
-			const uint8_t currentPattern	= frontParser_sysexSeqStepNr / 7;
-			const uint8_t currentTrack  	= frontParser_sysexSeqStepNr - currentPattern*7;
+			const uint8_t currentPattern	= frontParser_sysexSeqStepNr / NUM_TRACKS;
+			const uint8_t currentTrack  	= frontParser_sysexSeqStepNr - currentPattern*NUM_TRACKS;
 
+
+			if(data == 0) data = 16; // legacy length encoding
+			if(data > NUM_STEPS)
+			{
+				frontParser_sysexSeqStepNr++;
+				frontParser_rxCnt = 0;
+				break;
+			}
 
 /*
 			if( (currentPattern == seq_activePattern) && seq_isRunning() )

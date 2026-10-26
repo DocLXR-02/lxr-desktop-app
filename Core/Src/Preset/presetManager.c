@@ -299,6 +299,35 @@ FRESULT preset_LoadTmpKit()
 		return res;
 }
 
+// Read the existing length/kit tail without exposing partial or invalid lengths.
+static uint8_t preset_readPatternLengths(uint8_t patternNr, uint8_t dataVersion)
+{
+	if(patternNr >= NUM_PATTERN) return 0;
+	uint8_t lengths[NUM_TRACKS];
+	uint8_t kit = 0;
+	UINT bytesRead;
+	if(f_read((FIL*)&SDFile, lengths, sizeof(lengths), &bytesRead) != FR_OK) return 0;
+	if(dataVersion == 1 && bytesRead == 0)
+	{
+		// Untagged V1 files may have no length tail at all.
+		for(uint8_t trk=0; trk<NUM_TRACKS; trk++) lengths[trk] = 16;
+	}
+	else if(bytesRead != sizeof(lengths)) return 0;
+	for(uint8_t trk=0; trk<NUM_TRACKS; trk++)
+	{
+		if(lengths[trk] == 0) lengths[trk] = 16;
+		if(lengths[trk] > NUM_STEPS) return 0;
+	}
+	if(dataVersion > 1)
+	{
+		if(f_read((FIL*)&SDFile, &kit, sizeof(kit), &bytesRead) != FR_OK || bytesRead != sizeof(kit)) return 0;
+	}
+	for(uint8_t trk=0; trk<NUM_TRACKS; trk++)
+		seq_patternSet.length[patternNr][trk] = lengths[trk];
+	if(dataVersion > 1) seq_patternSet.kitNr[patternNr] = kit;
+	return 1;
+}
+
 FRESULT preset_LoadTmpPat()
 {
 
@@ -326,21 +355,22 @@ FRESULT preset_LoadTmpPat()
 				return res;
 		}
 
-		//read current preset nr
-		res = f_read((FIL*)&SDFile,(void*)&menu_playedPattern,1,&bytesRead);
-		if(bytesRead != 1)
+		// Validate the stored pattern index before publishing it to UI/playback state.
+		uint8_t loadedPattern;
+		res = f_read((FIL*)&SDFile,(void*)&loadedPattern,1,&bytesRead);
+		if(res != FR_OK || bytesRead != 1)
 		{
 			success = 0;
 			goto closeFile;
 		}
 
-		if(menu_playedPattern >= NUM_PATTERN)
+		if(loadedPattern >= NUM_PATTERN)
 		{
-			menu_playedPattern = 0;
 			success = 0;
 			goto closeFile;
 		}
 
+		menu_playedPattern = loadedPattern;
 		menu_shownPattern = menu_playedPattern;
 		seq_activePattern = menu_playedPattern;
 		seq_pendingPattern = menu_playedPattern;
@@ -358,7 +388,6 @@ FRESULT preset_LoadTmpPat()
 		// This means that loading old patterns with non-standard length, the length will be
 		// ignored and a standard length used. I think it's acceptable as long as users are aware of this.
 
-		uint8_t next=0;
 
 		// ---------- Load step data first
 
@@ -369,9 +398,7 @@ FRESULT preset_LoadTmpPat()
 		for(uint8_t trk=0; trk<NUM_TRACKS;trk++)
 		{
 
-			f_read((FIL*)&SDFile,(void*)&seq_patternSet.seq_subStepPattern[patternNr][trk][0],sizeof(Step)*STEPS_PER_PATTERN,&bytesRead);
-
-			if(bytesRead!=sizeof(Step)*(STEPS_PER_PATTERN))
+			if(f_read((FIL*)&SDFile,(void*)&seq_patternSet.seq_subStepPattern[patternNr][trk][0],sizeof(Step)*STEPS_PER_PATTERN,&bytesRead) != FR_OK || bytesRead!=sizeof(Step)*(STEPS_PER_PATTERN))
 			{
 				success=0;
 				break; // file error, or we ran out of file (eof)
@@ -380,9 +407,7 @@ FRESULT preset_LoadTmpPat()
 			//Pattern V3 and up => flam added
 			//if(dataVersion > 2)
 			{
-				f_read((FIL*)&SDFile,(void*)&seq_patternSet.seq_stepTiming[patternNr][trk][0],sizeof(uint8_t)*STEPS_PER_PATTERN,&bytesRead);
-
-				if(bytesRead!=sizeof(uint8_t)*(STEPS_PER_PATTERN))
+				if(f_read((FIL*)&SDFile,(void*)&seq_patternSet.seq_stepTiming[patternNr][trk][0],sizeof(uint8_t)*STEPS_PER_PATTERN,&bytesRead) != FR_OK || bytesRead!=sizeof(uint8_t)*(STEPS_PER_PATTERN))
 				{
 					success=0;
 					break; // file error, or we ran out of file (eof)
@@ -401,9 +426,7 @@ FRESULT preset_LoadTmpPat()
 			{
 				for(uint8_t bar=0;bar<NUM_BARS; bar++)
 				{
-					f_read((FIL*)&SDFile,(void*)&mainStepData,sizeof(uint16_t),&bytesRead);
-
-					if( bytesRead==sizeof(uint16_t)) {
+					if(f_read((FIL*)&SDFile,(void*)&mainStepData,sizeof(uint16_t),&bytesRead) == FR_OK && bytesRead==sizeof(uint16_t)) {
 						seq_patternSet.seq_mainSteps[bar][patternNr][trk] = mainStepData;
 					}
 					 else {
@@ -418,9 +441,7 @@ FRESULT preset_LoadTmpPat()
 		// ------------ shuffle settings
 		if(success) {
 			//load the shuffle settings
-			f_read((FIL*)&SDFile,(void*)&seq_patternSet.shuffle[patternNr],sizeof(uint8_t),&bytesRead);
-			//and update on cortex
-			if(bytesRead)
+			if(f_read((FIL*)&SDFile,(void*)&seq_patternSet.shuffle[patternNr],sizeof(uint8_t),&bytesRead) == FR_OK && bytesRead == sizeof(uint8_t))
 			{
 
 				//activeParameters[PAR_SHUFFLE] = seq_patternSet.shuffle[patternNr];
@@ -433,25 +454,7 @@ FRESULT preset_LoadTmpPat()
 			}
 		}
 
-		// ----------- Pattern/track lengths
-		// -- AS this might not exist in the saved data file, we still want success
-		if(success) {
-
-				for(uint8_t trk=0; trk<NUM_TRACKS;trk++)
-				{
-					f_read((FIL*)&SDFile,(void*)&next,sizeof(uint8_t),&bytesRead);
-					seq_patternSet.length[patternNr][trk] = next;
-				}
-
-			success=1; // just to document that we don't consider this a failure, we just didn't read the bytes for this
-		}
-
-		//if(dataVersion > 1)
-		{
-			f_read((FIL*)&SDFile,(void*)&seq_patternSet.kitNr[patternNr],sizeof(uint8_t),&bytesRead);
-			if(bytesRead == 0) success = 0;
-
-		}
+		if(success) success = preset_readPatternLengths(patternNr, 3);
 
 		if( success == 0)
 		{
@@ -1699,6 +1702,7 @@ FRESULT preset_savePatternSD(uint8_t presetNr)
 // returns 1 on success
 static uint8_t preset_readPatternData(uint8_t patternNr, uint8_t dataVersion)
 {
+	if(patternNr >= NUM_PATTERN) return 0;
 
 #if 0
 
@@ -1871,7 +1875,6 @@ static uint8_t preset_readPatternData(uint8_t patternNr, uint8_t dataVersion)
 
 	UINT bytesRead;
 	uint8_t success=1; // start off succeeding
-	uint8_t next=0;
 
 	// ---------- Load step data first
 
@@ -1882,9 +1885,7 @@ static uint8_t preset_readPatternData(uint8_t patternNr, uint8_t dataVersion)
 	for(uint8_t trk=0; trk<NUM_TRACKS;trk++)
 	{
 
-		f_read((FIL*)&SDFile,(void*)&seq_patternSet.seq_subStepPattern[patternNr][trk][0],sizeof(Step)*STEPS_PER_PATTERN,&bytesRead);
-
-		if(bytesRead!=sizeof(Step)*(STEPS_PER_PATTERN))
+		if(f_read((FIL*)&SDFile,(void*)&seq_patternSet.seq_subStepPattern[patternNr][trk][0],sizeof(Step)*STEPS_PER_PATTERN,&bytesRead) != FR_OK || bytesRead!=sizeof(Step)*(STEPS_PER_PATTERN))
 		{
 			success=0;
 			break; // file error, or we ran out of file (eof)
@@ -1893,9 +1894,7 @@ static uint8_t preset_readPatternData(uint8_t patternNr, uint8_t dataVersion)
 		//Pattern V3 and up => flam added
 		if(dataVersion > 2)
 		{
-			f_read((FIL*)&SDFile,(void*)&seq_patternSet.seq_stepTiming[patternNr][trk][0],sizeof(uint8_t)*STEPS_PER_PATTERN,&bytesRead);
-
-			if(bytesRead!=sizeof(uint8_t)*(STEPS_PER_PATTERN))
+			if(f_read((FIL*)&SDFile,(void*)&seq_patternSet.seq_stepTiming[patternNr][trk][0],sizeof(uint8_t)*STEPS_PER_PATTERN,&bytesRead) != FR_OK || bytesRead!=sizeof(uint8_t)*(STEPS_PER_PATTERN))
 			{
 				success=0;
 				break; // file error, or we ran out of file (eof)
@@ -1914,9 +1913,7 @@ static uint8_t preset_readPatternData(uint8_t patternNr, uint8_t dataVersion)
 		{
 			for(uint8_t bar=0;bar<NUM_BARS; bar++)
 			{
-				f_read((FIL*)&SDFile,(void*)&mainStepData,sizeof(uint16_t),&bytesRead);
-
-				if( bytesRead==sizeof(uint16_t)) {
+				if(f_read((FIL*)&SDFile,(void*)&mainStepData,sizeof(uint16_t),&bytesRead) == FR_OK && bytesRead==sizeof(uint16_t)) {
 					seq_patternSet.seq_mainSteps[bar][patternNr][trk] = mainStepData;
 				}
 				 else {
@@ -1931,9 +1928,7 @@ static uint8_t preset_readPatternData(uint8_t patternNr, uint8_t dataVersion)
 	// ------------ shuffle settings
 	if(success) {
 		//load the shuffle settings
-		f_read((FIL*)&SDFile,(void*)&seq_patternSet.shuffle[patternNr],sizeof(uint8_t),&bytesRead);
-		//and update on cortex
-		if(bytesRead)
+		if(f_read((FIL*)&SDFile,(void*)&seq_patternSet.shuffle[patternNr],sizeof(uint8_t),&bytesRead) == FR_OK && bytesRead == sizeof(uint8_t))
 		{
 
 			//activeParameters[PAR_SHUFFLE] = seq_patternSet.shuffle[patternNr];
@@ -1946,25 +1941,7 @@ static uint8_t preset_readPatternData(uint8_t patternNr, uint8_t dataVersion)
 		}
 	}
 
-	// ----------- Pattern/track lengths
-	// -- AS this might not exist in the saved data file, we still want success
-	if(success) {
-
-			for(uint8_t trk=0; trk<NUM_TRACKS;trk++)
-			{
-				f_read((FIL*)&SDFile,(void*)&next,sizeof(uint8_t),&bytesRead);
-				seq_patternSet.length[patternNr][trk] = next;
-			}
-
-		success=1; // just to document that we don't consider this a failure, we just didn't read the bytes for this
-	}
-
-	if(dataVersion > 1)
-	{
-		f_read((FIL*)&SDFile,(void*)&seq_patternSet.kitNr[patternNr],sizeof(uint8_t),&bytesRead);
-		if(bytesRead == 0) success = 0;
-
-	}
+	if(success) success = preset_readPatternLengths(patternNr, dataVersion);
 
 	return success;
 #endif
@@ -2019,6 +1996,7 @@ frontPanel_sendData(PRESET,PATTERN_LOAD,presetNr);
 //----------------------------------------------------
 FRESULT preset_loadPatternSD(uint8_t presetNr)
 {
+	if(presetNr >= NUM_PATTERN) return FR_INVALID_PARAMETER;
 #if USE_SD_CARD		
 	//filename in 8.3  format
 	uint8_t fileVersion = 1;
@@ -2045,11 +2023,12 @@ FRESULT preset_loadPatternSD(uint8_t presetNr)
 	
 	//read the preset name
 	res = f_read((FIL*)&SDFile,(void*)savefileNames[presetNr][PATTERN_NAMES],8,&bytesRead);
-	if(bytesRead != 8)
+	if(res != FR_OK || bytesRead != 8)
 		goto closeFile;
 	
 	char buf[7];
 	res = f_read((FIL*)&SDFile,buf,6,&bytesRead);
+	if(res != FR_OK || bytesRead != 6) goto closeFile;
 	//zero termination
 	buf[6]=0;
 	fileVersion = atoi(&buf[4]);

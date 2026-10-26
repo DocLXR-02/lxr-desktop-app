@@ -52,6 +52,8 @@ void euklid_init()
  */
 static inline uint8_t getObjSize(uint16_t group)
 {
+	// The C builtin underlying __CLZ is undefined for zero.
+	if(group == 0) return 1;
 	uint8_t ret = 32 - __CLZ((uint32_t)group);
 	if(ret==0) return 1;
 	return ret;
@@ -141,6 +143,8 @@ void euklid_calcRecursive(uint8_t length, uint8_t steps, uint8_t iteration, uint
 //-----------------------------------------------------
 void euklid_generate(uint8_t trackNr, uint8_t patternNr)
 {
+	if(trackNr >= NUM_TRACKS || patternNr >= NUM_PATTERN) return;
+	if(euklid_length[trackNr] < 1 || euklid_length[trackNr] > 16) return;
 	uint8_t length,steps,rotation;
 	length = euklid_length[trackNr];
 	steps = euklid_steps[trackNr];
@@ -168,24 +172,28 @@ void euklid_generate(uint8_t trackNr, uint8_t patternNr)
 //-----------------------------------------------------
 uint8_t euklid_getLength(uint8_t trackNr)
 {
+	if(trackNr >= NUM_TRACKS) return 16;
 	return euklid_length[trackNr];
 }
 //-----------------------------------------------------
 uint8_t euklid_getSteps(uint8_t trackNr)
 {
+	if(trackNr >= NUM_TRACKS) return 1;
 	return euklid_steps[trackNr];
 };
 
 //-----------------------------------------------------
 void euklid_setLength(uint8_t trackNr, uint8_t value)
 {
+	if(trackNr >= NUM_TRACKS) return;
 	if(value<=0)value=1;
-	//else if(value>16)value=16;
+	else if(value>16)value=16;
 	euklid_length[trackNr] = value;
 }
 //-----------------------------------------------------
 void euklid_setSteps(uint8_t trackNr, uint8_t value, uint8_t patternNr)
 {
+	if(trackNr >= NUM_TRACKS || patternNr >= NUM_PATTERN) return;
 	if(value<=0)value=1;
 
 	if(value>euklid_length[trackNr]) value= euklid_length[trackNr];
@@ -196,11 +204,13 @@ void euklid_setSteps(uint8_t trackNr, uint8_t value, uint8_t patternNr)
 //-----------------------------------------------------
 uint8_t euklid_getRotation(uint8_t trackNr)
 {
+	if(trackNr >= NUM_TRACKS) return 0;
 	return euklid_rotation[trackNr];
 }
 //-----------------------------------------------------
 void euklid_setRotation(uint8_t trackNr, uint8_t value, uint8_t patternNr)
 {
+	if(trackNr >= NUM_TRACKS || patternNr >= NUM_PATTERN) return;
 	if(value>euklid_length[trackNr]) value = euklid_rotation[trackNr];
 
 	euklid_rotation[trackNr] = value;
@@ -209,6 +219,7 @@ void euklid_setRotation(uint8_t trackNr, uint8_t value, uint8_t patternNr)
 //-----------------------------------------------------
 void euklid_rotatePattern(uint8_t length, uint8_t amount)
 {
+	if(length < 1 || length > 16) return;
 	if( amount==0 || length==1 || amount%length==0  ) return; //Nothing to be done
 
 	amount = amount%length;
@@ -220,6 +231,8 @@ void euklid_rotatePattern(uint8_t length, uint8_t amount)
 //-----------------------------------------------------
 void euklid_transferPattern(uint8_t trackNr, uint8_t patternNr)
 {
+	if(trackNr >= NUM_TRACKS || patternNr >= NUM_PATTERN) return;
+	if(euklid_length[trackNr] < 1 || euklid_length[trackNr] > 16) return;
 	uint8_t len=euklid_length[trackNr];
 	for(int i=0; i<NUM_BARS; i++)
 	{
@@ -230,10 +243,7 @@ void euklid_transferPattern(uint8_t trackNr, uint8_t patternNr)
 #endif
 
 	}
-// **PATROT - pattern end is now stored differently
-
-	if(len == 16)
-		len=0;
+	// Track lengths are literal 1..64 values, including length 16.
 #if USE_PATTERN_EDIT_BUFFER
 	patternBackupBuffer.length[trackNr]=len;
 #else
