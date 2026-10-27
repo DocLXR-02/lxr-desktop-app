@@ -6,7 +6,7 @@ compiler and the existing target headers are required. No card or hardware is us
 `host.c` runs complete extracted production bodies, including project save/load,
 readers, checked writers and validation. The filesystem, timer, LCD and sound-send
 operations are deterministic mocks. It checks capacity boundaries, all byte-valued
-invalid indices and associated kits, nonrecursive temporary cleanup, project
+invalid indices and associated kits, nonrecursive temporary cleanup, unsafe project
 overwrite rejection, successful absent-slot output, failures and legacy reads.
 The production initialization kit and unchanged pattern reset/copy bodies are used.
 
@@ -19,6 +19,8 @@ mocked file APIs; neither fixture is a physical SD or audio test.
 Both groups run with ASan/UBSan. Existing S1–S4-L2 suites remain required. Existing
 Euclidean tests cover V1/V2/V3 patterns and the unchanged successful byte layout.
 
-Temporary restriction: full-project saves require an absent directory. An existing
-empty, partial or complete path returns `FR_EXIST`. No replacement, automatic
-rollback, card repair or forced file-handle recovery is implemented.
+S4b-2 retains the capacity/index/legacy checks and the absent-folder reservation
+gate. The complete save now invokes bounded project replacement; the separate
+`tests/project_transaction` suite exercises that workflow using real FatFs. The
+unit fixture tests clean repeat saves and rejects unknown existing contents. No
+card repair or forced file-handle recovery is implemented.

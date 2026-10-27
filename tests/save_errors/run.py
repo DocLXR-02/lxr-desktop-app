@@ -11,7 +11,7 @@ WRITERS=['preset_writeDrumsetData','preset_writeGlobalData','preset_writePattern
          'preset_saveLastUsedProjectNrToSD','preset_savePatternSD','preset_saveSongSD']
 def extract(text,name):
     masked=re.sub(r'/\*.*?\*/|//[^\n]*|"(?:\\.|[^"\\])*"',lambda m:' '*len(m[0]),text,flags=re.S)
-    m=re.search(r'^(?:static\s+)?(?:void|FRESULT|uint8_t)\s+'+name+r'\([^;]*?\)\s*\{',masked,re.M)
+    m=re.search(r'^(?:static\s+)?(?:void|FRESULT|u?int(?:8|16|32)_t)\s+'+name+r'\([^;]*?\)\s*\{',masked,re.M)
     if not m:raise RuntimeError('Cannot extract '+name)
     i=m.end();depth=1
     while depth:depth+=(masked[i]=='{')-(masked[i]=='}');i+=1
@@ -22,6 +22,12 @@ def frozen(text):
 def case(text,name,next_name):
     start=text.index('case '+name+':');end=text.index('case '+next_name+':',start)
     return text[start:end]
+def preset_source():
+    text=(ROOT/PRESET).read_bytes().decode('latin1').replace('\r\n','\n')
+    include='#include "projectStorage.inc"'
+    if include in text:
+        text=text.replace(include,(ROOT/'Core/Src/Preset/projectStorage.inc').read_text())
+    return text
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--verify-baseline',action='store_true');parser.add_argument('--autosave-regressions',action='store_true');args=parser.parse_args()
     snapshot=(HERE/'baseline_s3.inc').read_text()
@@ -30,7 +36,7 @@ def main():
         base=subprocess.check_output(['git','show',BASE+':'+PRESET],cwd=ROOT).decode('latin1').replace('\r\n','\n')
         assert frozen(base)==snapshot
         print('PASS frozen oracle exactly matches pinned S3 production function bodies',flush=True)
-    text=(ROOT/PRESET).read_bytes().decode('latin1').replace('\r\n','\n')
+    text=preset_source()
     funcs=['preset_sharedStatus','preset_openShared','preset_closeShared','preset_writeChecked',
            'preset_finishSave','preset_childPath','preset_isTmpFile','interpolate','preset_getMorphValue']+WRITERS+['preset_resetAllSaveTimers','preset_touchTimer','preset_completeAutosave','preset_autosaveCanRetry','preset_autosaveOne','preset_processTimer','preset_initTmpFolder','preset_clearTmpFolder','preset_makeFileNameLoad','preset_loadDefaultGlobals','preset_createGlobals']
     names='\n'.join('#define '+n+' baseline_'+n for n in WRITERS)
@@ -52,10 +58,9 @@ def main():
     for name in ['preset_createProject','preset_saveProject','preset_loadProject','preset_loadProjectNames','loadTmpFolderFiles','preset_makeFileNameLoad']:
         body=extract(text,name);assert 'preset_sharedStatus()' in body[:body.index('{')+180]
     assert 'f_close(' not in extract(text,'preset_finishSave')
-    project=extract(text,'preset_saveProject')
+    project=extract(text,'preset_writeProjectData')
     start=project.index('res = preset_saveGlobals();');end=project.index('//save all drumkits',start)
-    # S4b-1 has one cleanup exit instead of duplicated return paths.
-    assert 'if(res != FR_OK) goto done;' in project[start:end]
+    assert 'if(res != FR_OK) return res;' in project[start:end]
     assert 'preset_clearTmpFolder' not in project[start:end]
     includes=['.','Core/Inc','Drivers/CMSIS/Include','Drivers/CMSIS/Device/ST/STM32F7xx/Include',
               'Drivers/STM32F7xx_HAL_Driver/Inc','Middlewares/Third_Party/FatFs/src','FATFS/App','FATFS/Target']

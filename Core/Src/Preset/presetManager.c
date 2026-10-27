@@ -224,6 +224,9 @@ static FRESULT preset_finishRead(FRESULT res)
     return res == FR_OK ? closed : res;
 }
 
+static FRESULT preset_writeProjectData(uint8_t presetNr);
+#include "projectStorage.inc"
+
 /* Only names produced by the firmware in its reserved flat /tmp directory. */
 static uint8_t preset_isTmpFile(const char *name)
 {
@@ -2165,10 +2168,35 @@ FRESULT preset_createProject(uint8_t presetNr)
 // save all settings (global, pattern, kit)
 // or save performance settings (pattern, kit)
 
+/* Existing serializers, unchanged payloads; project metadata is written last. */
+static FRESULT preset_writeProjectData(uint8_t presetNr)
+{
+    preset_saveDrumsetRam(menu_selectedPresetNr[SAVE_TYPE_KIT], 0);
+    FRESULT res = preset_savePatternRAM(seq_activePattern);
+    if(res != FR_OK) return res;
+    res = preset_saveGlobals();
+    if(res != FR_OK) return res;
+    //save all drumkits, patterns and songs
+    for(uint8_t i = 0; i < NUM_KIT_SLOTS; i++) {
+        char text[17];
+        snprintf(text, sizeof(text), "%u%%", (unsigned)i * 100u / NUM_KIT_SLOTS);
+        lcd_setcursor(0,2);
+        lcd_string(text);
+        res = preset_saveDrumsetSD(i, 0);
+        if(res != FR_OK) return res;
+        res = preset_savePatternSD(i);
+        if(res != FR_OK) return res;
+        res = preset_saveSongSD(i);
+        if(res != FR_OK) return res;
+    }
+    res = preset_openShared((FIL*)&SDFile, "prj.nfo", FA_CREATE_NEW | FA_WRITE);
+    if(res != FR_OK) return res;
+    return preset_finishSave(preset_writeChecked(savefileNames[presetNr][PROJECT_NAMES], 8));
+}
+
 FRESULT preset_saveProject(uint8_t presetNr)
 {
     FRESULT res = preset_sharedStatus();
-    uint8_t entered = 0;
     char folder[8];
     if(res != FR_OK) return res;
     res = preset_projectPath(folder, sizeof(folder), presetNr);
@@ -2180,46 +2208,21 @@ FRESULT preset_saveProject(uint8_t presetNr)
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
     HAL_TIM_Base_Start_IT(&htim2);
 #endif
-    /* S4b-1 containment: even empty existing directories are never replaced. */
-    res = preset_createProjectFolder(folder);
-    if(res != FR_OK) goto done;
-    res = f_chdir(folder);
-    if(res != FR_OK) goto done;
-    entered = 1;
-    memcpy(currentFolder, folder, sizeof(folder));
-    preset_saveDrumsetRam(menu_selectedPresetNr[SAVE_TYPE_KIT], 0);
-    res = preset_savePatternRAM(seq_activePattern);
-    if(res != FR_OK) goto done;
     lcd_process_display_interrupt = 0;
     while(sendDisplayBuffer() != 0);
     lcd_clear();
     lcd_home();
     lcd_string(PSTR("Saving Project"));
-    res = preset_openShared((FIL*)&SDFile, "prj.nfo", FA_CREATE_NEW | FA_WRITE);
-    if(res != FR_OK) goto done;
-    res = preset_finishSave(preset_writeChecked(savefileNames[presetNr][PROJECT_NAMES], 8));
-    if(res != FR_OK) goto done;
-    res = preset_saveGlobals();
-    if(res != FR_OK) goto done; /* No later writes or temporary-file deletion. */
-    //save all drumkits, patterns and songs
-    for(uint8_t i = 0; i < NUM_KIT_SLOTS; i++) {
-        char text[17];
-        snprintf(text, sizeof(text), "%u%%", (unsigned)i * 100u / NUM_KIT_SLOTS);
-        lcd_setcursor(0,2);
-        lcd_string(text);
-        res = preset_saveDrumsetSD(i, 0);
-        if(res != FR_OK) goto done;
-        res = preset_savePatternSD(i);
-        if(res != FR_OK) goto done;
-        res = preset_saveSongSD(i);
-        if(res != FR_OK) goto done;
-    }
-    res = preset_clearTmpFolder();
-done:
+    res = preset_txnRun(presetNr, folder);
+    if(res == FR_OK) res = preset_clearTmpFolder();
     lcd_process_display_interrupt = 1;
-    if(entered && preset_sharedStatus() == FR_OK) {
+    if(preset_sharedStatus() == FR_OK) {
         FRESULT restored = preset_initTmpFolder();
-        if(res == FR_OK) res = restored;
+        if(restored != FR_OK) {
+            /* Relative writers must never inherit an unresolved staging CWD. */
+            preset_sharedFailure = restored;
+            if(res == FR_OK) res = restored;
+        }
     }
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
     HAL_TIM_Base_Stop_IT(&htim2);
@@ -2305,6 +2308,8 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
     HAL_TIM_Base_Start_IT(&htim2);
 #endif
+    res = preset_txnLoadFolder(presetNr, folder);
+    if(res != FR_OK) goto done;
     res = f_stat(folder, &info);
     if(res != FR_OK) goto done; /* No mkdir or tmp cleanup while validating a load. */
     if(!(info.fattrib & AM_DIR)) { res = FR_NO_PATH; goto done; }
@@ -2321,7 +2326,7 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
     res = f_chdir(folder);
     if(res != FR_OK) goto done;
     entered = 1;
-    memcpy(currentFolder, folder, sizeof(folder));
+    preset_projectPath(currentFolder, sizeof(currentFolder), presetNr);
     lcd_process_display_interrupt = 0;
     while(sendDisplayBuffer() != 0);
     lcd_clear();
@@ -2372,14 +2377,16 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
     preset_loadDrumsetRam(kit, 0, 1);
     menu_selectedPresetNr[SAVE_TYPE_KIT] = menu_loadedPresetNr[CURRENT_KIT] = kit;
     seq_copyPatternToBackupBuffer(seq_activePattern);
-    res = preset_saveLastUsedProjectNrToSD(presetNr);
-    if(res != FR_OK) goto done;
+    if(!preset_projectRecovered) {
+        res = preset_saveLastUsedProjectNrToSD(presetNr);
+        if(res != FR_OK) goto done;
+    }
     seq_setNextPattern(0);
-    if(clearTmp) res = preset_clearTmpFolder(); /* Only after a completed load. */
+    if(clearTmp && !preset_projectRecovered) res = preset_clearTmpFolder(); /* Only after a completed load. */
 done:
     lcd_process_display_interrupt = 1;
     if(entered && preset_sharedStatus() == FR_OK) {
-        FRESULT restored = preset_initTmpFolder();
+        FRESULT restored = preset_projectRecovered ? f_chdir("/tmp") : preset_initTmpFolder();
         if(res == FR_OK) res = restored;
     }
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ

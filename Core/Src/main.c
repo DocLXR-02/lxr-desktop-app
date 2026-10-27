@@ -444,42 +444,26 @@ adc_checkPots();
 //-----------------------
 
 sprintf(currentFolder, "/proj00");
-if(sd_card_ok)
-{
-
-
-
-
-	FRESULT res;
-	FILINFO fno;
-
-	res = f_stat(currentFolder, &fno);
-	if(res == FR_NO_FILE)
-	{
-		res = f_mkdir(currentFolder);
-		if(res == FR_OK)
-		{
-			f_chdir(currentFolder);
-		}
-	}
-	else
-	{
-		f_chdir(currentFolder);
-	}
+uint8_t projectPending = sd_card_ok ? preset_projectTransactionPending() : 0;
+uint8_t projectFolderReady = 0;
+if(sd_card_ok) {
+    /* Do not create a canonical directory in an interrupted rename gap. */
+    projectFolderReady = f_chdir(currentFolder) == FR_OK;
 }
 
 	soundengine_init();
 
 	if(sd_card_ok)
 	{
-		if(!preset_loadGlobals())
+		if(!projectFolderReady || !preset_loadGlobals())
 		{
 			lcd_clear();
 			lcd_home();
 			lcd_string(PSTR("glo.cfg error"));
 			lcd_setcursor(0,2);
 			lcd_string("Using defaults.");
-			preset_createGlobals();
+			if(projectPending || !projectFolderReady) preset_loadDefaultGlobals();
+			else preset_createGlobals();
 			HAL_Delay(1000);
 
 		}
@@ -895,14 +879,17 @@ uint8_t lastSdState = BSP_SD_IsDetected();
 buttonHandler_init(); //to make sure all leds are properly lit after boot
 
 //make sure to have the tmp folder active
-preset_initTmpFolder();
+if(preset_projectRecoveryActive()) f_chdir("/tmp");
+else preset_initTmpFolder();
 //----- load tmp stuff --------
+if(!preset_projectRecoveryActive()) {
 //manually saved files
 loadTmpFolderFiles();
 //autosave kit
 preset_LoadTmpKit();
 //autosave pattern
 preset_LoadTmpPat();
+}
 led_updateSeqLeds();
 
 preset_resetAllSaveTimers();

@@ -67,7 +67,7 @@ static int add(const char *path,BYTE attr,const void *data,unsigned size)
 static void reset(void)
 {
  memset(entries,0,sizeof entries);add("/tmp",AM_DIR,0,0);strcpy(cwd,"/tmp");
- memset(&SDFile,0,sizeof SDFile);memset(&host_fs,0,sizeof host_fs);host_fs.fs_type=2;
+ memset(&SDFile,0,sizeof SDFile);memset(&host_fs,0,sizeof host_fs);host_fs.fs_type=2;host_fs.csize=1;
  preset_sharedFailure=FR_OK;preset_autosavePaused=0;
  opens=reads=writes=closes=stats=mkdirs=chdirs=unlinks=dirreads=dircloses=0;
  starts=stops=sends=audio_calls=index_writes=0;
@@ -146,6 +146,8 @@ FRESULT f_chdir(const TCHAR *path)
  if(strcmp(absolute,"/") && (i<0 || !(entries[i].attr&AM_DIR)))return FR_NO_PATH;
  strcpy(cwd,absolute);return FR_OK;
 }
+FRESULT f_getfree(const TCHAR *path,DWORD *available,FATFS **volume)
+{(void)path;*available=1000000;*volume=&host_fs;return FR_OK;}
 static int child(const char *directory,const char *path)
 {size_t n=strlen(directory);return !strncasecmp(directory,path,n) && path[n]=='/' && !strchr(path+n+1,'/');}
 FRESULT f_opendir(DIR *dir,const TCHAR *path)
@@ -179,8 +181,20 @@ FRESULT f_findfirst(DIR *dir,FILINFO *info,const TCHAR *path,const TCHAR *mask)
 }
 FRESULT f_unlink(const TCHAR *path)
 {
- unlinks++;assert(!strncmp(path,"/tmp/",5));int i=lookup(path);assert(i>=0 && !(entries[i].attr&AM_DIR));
+ unlinks++;assert(!strncmp(path,"/tmp/",5) || !strncmp(path,"/LXRSTG",7) || !strncmp(path,"/LXRBAK",7) || !strcmp(path,"/LXRTRANS.DAT"));
+ int i=lookup(path);assert(i>=0);
+ if(entries[i].attr&AM_DIR)for(unsigned j=0;j<512;j++)if(entries[j].exists && child(path,entries[j].path))return FR_DENIED;
  if(unlink_result!=FR_OK)return unlink_result;entries[i].exists=0;return FR_OK;
+}
+FRESULT f_rename(const TCHAR *from,const TCHAR *to)
+{
+ char a[80],b[80];resolve(a,from);resolve(b,to);
+ int old=lookup(a);if(old<0)return FR_NO_FILE;if(lookup(b)>=0)return FR_EXIST;
+ size_t n=strlen(a);
+ for(unsigned i=0;i<512;i++)if(entries[i].exists && (!strcasecmp(a,entries[i].path) || child(a,entries[i].path))){
+  char suffix[80];strcpy(suffix,entries[i].path+n);int count=snprintf(entries[i].path,sizeof entries[i].path,"%s%s",b,suffix);assert(count>=0 && count<80);
+ }
+ return FR_OK;
 }
 HAL_StatusTypeDef HAL_TIM_Base_Start_IT(TIM_HandleTypeDef *timer){(void)timer;starts++;return HAL_OK;}
 HAL_StatusTypeDef HAL_TIM_Base_Stop_IT(TIM_HandleTypeDef *timer){(void)timer;stops++;return HAL_OK;}
@@ -263,19 +277,19 @@ static void protection(void)
  reset();add("/proj00",AM_DIR,0,0);add("/proj00/prj.nfo",AM_ARC,"OLDVALID",8);
  add("/proj00/README.TXT",AM_ARC,"unknown",7);add("/proj00/SUBDIR",AM_DIR,0,0);
  static Entry before[512];memcpy(before,entries,sizeof entries);
- for(unsigned i=0;i<10;i++)assert(preset_saveProject(0)==FR_EXIST);
- assert(!memcmp(before,entries,sizeof entries) && !opens && !writes && !unlinks && !mkdirs && !chdirs);
+ for(unsigned i=0;i<10;i++)assert(preset_saveProject(0)==FR_DENIED);
+ assert(!memcmp(before,entries,sizeof entries) && !writes && !unlinks && !mkdirs);
  assert(preset_sharedFailure==FR_OK && starts==stops);
  assert(preset_saveProject(63)==FR_OK && starts==stops && !SDFile.obj.fs);
  unsigned payload=0,count=0;for(unsigned i=0;i<512;i++)if(entries[i].exists && child("/proj63",entries[i].path)){payload+=entries[i].size;count++;}
  assert(count==194 && payload==255398 && !strcmp(cwd,"/tmp") && lookup("/proj00/prj.nfo")>=0);
  assert(!memcmp(entries[lookup("/proj00/prj.nfo")].data,"OLDVALID",8));
- assert(preset_saveProject(63)==FR_EXIST);
- reset();stat_result=FR_DISK_ERR;assert(preset_saveProject(1)==FR_DISK_ERR && !mkdirs && !opens);
- reset();add("/proj01",AM_ARC,"unknown",7);assert(preset_saveProject(1)==FR_EXIST && !writes && !mkdirs);
- reset();add("/proj01",AM_DIR,0,0);assert(preset_saveProject(1)==FR_EXIST && !writes && !mkdirs);
- reset();chdir_result=FR_NO_PATH;assert(preset_saveProject(1)==FR_NO_PATH && !opens && !writes);
- puts("PASS overwrite containment: ten truthful FR_EXIST results preserve all old/unknown data; safe slot63 saves194 files/255398 bytes; wrong CWD never receives payload");
+ assert(preset_saveProject(63)==FR_OK && lookup(PROJECT_STAGE)<0 && lookup(PROJECT_BACKUP)<0 && lookup(PROJECT_RECORD)<0);
+ reset();stat_result=FR_DISK_ERR;assert(preset_saveProject(1)==FR_DISK_ERR && !mkdirs && !writes);
+ reset();add("/proj01",AM_ARC,"unknown",7);assert(preset_saveProject(1)==FR_DENIED && !writes && !mkdirs);
+ reset();add("/proj01",AM_DIR,0,0);assert(preset_saveProject(1)==FR_INT_ERR && !writes && !mkdirs);
+ reset();chdir_result=FR_NO_PATH;assert(preset_saveProject(1)==FR_NO_PATH && lookup("/LXRSTG/prj.nfo")<0 && writes==1);
+ puts("PASS S4b-1 containment retained: unknown data and wrong CWD protected; new/repeated slot63 saves194 files/255398 bytes without stage/backup accumulation");
 }
 static void project_failures(void)
 {
@@ -295,7 +309,7 @@ static void project_failures(void)
   cases++;
  }
  reset();write_short=1;assert(preset_saveProject(1)==FR_DISK_ERR && writes==1 && !closes);
- puts("PASS injected project nfo/global/early/late child open/write/short-write/close failures: first error, no later payload, no old-project or temp deletion, unsafe replay blocked");
+ puts("PASS injected transaction/header/global/early/late child open/write/short-write/close failures: first error, no later payload, no old-project or temp deletion, unsafe replay blocked");
  assert(cases==38);printf("Project failure scenarios exercised: %u\n",cases);
 }
 static void reads_and_legacy(void)

@@ -93,6 +93,9 @@ void preset_loadDefaultGlobals();
 FRESULT preset_saveProject(uint8_t presetNr);
 FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp);
 FRESULT preset_createProject(uint8_t presetNr);
+/* Recovery inspection is foreground-only and never writes project data. */
+uint8_t preset_projectRecoveryActive(void);
+uint8_t preset_projectTransactionPending(void);
 void preset_loadProjectNames(uint8_t projectNr);
 
 FRESULT preset_loadSongSD(uint8_t songNr);
