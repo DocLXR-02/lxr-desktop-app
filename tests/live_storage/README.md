@@ -18,7 +18,9 @@ The second suite extracts actual menu_showSdError, notification expiry/renderer,
 menu_tick, menu_repaintAll and menu_repaint. Native mocks replace HAL time,
 normal menu painters and the LCD sender. Tests cover two-second expiry (1999/2000),
 wraparound, busy display queuing, latest-message replacement, every FatFs result,
-page state retention and no storage-latch clear on dismissal. Static checks reject
+page state retention, expiry preempting a foreground copy and no storage-latch
+clear on dismissal. A test-only memcpy wrapper injects one menu_tick interleaving;
+production uses ordinary fixed-size memcpy and a bounded repaint request. Static checks reject
 waits, delay, timer/LCD/storage/audio calls in the new notification helpers.
 Existing menu_tick/sendDisplayBuffer architecture is not a physical LCD test.
 

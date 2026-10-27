@@ -1963,6 +1963,8 @@ static uint8_t menu_renderSdError(void)
         (menu_sdErrorAuto ? "Autosave paused " : "SD error        "), 16);
     memcpy(editDisplayBuffer[1], detail, 16);
     display_needs_refresh = 1;
+    /* Expiry may preempt a foreground repaint; never leave its stale overlay. */
+    if(menu_sdError != error) menu_repaintAll();
     return 1;
 }
 void menu_showSdError(uint8_t res)

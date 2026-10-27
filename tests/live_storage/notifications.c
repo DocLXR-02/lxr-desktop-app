@@ -16,6 +16,7 @@ static volatile uint32_t menu_sdErrorSince;
 static uint32_t now;
 static FRESULT held;
 static unsigned paints,sends;
+static uint8_t expire_on_copy;
 #define SELECT_MODE_VOICE 0
 uint32_t HAL_GetTick(void){return now;}
 FRESULT preset_storageError(void){return held;}
@@ -33,13 +34,21 @@ static void menu_repaintLoadSavePage(void){paint();}
 static void menu_repaintSimplePage(void){paint();}
 void menu_repaintGeneric(void){paint();}
 uint8_t sendDisplayBuffer(void){sends++;return display_refresh_state;}
+static void *interleaved_copy(void *to,const void *from,size_t count)
+{
+ void *result=memcpy(to,from,count);
+ if(expire_on_copy){expire_on_copy=0;now+=2000;menu_tick();}
+ return result;
+}
+#define memcpy interleaved_copy
 #include "functions.inc"
+#undef memcpy
 static void reset(void)
 {
  menu_activePage=SAVE_PAGE;visibleCursor=2;screensaver_Active=copyClear_showClearMenu=0;
  display_refresh_state=display_needs_clear_all=display_needs_refresh=0;
  memset(editDisplayBuffer,0,sizeof editDisplayBuffer);menu_sdError=FR_OK;held=FR_OK;
- now=100;autosave_paused=0;paints=sends=0;systick_ticks=0;
+ now=100;autosave_paused=0;expire_on_copy=0;paints=sends=0;systick_ticks=0;
 }
 int main(void)
 {
@@ -58,10 +67,14 @@ int main(void)
  assert(!memcmp(editDisplayBuffer[0],"SD writes held  ",16) && !memcmp(editDisplayBuffer[1],"RAM OK; check SD",16));
  now+=2000;menu_tick();assert(!menu_sdError && held==FR_DISK_ERR); /* dismiss never unlocks storage */
  reset();autosave_paused=1;menu_showSdError(FR_NO_PATH);menu_tick();assert(!memcmp(editDisplayBuffer[0],"Autosave paused ",16));
+ /* Simulated display IRQ expires midway through actual foreground overlay copy. */
+ reset();menu_showSdError(FR_NO_PATH);menu_tick();expire_on_copy=1;menu_repaint();
+ assert(!menu_sdError && display_needs_clear_all);menu_tick();
+ for(unsigned row=0;row<2;row++)for(unsigned col=0;col<16;col++)assert(editDisplayBuffer[row][col]=='R');
  for(unsigned result=1;result<=FR_INVALID_PARAMETER;result++){
   reset();menu_showSdError((uint8_t)result);menu_tick();
   assert(editDisplayBuffer[0][16]==' ' && editDisplayBuffer[1][16]==' ' && !paints);
   now+=2000;menu_tick();assert(menu_sdError==FR_OK && paints==1);
  }
- puts("PASS actual notification/tick/repaint bodies: queued/busy display, 1999/2000ms and wrap, latest error, all result codes, page/RAM independence, no storage unlock or blocking calls");
+ puts("PASS actual notification/tick/repaint bodies: queued/busy display, 1999/2000ms and wrap, latest error, all result codes, expiry/copy interleaving, page/RAM independence, no storage unlock or blocking calls");
 }
