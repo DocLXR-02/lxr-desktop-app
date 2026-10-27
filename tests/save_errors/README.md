@@ -16,7 +16,7 @@ FatFs file operations, RAM-editor callbacks and UI notifications are mocks;
 this is not a physical card, LCD, audio or complete menu-state simulation.
 
 Coverage includes 1536 direct byte-for-byte comparisons with the S3 oracle:
-eight save variants, all 64 slots, Morph 0/127/255, identical filenames and write
+eight save variants, all 64 slots, Morph 0/127/255, identical resolved /tmp targets and write
 call counts. Every payload position is tested with an error, error plus full
 byte count, short successful write, and disk error. Open/close failures, invalid
 indices, balanced existing timer hooks, first-error retention, object ownership,
@@ -38,10 +38,13 @@ rejection are distinct from observed disk errors. Payload DENIED remains held.
 Any write failure/short write or failed close still latches shared-file uncertainty
 until reboot. Short writes map to FR_DISK_ERR. There is no close after incomplete
 write, FIL.err reset, automatic retry/reset/remount, or forced lock release.
-Normal saves close exactly once. Failed temporary saves retain dirty flags and
-pause background saves for the session; manual saves after logical errors remain
-available. A manual save does not silently restart background retries or discard
-pending temporary-save flags. The production latch has no clear API.
+Normal saves close exactly once. S4-L2 temporary saves retain dirty flags and retry only selected safe open
+failures, silently, with per-type 2/4/8/16/32-second cooldowns. Unknown/not-ready/
+ownership/write/close outcomes remain held. A fully successful explicit save can
+re-arm a check-required hold, without clearing a fault, dirty flag or cooldown.
+The production fault latches still have no clear API. The original S4-L session-
+pause assertions are updated only for the intentionally changed autosave policy;
+manual UI and every incomplete-write/close protection assertion remain.
 
 The existing Euclidean tests have only extraction/ownership mocks updated for
 the new helper dependencies and FatFs open/close ownership contract; no assertions
@@ -53,3 +56,7 @@ reboots and are not firmware recovery APIs.
 Complete project-directory replacement remains S4b work. The old destination
 emptying, unchecked project-header short write/close, ignored global-save result,
 and temp cleanup results are not certified safe by these individual-save tests.
+
+S4-L2 uses absolute /tmp paths for the two temporary writers so a retry cannot
+follow a changed foreground CWD. The frozen relative filenames are resolved
+against the established /tmp baseline context; file bytes and final names match.

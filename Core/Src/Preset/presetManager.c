@@ -81,15 +81,23 @@ static void preset_makeFileNameSave(char *buf, uint8_t num, uint8_t type, char *
 uint32_t preset_kitTimer = 0;
 uint32_t preset_patTimer = 0;
 
-uint8_t preset_kitDirty = 0;
-uint8_t preset_patDirty = 0;
+volatile uint8_t preset_kitDirty = 0;
+volatile uint8_t preset_patDirty = 0;
 
 /* One shared FIL: uncertain writes/closes are quarantined until reboot.
  * Never clear FIL.err or close after an incomplete write: close could flush more data.
  */
 static FRESULT preset_sharedFailure = FR_OK;
-/* Pending RAM changes survive failure; no background retry after an error. */
+/* Only unsafe autosave failures pause the session; safe open failures back off. */
 static uint8_t preset_autosavePaused;
+/* Autosave retry state: foreground only, independent of edit inactivity timers. */
+typedef struct {
+    uint32_t at;
+    uint32_t wait;
+} PresetAutosaveRetry;
+static PresetAutosaveRetry preset_patRetry, preset_kitRetry;
+#define PRESET_AUTOSAVE_MAX_WAIT (PRESET_SAVE_TIME * 16u)
+/* End autosave retry state. */
 uint8_t preset_autosaveIsPaused(void)
 {
     return preset_autosavePaused;
@@ -151,7 +159,15 @@ static FRESULT preset_writeChecked(const void *data, UINT count)
 }
 static FRESULT preset_finishSave(FRESULT res)
 {
-    return res == FR_OK ? preset_closeShared((FIL*)&SDFile) : res;
+    if(res != FR_OK) return res;
+    res = preset_closeShared((FIL*)&SDFile);
+    /* A completed save can re-arm check-required autosave holds, never a fault:
+     * unresolved app/physical faults prevent this contract from succeeding.
+     * Keep dirty state and cooldowns: this may not be a temporary-file save.
+     */
+    if(res == FR_OK && preset_sharedFailure == FR_OK && !SDFile.obj.fs)
+        preset_autosavePaused = 0;
+    return res;
 }
 static FRESULT preset_writePatternData(uint8_t patternNr);
 
@@ -272,7 +288,7 @@ FRESULT preset_saveTmpKit()
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
     HAL_TIM_Base_Start_IT(&htim2);
 #endif
-    res = preset_openShared((FIL*)&SDFile, "tmp.snd", FA_CREATE_ALWAYS | FA_WRITE);
+    res = preset_openShared((FIL*)&SDFile, "/tmp/tmp.snd", FA_CREATE_ALWAYS | FA_WRITE);
     if(res == FR_OK) {
         res = preset_writeChecked(&menu_selectedPresetNr[SAVE_TYPE_KIT], 1);
         if(res == FR_OK) res = preset_writeChecked(activeParameters, END_OF_SOUND_PARAMETERS);
@@ -543,7 +559,7 @@ FRESULT preset_saveTmpPat()
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
     HAL_TIM_Base_Start_IT(&htim2);
 #endif
-    res = preset_openShared((FIL*)&SDFile, "tmp.pat", FA_CREATE_ALWAYS | FA_WRITE);
+    res = preset_openShared((FIL*)&SDFile, "/tmp/tmp.pat", FA_CREATE_ALWAYS | FA_WRITE);
     if(res == FR_OK) {
         res = preset_writeChecked(&menu_playedPattern, 1);
         if(res == FR_OK) res = preset_writePatternData(menu_playedPattern);
@@ -626,25 +642,69 @@ FRESULT preset_clearTmpFolder()
 }
 
 
+/* Clear only our pending tag, not an edit/cancellation delivered during I/O.
+ * A single exclusive attempt runs in foreground: no IRQ mask, spin or ISR work.
+ * If preempted, retain pending work and defer a known-success follow-up by 2 s.
+ */
+static uint8_t preset_completeAutosave(volatile uint8_t *dirty, FRESULT res)
+{
+    if(__LDREXB(dirty) != 2u) {
+        __CLREX();
+        return 1;
+    }
+    return __STREXB(res == FR_OK ? 0u : 1u, dirty) == 0u;
+}
+static uint8_t preset_autosaveCanRetry(FRESULT res)
+{
+    if(preset_sharedFailure != FR_OK || SDFile.obj.fs) return 0;
+    /* These can only be rejected opens in the temporary writers: write/close
+     * errors latch above. NOT_READY, lock/owner and mount errors need checks.
+     */
+    switch(res) {
+    case FR_NO_FILE: case FR_NO_PATH: case FR_INVALID_NAME: case FR_EXIST:
+    case FR_WRITE_PROTECTED:
+#if _USE_LFN == 0 && !_FS_EXFAT
+    case FR_DENIED:
+#endif
+        return 1;
+    default:
+        return 0;
+    }
+}
+static void preset_autosaveOne(volatile uint8_t *dirty, uint32_t edited,
+                               PresetAutosaveRetry *retry, uint8_t pattern)
+{
+    uint32_t now;
+    FRESULT res;
+    uint8_t completed;
+    if(!*dirty) return;
+    now = HAL_GetTick();
+    if((uint32_t)(now - edited) < PRESET_SAVE_TIME ||
+       (retry->wait && (uint32_t)(now - retry->at) < retry->wait)) return;
+    *dirty = 2u; /* Still pending, tagged before any payload is read. */
+    res = pattern ? preset_saveTmpPat() : preset_saveTmpKit();
+    completed = preset_completeAutosave(dirty, res);
+    now = HAL_GetTick(); /* Cooldown begins after the synchronous attempt returns. */
+    if(res == FR_OK) {
+        retry->at = now;
+        retry->wait = completed ? 0u : PRESET_SAVE_TIME;
+    } else if(preset_autosaveCanRetry(res)) {
+        retry->at = now;
+        if(!retry->wait) retry->wait = PRESET_SAVE_TIME;
+        else if(retry->wait < PRESET_AUTOSAVE_MAX_WAIT) retry->wait *= 2u;
+    } else {
+        preset_autosavePaused = 1;
+    }
+}
 void preset_processTimer()
 {
-    FRESULT res = FR_OK;
     if(preset_sharedFailure != FR_OK || preset_autosavePaused) return;
-    if(preset_patDirty && HAL_GetTick() - preset_patTimer >= PRESET_SAVE_TIME) {
-        res = preset_saveTmpPat();
-        if(res == FR_OK) preset_patDirty = 0;
-    }
-    if(res == FR_OK && preset_kitDirty && HAL_GetTick() - preset_kitTimer >= PRESET_SAVE_TIME) {
-        res = preset_saveTmpKit();
-        if(res == FR_OK) preset_kitDirty = 0;
-    }
-    if(res != FR_OK) {
-        /* Keep RAM dirty state; manual saves remain available after logical errors.
-         * Do not restart autosave on edits or notifications: no implicit replay.
-         */
-        preset_autosavePaused = 1;
-        menu_showSdError(res);
-    }
+    if(!preset_patDirty && !preset_kitDirty) return;
+    /* Do not use a retry to initiate FatFs lazy mounting/reinitialization. */
+    if(!SDFatFS.fs_type || SDFile.obj.fs) { preset_autosavePaused = 1; return; }
+    preset_autosaveOne(&preset_patDirty, preset_patTimer, &preset_patRetry, 1);
+    if(preset_autosavePaused) return;
+    preset_autosaveOne(&preset_kitDirty, preset_kitTimer, &preset_kitRetry, 0);
 }
 
 

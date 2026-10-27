@@ -40,6 +40,7 @@ TIM_HandleTypeDef htim2;
 FIL SDFile;
 static FATFS host_filesystem;
 static FRESULT preset_sharedFailure;
+static uint8_t preset_autosavePaused;
 #define STEPS_PER_PATTERN NUM_STEPS
 #define FEXT_PAT 1
 static uint8_t stream[65536], saved_stream[65536];
@@ -95,7 +96,7 @@ void led_setValue(uint8_t value,uint8_t led) { (void)value; (void)led; }
 #include "functions.inc"
 
 static void reset(void) {
-    memset(&SDFile,0,sizeof SDFile); preset_sharedFailure=FR_OK;
+    memset(&SDFile,0,sizeof SDFile); preset_sharedFailure=FR_OK; preset_autosavePaused=0;
     memset(&seq_patternSet,0,sizeof(seq_patternSet));
     for(unsigned p=0;p<NUM_PATTERN;p++) for(unsigned t=0;t<NUM_TRACKS;t++)
         seq_patternSet.length[p][t]=16;

@@ -1,0 +1,9 @@
+{
+  "Core/Src/menu/menu.c": "47ce3c8d52c87b0866f9cca6f0acbd79bd2161ef919c264a6f3cfa9ad017cf11",
+  "Core/Src/buttonHandler.c": "1aae6cc6a5a6ab1d762d1d42df50f77d894bc0397d8d1d5c578bd319f2e9eff1",
+  "Core/Src/stm32f7xx_it.c": "059988319962606810845a8be75f11d843c6f8d2f93060dd7424d0eba5383b4a",
+  "Core/Src/Soundengine/Soundengine.c": "900b27069d52d4e57e55f5e47a76aecaf6e271ac4f9f0a145b0fd25ffe0a2928",
+  "Core/Src/Soundengine/cs4344_cs5343.c": "b4f0331fc196dacd41a0ccd76507a7775d45340db224670b1dfa9f66db45c34c",
+  "FATFS/Target/sd_diskio.c": "9faaf6dcb11d21d3442f9c9fa250f5cc676542d4509bb58deae17894e0c389de",
+  "preset_touchTimer": "da166fb5e3be2c23cd436716c20eced447a1e5de8a31670a44dd84eedba08683"
+}

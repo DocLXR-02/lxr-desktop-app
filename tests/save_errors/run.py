@@ -23,7 +23,7 @@ def case(text,name,next_name):
     start=text.index('case '+name+':');end=text.index('case '+next_name+':',start)
     return text[start:end]
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--verify-baseline',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--verify-baseline',action='store_true');parser.add_argument('--autosave-regressions',action='store_true');args=parser.parse_args()
     snapshot=(HERE/'baseline_s3.inc').read_text()
     assert hashlib.sha256(snapshot.encode()).hexdigest()==(HERE/'baseline_s3.sha256').read_text().strip()
     if args.verify_baseline:
@@ -32,13 +32,14 @@ def main():
         print('PASS frozen oracle exactly matches pinned S3 production function bodies',flush=True)
     text=(ROOT/PRESET).read_bytes().decode('latin1').replace('\r\n','\n')
     funcs=['preset_sharedStatus','preset_openShared','preset_closeShared','preset_writeChecked',
-           'preset_finishSave','interpolate','preset_getMorphValue']+WRITERS+['preset_resetAllSaveTimers','preset_processTimer','preset_initTmpFolder','preset_clearTmpFolder','preset_makeFileNameLoad','preset_loadDefaultGlobals','preset_createGlobals']
+           'preset_finishSave','interpolate','preset_getMorphValue']+WRITERS+['preset_resetAllSaveTimers','preset_touchTimer','preset_completeAutosave','preset_autosaveCanRetry','preset_autosaveOne','preset_processTimer','preset_initTmpFolder','preset_clearTmpFolder','preset_makeFileNameLoad','preset_loadDefaultGlobals','preset_createGlobals']
     names='\n'.join('#define '+n+' baseline_'+n for n in WRITERS)
     unnames='\n'.join('#undef '+n for n in WRITERS)
     menu=(ROOT/'Core/Src/menu/menu.c').read_text()
     for name,digest in json.loads((HERE/'common_s3.json').read_text()).items():
         assert hashlib.sha256(extract(menu if name=='numtostrpu_2Bytes' else text,name).encode()).hexdigest()==digest
     source=extract(menu,'numtostrpu_2Bytes')+extract(text,'clearIllegalCharacters')+extract(text,'preset_makeFileNameSave')
+    source+=text[text.index('/* Autosave retry state:'):text.index('/* End autosave retry state. */')+len('/* End autosave retry state. */')]+'\n'
     source+=''.join(extract(text,n) for n in funcs)
     source+='\n'+names+'\n#include "baseline_s3.inc"\n'+unnames+'\n'
     menu=(ROOT/'Core/Src/menu/menu.c').read_text()
@@ -82,6 +83,7 @@ def main():
                '-fno-pie','-no-pie','-ffunction-sections','-fdata-sections']
         flags+=['-I'+str(ROOT/p) for p in includes]+['-I'+str(directory),'-I'+str(HERE)]
         binary=directory/'host';env=os.environ.copy();env['ASAN_OPTIONS']='detect_leaks=0'
-        subprocess.run(flags+[str(HERE/'host.c'),'-Wl,--gc-sections','-o',str(binary)],cwd=ROOT,check=True,env=env)
+        host=ROOT/'tests/silent_autosave/host.c' if args.autosave_regressions else HERE/'host.c'
+        subprocess.run(flags+[str(host),'-Wl,--gc-sections','-o',str(binary)],cwd=ROOT,check=True,env=env)
         subprocess.run([str(binary)],cwd=ROOT,check=True,env=env,timeout=40)
 if __name__=='__main__':main()

@@ -25,11 +25,12 @@ uint8_t menu_playedPattern,menu_activePage,menu_activePatternBank,lcd_process_di
 uint32_t sucessTimer;
 volatile uint32_t systick_ticks;
 FIL SDFile;
+FATFS SDFatFS;
 TIM_HandleTypeDef htim2;
 static FATFS host_fs;
 static FRESULT preset_sharedFailure;
 static uint8_t preset_autosavePaused;
-uint8_t preset_kitDirty,preset_patDirty;
+volatile uint8_t preset_kitDirty,preset_patDirty;
 uint32_t preset_kitTimer,preset_patTimer;
 static BYTE output[65536],oracle[65536];
 static size_t used;
@@ -37,16 +38,33 @@ static unsigned opens,writes,closes,fail_at,short_at,full_error_count,starts,sto
 static FRESULT open_error,write_error,close_error,last_notification,ram_error;
 static uint32_t now=3000;
 static char last_name[64],oracle_name[64];
+static const char *open_error_name;
+static void (*write_hook)(void);
+static void (*exclusive_hook)(volatile uint8_t *);
+static uint8_t lose_exclusive;
+static uint32_t host_ldrexb(volatile uint8_t *p){return *p;}
+static uint32_t host_strexb(uint8_t value,volatile uint8_t *p)
+{
+ if(exclusive_hook){void (*hook)(volatile uint8_t *)=exclusive_hook;exclusive_hook=0;hook(p);return 1;}
+ if(lose_exclusive){lose_exclusive=0;return 1;}
+ *p=value;return 0;
+}
+static void host_clrex(void){}
+#define __LDREXB host_ldrexb
+#define __STREXB host_strexb
+#define __CLREX host_clrex
 FRESULT f_open(FIL *f,const TCHAR *name,BYTE flags)
 {
  assert(f==&SDFile && !f->obj.fs);opens++;strcpy(last_name,name);
- if(open_error!=FR_OK)return open_error;
+ if(open_error!=FR_OK && (!open_error_name || !strcmp(open_error_name,name)))return open_error;
+ if(flags&FA_WRITE)used=0;
  assert(flags==(FA_CREATE_ALWAYS|FA_WRITE) || flags==FA_READ);
  f->obj.fs=&host_fs;f->err=0;f->fptr=0;return FR_OK;
 }
 FRESULT f_write(FIL *f,const void *data,UINT count,UINT *actual)
 {
  assert(f==&SDFile && f->obj.fs && used+count<=sizeof output);writes++;
+ if(write_hook){void (*hook)(void)=write_hook;write_hook=0;hook();}
  *actual=writes==short_at?count-1:count;
  if(writes==fail_at && !full_error_count)*actual=0;
  memcpy(output+used,data,*actual);used+=*actual;f->fptr+=*actual;
@@ -79,10 +97,12 @@ FRESULT delete_node(TCHAR *path,UINT size,FILINFO *info){(void)path;(void)size;(
 static void session(void)
 {
  /* Test-only simulated reboot/controller reset. There is no production clear. */
- memset(&SDFile,0,sizeof SDFile);preset_sharedFailure=FR_OK;preset_autosavePaused=0;
+ memset(&SDFile,0,sizeof SDFile);preset_sharedFailure=FR_OK;preset_autosavePaused=0;SDFatFS.fs_type=1;
  used=opens=writes=closes=fail_at=short_at=full_error_count=starts=stops=notifications=repaints=resets=directory_calls=0;
  open_error=close_error=last_notification=ram_error=FR_OK;write_error=FR_DENIED;
  preset_patDirty=preset_kitDirty=0;preset_patTimer=preset_kitTimer=0;
+ memset(&preset_patRetry,0,sizeof preset_patRetry);memset(&preset_kitRetry,0,sizeof preset_kitRetry);
+ open_error_name=0;write_hook=0;exclusive_hook=0;lose_exclusive=0;now=3000;
  menu_playedPattern=0;menu_loadedPresetNr[CURRENT_KIT]=63;menu_activePage=SAVE_PAGE;menu_activePatternBank=0;
  sucessTimer=123;systick_ticks=456;last_name[0]=0;
 }
@@ -118,11 +138,13 @@ static void equivalence(void)
    session();assert(save(kind,slot,1)==FR_OK);size_t expected=used;unsigned calls=writes;
    memcpy(oracle,output,used);strcpy(oracle_name,last_name);
    session();assert(save(kind,slot,0)==FR_OK && used==expected && writes==calls);
-   assert(!memcmp(output,oracle,used) && !strcmp(last_name,oracle_name));
+   assert(!memcmp(output,oracle,used));
+   if(kind==0 || kind==3){assert(!strcmp(last_name,kind==0?"/tmp/tmp.snd":"/tmp/tmp.pat"));assert(!strcmp(last_name+5,oracle_name));}
+   else assert(!strcmp(last_name,oracle_name));
    assert(opens==1 && closes==1 && !SDFile.obj.fs && starts==stops);cases++;
   }
  }
- printf("PASS %u byte-for-byte S3 oracle saves: eight variants, all 64 slots, Morph endpoints/midpoint, identical names/write counts and balanced timer hooks\n",cases);
+ printf("PASS %u byte-for-byte S3 oracle saves: eight variants, all 64 slots, Morph endpoints/midpoint, identical resolved /tmp targets/write counts and balanced timer hooks\n",cases);
 }
 static void quarantined(FRESULT expected)
 {
@@ -181,14 +203,14 @@ static void ui_and_background(void)
   assert(starts==stops);
  }
  session();preset_patDirty=preset_kitDirty=1;short_at=1;preset_processTimer();
- assert(notifications==1 && opens==1 && preset_patDirty && preset_kitDirty && preset_autosavePaused);
- preset_patDirty=preset_kitDirty=1;preset_processTimer();assert(notifications==1 && opens==1 && preset_patDirty && preset_kitDirty);
+ assert(notifications==0 && opens==1 && preset_patDirty && preset_kitDirty && preset_autosavePaused);
+ preset_patDirty=preset_kitDirty=1;preset_processTimer();assert(notifications==0 && opens==1 && preset_patDirty && preset_kitDirty);
  session();preset_patDirty=preset_kitDirty=1;preset_processTimer();assert(!notifications && opens==2 && closes==2 && !preset_patDirty && !preset_kitDirty);
- session();preset_kitDirty=1;short_at=2;preset_processTimer();assert(notifications==1 && opens==1 && preset_kitDirty && preset_autosavePaused);
- session();preset_patDirty=1;open_error=FR_NO_PATH;preset_processTimer();assert(notifications==1 && opens==1 && preset_patDirty && preset_autosavePaused);preset_processTimer();assert(opens==1);
- open_error=FR_OK;assert(preset_saveGlobals()==FR_OK && preset_patDirty && preset_autosavePaused);
+ session();preset_kitDirty=1;short_at=2;preset_processTimer();assert(notifications==0 && opens==1 && preset_kitDirty && preset_autosavePaused);
+ session();preset_patDirty=1;open_error=FR_NO_PATH;preset_processTimer();assert(notifications==0 && opens==1 && preset_patDirty && !preset_autosavePaused);preset_processTimer();assert(opens==1);
+ open_error=FR_OK;assert(preset_saveGlobals()==FR_OK && preset_patDirty && !preset_autosavePaused);
  session();short_at=2;preset_createGlobals();assert(notifications==1 && last_notification==FR_DISK_ERR && writes==2 && !closes);
- puts("PASS actual menu case/button bodies and timer service: success-only state, write/close/RAM error UI, stopped background retries; no UI/hardware execution");
+ puts("PASS actual menu case/button bodies and timer service: success-only state, write/close/RAM error UI, silent controlled background retries; no UI/hardware execution");
 }
 static void logical_retries(void)
 {
@@ -205,4 +227,4 @@ static void logical_retries(void)
  session();open_error=FR_TIMEOUT;assert(preset_saveGlobals()==FR_TIMEOUT);quarantined(FR_TIMEOUT);
  puts("PASS S4-L: 936 recoverable open failures then 104 successful explicit saves; no accumulated latch/data loss; ambiguous TIMEOUT and all payload failures still held");
 }
-int main(void){setvbuf(stdout,0,_IONBF,0);contents();equivalence();failures();ui_and_background();logical_retries();}
+int main(void){setvbuf(stdout,0,_IONBF,0);contents();equivalence();failures();ui_and_background();logical_retries();return 0;}
