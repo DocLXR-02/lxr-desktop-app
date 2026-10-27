@@ -169,12 +169,12 @@ void sd_formatRoutine()
 
 		sprintf(savefileNames[0][PROJECT_NAMES], "Init");
 		//preset_saveDrumsetSD(0);
-		preset_saveProject(0);
+		res = preset_saveProject(0);
 
 		//success
 		lcd_clear();
 		lcd_home();
-		lcd_string("Success!");
+		lcd_string(res == FR_OK ? "Success!" : "Error-Please try");
 		//goto 2nd line
 		lcd_setcursor(0,2);
 		lcd_string("Please reboot.");
@@ -823,9 +823,10 @@ if(sd_card_ok)
 
 #if LOAD_PROJECT_ON_BOOT
 	uint8_t lastUsedProject;
-	preset_loadLastUsedProjectNrFromSD(&lastUsedProject);
+	res = preset_loadLastUsedProjectNrFromSD(&lastUsedProject);
+	if(res == FR_NO_FILE) res = FR_OK; /* No saved selection: use validated default 0. */
 	//do not clean the tmp folder here, as we are just booting
-	preset_loadProject(lastUsedProject, 0);
+	if(res == FR_OK) res = preset_loadProject(lastUsedProject, 0);
 	if(res != FR_OK)
 	{
 		menu_showSdError(res);

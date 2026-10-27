@@ -92,7 +92,9 @@ FRESULT f_mkdir(const TCHAR *name){(void)name;directory_calls++;return FR_OK;}
 FRESULT f_chdir(const TCHAR *name){(void)name;directory_calls++;return FR_OK;}
 FRESULT f_findfirst(DIR *dir,FILINFO *info,const TCHAR *path,const TCHAR *mask){(void)dir;(void)info;(void)path;(void)mask;directory_calls++;return FR_NO_FILE;}
 FRESULT f_closedir(DIR *dir){(void)dir;directory_calls++;return FR_OK;}
-FRESULT delete_node(TCHAR *path,UINT size,FILINFO *info){(void)path;(void)size;(void)info;directory_calls++;return FR_OK;}
+FRESULT f_opendir(DIR *dir,const TCHAR *path){(void)dir;(void)path;directory_calls++;return FR_NO_PATH;}
+FRESULT f_readdir(DIR *dir,FILINFO *info){(void)dir;memset(info,0,sizeof *info);directory_calls++;return FR_OK;}
+FRESULT f_unlink(const TCHAR *path){(void)path;directory_calls++;return FR_OK;}
 #include "functions.inc"
 static void session(void)
 {

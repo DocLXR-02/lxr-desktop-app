@@ -32,7 +32,7 @@ def main():
         print('PASS frozen oracle exactly matches pinned S3 production function bodies',flush=True)
     text=(ROOT/PRESET).read_bytes().decode('latin1').replace('\r\n','\n')
     funcs=['preset_sharedStatus','preset_openShared','preset_closeShared','preset_writeChecked',
-           'preset_finishSave','interpolate','preset_getMorphValue']+WRITERS+['preset_resetAllSaveTimers','preset_touchTimer','preset_completeAutosave','preset_autosaveCanRetry','preset_autosaveOne','preset_processTimer','preset_initTmpFolder','preset_clearTmpFolder','preset_makeFileNameLoad','preset_loadDefaultGlobals','preset_createGlobals']
+           'preset_finishSave','preset_childPath','preset_isTmpFile','interpolate','preset_getMorphValue']+WRITERS+['preset_resetAllSaveTimers','preset_touchTimer','preset_completeAutosave','preset_autosaveCanRetry','preset_autosaveOne','preset_processTimer','preset_initTmpFolder','preset_clearTmpFolder','preset_makeFileNameLoad','preset_loadDefaultGlobals','preset_createGlobals']
     names='\n'.join('#define '+n+' baseline_'+n for n in WRITERS)
     unnames='\n'.join('#undef '+n for n in WRITERS)
     menu=(ROOT/'Core/Src/menu/menu.c').read_text()
@@ -54,7 +54,8 @@ def main():
     assert 'f_close(' not in extract(text,'preset_finishSave')
     project=extract(text,'preset_saveProject')
     start=project.index('res = preset_saveGlobals();');end=project.index('//save all drumkits',start)
-    assert 'if(res != FR_OK)' in project[start:end] and 'return res;' in project[start:end]
+    # S4b-1 has one cleanup exit instead of duplicated return paths.
+    assert 'if(res != FR_OK) goto done;' in project[start:end]
     assert 'preset_clearTmpFolder' not in project[start:end]
     includes=['.','Core/Inc','Drivers/CMSIS/Include','Drivers/CMSIS/Device/ST/STM32F7xx/Include',
               'Drivers/STM32F7xx_HAL_Driver/Inc','Middlewares/Third_Party/FatFs/src','FATFS/App','FATFS/Target']

@@ -56,7 +56,7 @@ typedef enum
 
 FRESULT preset_LoadTmpKit();
 FRESULT preset_LoadTmpPat();
-void preset_initTmpFolder();
+FRESULT preset_initTmpFolder(void);
 void preset_touchTimer(PresetTimer type);
 void preset_processTimer();
 FRESULT preset_clearTmpFolder();
