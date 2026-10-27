@@ -26,15 +26,22 @@ preprocessor scan ensures only ownership wrappers call f_open/f_close and raw
 writes remain only in the checked helper and the explicitly deferred project
 header. Project lifecycle guards are checked before destructive entry work.
 
-A failed write-mode open, any write failure/short write, or failed close latches
-the shared-file error until reboot. Read-mode no-file/path fallback stays usable;
-serious read-open or close failures also quarantine. There is no production latch
-clear, FIL.err reset, automatic retry/reset/remount, or forced file-lock release.
-Short writes are mapped to FR_DISK_ERR. The policy deliberately does not close
-a partially written file: close can flush further payload/FAT/directory data even
-when the short write returned FR_OK and FIL.err is still zero. Normal saves close
-exactly once. The retained object/lock and even known write-open errors such as
-missing paths require reboot; this conservative restriction is intentional.
+S4-L refines open failures: missing paths/files, invalid names/drives/parameters,
+existence conflicts, disabled/unavailable/unknown filesystem, protection and lock
+errors do not set an application latch when the failed open leaves no owner.
+Nine failures followed by a corrected successful attempt are tested for all 13
+classified results and all eight save variants. S1's physical fault latch is
+never cleared or bypassed. Open DENIED is logical only under the configured _USE_LFN=0/non-exFAT guard:
+SFN allocation requests one entry; full-table/no-free-cluster and attribute
+rejection are distinct from observed disk errors. Payload DENIED remains held.
+
+Any write failure/short write or failed close still latches shared-file uncertainty
+until reboot. Short writes map to FR_DISK_ERR. There is no close after incomplete
+write, FIL.err reset, automatic retry/reset/remount, or forced lock release.
+Normal saves close exactly once. Failed temporary saves retain dirty flags and
+pause background saves for the session; manual saves after logical errors remain
+available. A manual save does not silently restart background retries or discard
+pending temporary-save flags. The production latch has no clear API.
 
 The existing Euclidean tests have only extraction/ownership mocks updated for
 the new helper dependencies and FatFs open/close ownership contract; no assertions

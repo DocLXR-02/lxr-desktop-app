@@ -118,4 +118,8 @@ void preset_sendDrumsetParametersImmediate();
 
 uint8_t preset_isNameEmpty(char* name);
 
+/* Application uncertainty only; FR_OK does not clear or bypass the S1 disk latch. */
+FRESULT preset_storageError(void);
+uint8_t preset_autosaveIsPaused(void);
+
 #endif /* PRESETMANAGER_H_ */

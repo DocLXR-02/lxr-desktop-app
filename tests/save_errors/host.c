@@ -28,6 +28,7 @@ FIL SDFile;
 TIM_HandleTypeDef htim2;
 static FATFS host_fs;
 static FRESULT preset_sharedFailure;
+static uint8_t preset_autosavePaused;
 uint8_t preset_kitDirty,preset_patDirty;
 uint32_t preset_kitTimer,preset_patTimer;
 static BYTE output[65536],oracle[65536];
@@ -78,7 +79,7 @@ FRESULT delete_node(TCHAR *path,UINT size,FILINFO *info){(void)path;(void)size;(
 static void session(void)
 {
  /* Test-only simulated reboot/controller reset. There is no production clear. */
- memset(&SDFile,0,sizeof SDFile);preset_sharedFailure=FR_OK;
+ memset(&SDFile,0,sizeof SDFile);preset_sharedFailure=FR_OK;preset_autosavePaused=0;
  used=opens=writes=closes=fail_at=short_at=full_error_count=starts=stops=notifications=repaints=resets=directory_calls=0;
  open_error=close_error=last_notification=ram_error=FR_OK;write_error=FR_DENIED;
  preset_patDirty=preset_kitDirty=0;preset_patTimer=preset_kitTimer=0;
@@ -140,7 +141,8 @@ static void failures(void)
  unsigned positions=0;
  for(unsigned kind=0;kind<8;kind++){
   session();assert(save(kind,3,0)==FR_OK);unsigned count=writes;
-  session();open_error=FR_NO_PATH;assert(save(kind,3,0)==FR_NO_PATH && opens==1 && !writes && !closes && !SDFile.obj.fs && starts==stops);quarantined(FR_NO_PATH);
+  session();open_error=FR_NO_PATH;assert(save(kind,3,0)==FR_NO_PATH && opens==1 && !writes && !closes && !SDFile.obj.fs && starts==stops);
+  assert(preset_sharedFailure==FR_OK);open_error=FR_OK;assert(save(kind,3,0)==FR_OK && opens==2 && closes==1);
   session();open_error=FR_DISK_ERR;assert(save(kind,3,0)==FR_DISK_ERR && !writes && !closes);quarantined(FR_DISK_ERR);
   for(unsigned pos=1;pos<=count;pos++)for(unsigned mode=0;mode<4;mode++){
    session();close_error=FR_NOT_READY;
@@ -179,12 +181,28 @@ static void ui_and_background(void)
   assert(starts==stops);
  }
  session();preset_patDirty=preset_kitDirty=1;short_at=1;preset_processTimer();
- assert(notifications==1 && opens==1 && !preset_patDirty && !preset_kitDirty);
- preset_patDirty=preset_kitDirty=1;preset_processTimer();assert(notifications==1 && opens==1 && !preset_patDirty && !preset_kitDirty);
+ assert(notifications==1 && opens==1 && preset_patDirty && preset_kitDirty && preset_autosavePaused);
+ preset_patDirty=preset_kitDirty=1;preset_processTimer();assert(notifications==1 && opens==1 && preset_patDirty && preset_kitDirty);
  session();preset_patDirty=preset_kitDirty=1;preset_processTimer();assert(!notifications && opens==2 && closes==2 && !preset_patDirty && !preset_kitDirty);
- session();preset_kitDirty=1;short_at=2;preset_processTimer();assert(notifications==1 && opens==1 && !preset_kitDirty);
- session();preset_patDirty=1;open_error=FR_NO_PATH;preset_processTimer();assert(notifications==1 && opens==1 && !preset_patDirty);preset_processTimer();assert(opens==1);
+ session();preset_kitDirty=1;short_at=2;preset_processTimer();assert(notifications==1 && opens==1 && preset_kitDirty && preset_autosavePaused);
+ session();preset_patDirty=1;open_error=FR_NO_PATH;preset_processTimer();assert(notifications==1 && opens==1 && preset_patDirty && preset_autosavePaused);preset_processTimer();assert(opens==1);
+ open_error=FR_OK;assert(preset_saveGlobals()==FR_OK && preset_patDirty && preset_autosavePaused);
  session();short_at=2;preset_createGlobals();assert(notifications==1 && last_notification==FR_DISK_ERR && writes==2 && !closes);
  puts("PASS actual menu case/button bodies and timer service: success-only state, write/close/RAM error UI, stopped background retries; no UI/hardware execution");
 }
-int main(void){setvbuf(stdout,0,_IONBF,0);contents();equivalence();failures();ui_and_background();}
+static void logical_retries(void)
+{
+ const FRESULT retryable[]={FR_NO_FILE,FR_NO_PATH,FR_INVALID_NAME,FR_EXIST,FR_INVALID_DRIVE,
+  FR_NOT_ENABLED,FR_NO_FILESYSTEM,FR_WRITE_PROTECTED,FR_LOCKED,FR_TOO_MANY_OPEN_FILES,FR_INVALID_PARAMETER,FR_NOT_READY,FR_DENIED};
+ for(unsigned k=0;k<8;k++)for(unsigned e=0;e<sizeof retryable/sizeof *retryable;e++){
+  session();contents();BYTE before[32];memcpy(before,activeParameters,sizeof before);
+  memcpy(output,"Existing valid bytes",20);used=20;
+  open_error=retryable[e];
+  for(unsigned n=0;n<9;n++)assert(save(k,2,0)==open_error && !writes && !closes && !SDFile.obj.fs && preset_sharedFailure==FR_OK);
+  assert(used==20 && !memcmp(output,"Existing valid bytes",20) && !memcmp(before,activeParameters,sizeof before));
+  open_error=FR_OK;used=0;assert(save(k,2,0)==FR_OK && opens==10 && closes==1);
+ }
+ session();open_error=FR_TIMEOUT;assert(preset_saveGlobals()==FR_TIMEOUT);quarantined(FR_TIMEOUT);
+ puts("PASS S4-L: 936 recoverable open failures then 104 successful explicit saves; no accumulated latch/data loss; ambiguous TIMEOUT and all payload failures still held");
+}
+int main(void){setvbuf(stdout,0,_IONBF,0);contents();equivalence();failures();ui_and_background();logical_retries();}

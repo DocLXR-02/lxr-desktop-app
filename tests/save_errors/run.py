@@ -51,6 +51,10 @@ def main():
     for name in ['preset_createProject','preset_saveProject','preset_loadProject','preset_loadProjectNames','loadTmpFolderFiles','preset_makeFileNameLoad']:
         body=extract(text,name);assert 'preset_sharedStatus()' in body[:body.index('{')+180]
     assert 'f_close(' not in extract(text,'preset_finishSave')
+    project=extract(text,'preset_saveProject')
+    start=project.index('res = preset_saveGlobals();');end=project.index('//save all drumkits',start)
+    assert 'if(res != FR_OK)' in project[start:end] and 'return res;' in project[start:end]
+    assert 'preset_clearTmpFolder' not in project[start:end]
     includes=['.','Core/Inc','Drivers/CMSIS/Include','Drivers/CMSIS/Device/ST/STM32F7xx/Include',
               'Drivers/STM32F7xx_HAL_Driver/Inc','Middlewares/Third_Party/FatFs/src','FATFS/App','FATFS/Target']
     with tempfile.TemporaryDirectory(prefix='lxr-save-errors-') as directory:

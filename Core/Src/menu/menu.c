@@ -670,6 +670,13 @@ uint8_t menu_selectedPresetNr[NUM_PRESET_LOCATIONS];
 uint8_t menu_loadedPresetNr[NUM_CURRENT];
 
 uint32_t sucessTimer = 0;
+/* Notification only: no page/input/transport state is changed. Latest error wins. */
+static volatile uint8_t menu_sdError;
+static volatile uint8_t menu_sdErrorHeld;
+static volatile uint8_t menu_sdErrorAuto;
+static volatile uint32_t menu_sdErrorSince;
+static void menu_expireSdError(void);
+static uint8_t menu_renderSdError(void);
 
 uint8_t menu_shownPattern = 0;
 uint8_t menu_muteModeActive = 0;
@@ -984,6 +991,7 @@ uint8_t sendDisplayBuffer()
 //-----------------------------------------------------------------
 void menu_tick()
 {
+    menu_expireSdError();
 
 	if((menu_activePage == PATTERN_SAVE_PAGE_OK) || (menu_activePage == KIT_SAVE_PAGE_OK))
 	{
@@ -1810,6 +1818,7 @@ void menu_repaintGeneric()
 // repaint the screen
 void menu_repaint()
 {
+    if(menu_renderSdError()) return;
 	if(screensaver_Active) return;
 
 	visibleCursor = 0;
@@ -1924,62 +1933,46 @@ void menu_handleSaveScreenKnobValue(uint8_t potNr, uint8_t value)
 
 }
 //-----------------------------------------------------------------
+/* Rendered by the existing bounded display refresh, never by a wait loop. */
+static void menu_expireSdError(void)
+{
+    if(menu_sdError != FR_OK && (uint32_t)(HAL_GetTick() - menu_sdErrorSince) >= 2000u) {
+        menu_sdError = FR_OK;
+        menu_repaintAll();
+    }
+}
+static uint8_t menu_renderSdError(void)
+{
+    const char *detail;
+    uint8_t error = menu_sdError;
+    if(error == FR_OK) return 0;
+    if(menu_sdErrorHeld) detail = "RAM OK; check SD";
+    else switch(error) {
+    case FR_NO_FILE: case FR_NO_PATH: detail = "Path? Retry save"; break;
+    case FR_INVALID_NAME: case FR_INVALID_DRIVE: case FR_INVALID_PARAMETER: detail = "Name? Retry save"; break;
+    case FR_EXIST: detail = "Exists: rename  "; break;
+    case FR_LOCKED: case FR_TOO_MANY_OPEN_FILES: detail = "File busy: retry"; break;
+    case FR_DENIED: detail = "Denied/full? Fix"; break;
+    case FR_WRITE_PROTECTED: detail = "Write protected "; break;
+    case FR_NO_FILESYSTEM: detail = "Check filesystem"; break;
+    case FR_NOT_READY: case FR_NOT_ENABLED: detail = "SD unavailable  "; break;
+    default: detail = "Check SD; RAM OK"; break;
+    }
+    visibleCursor = 0;
+    memcpy(editDisplayBuffer[0], menu_sdErrorHeld ? "SD writes held  " :
+        (menu_sdErrorAuto ? "Autosave paused " : "SD error        "), 16);
+    memcpy(editDisplayBuffer[1], detail, 16);
+    display_needs_refresh = 1;
+    return 1;
+}
 void menu_showSdError(uint8_t res)
 {
-
-#if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
-	HAL_TIM_Base_Start_IT(&htim2);	//calc sample interrupt - prio 1
-#else
-
-#endif
-
-	lcd_process_display_interrupt = 0;
-	while(sendDisplayBuffer() != 0);
-
-	lcd_clear();
-	lcd_home();
-	lcd_string(PSTR("SD Card error:"));
-	lcd_setcursor(0,2);
-	switch(res)
-	{
-		// There is no valid FAT volume on the drive or wrong lower layer implementation.
-		case FR_NO_FILESYSTEM:
-			lcd_string("No FS found!");
-			break;
-
-		// The lower layer, disk_read, disk_write or disk_ioctl function, reported that an unrecoverable hard error occured.
-		case FR_DISK_ERR:
-
-			lcd_string("Disk error!");
-			break;
-
-		/*The lower layer, disk_initialize function, reported that the storage device could not be got ready to work. One of the following possibilities is suspected.
-
-		No medium in the drive.
-		Wrong lower layer implementation.
-		Wrong hardware configuration.
-		The storage device has broken.
-		*/
-		case FR_NOT_READY:
-			lcd_string("No Card!");
-			break;
-
-		case FR_NO_FILE:
-			lcd_string("File not found!");
-			break;
-
-		default:
-			lcd_string("unknown!");
-			break;
-
-	}
-	HAL_Delay(2000);
-#if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
-	HAL_TIM_Base_Stop_IT(&htim2);	//calc sample interrupt - prio 1
-#else
-
-#endif
-	lcd_process_display_interrupt = 1;
+    if(res == FR_OK) return;
+    menu_sdErrorHeld = preset_storageError() != FR_OK;
+    menu_sdErrorAuto = preset_autosaveIsPaused();
+    menu_sdErrorSince = HAL_GetTick();
+    menu_sdError = res;
+    menu_repaintAll(); /* Queue; no delay, LCD wait, timer stop or storage work. */
 }
 //-----------------------------------------------------------------
 void menu_handleLoadSaveMenu(int8_t inc, uint8_t btnClicked)

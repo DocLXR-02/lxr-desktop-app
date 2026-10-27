@@ -84,10 +84,20 @@ uint32_t preset_patTimer = 0;
 uint8_t preset_kitDirty = 0;
 uint8_t preset_patDirty = 0;
 
-/* One shared FIL: failed/short writes and failed closes are quarantined until reboot.
+/* One shared FIL: uncertain writes/closes are quarantined until reboot.
  * Never clear FIL.err or close after an incomplete write: close could flush more data.
  */
 static FRESULT preset_sharedFailure = FR_OK;
+/* Pending RAM changes survive failure; no background retry after an error. */
+static uint8_t preset_autosavePaused;
+uint8_t preset_autosaveIsPaused(void)
+{
+    return preset_autosavePaused;
+}
+FRESULT preset_storageError(void)
+{
+    return preset_sharedFailure;
+}
 static FRESULT preset_sharedStatus(void)
 {
     if(preset_sharedFailure != FR_OK) return preset_sharedFailure;
@@ -98,8 +108,26 @@ static FRESULT preset_openShared(FIL *file, const TCHAR *name, BYTE mode)
     FRESULT res = preset_sharedStatus();
     if(res != FR_OK) return res;
     res = f_open(file, name, mode);
-    if(res != FR_OK && ((mode & FA_WRITE) || res == FR_DISK_ERR || res == FR_INT_ERR))
-        preset_sharedFailure = res;
+    if(res != FR_OK) {
+        /* These f_open failures precede file creation/truncation in this FatFs.
+         * The S1 disk latch still blocks hardware access after a physical fault.
+         * DENIED is logical only for the configured single-SFN, non-exFAT path.
+         */
+        switch(res) {
+        case FR_NO_FILE: case FR_NO_PATH: case FR_INVALID_NAME: case FR_EXIST:
+        case FR_INVALID_DRIVE: case FR_NOT_ENABLED: case FR_NO_FILESYSTEM:
+        case FR_WRITE_PROTECTED: case FR_LOCKED: case FR_TOO_MANY_OPEN_FILES:
+        case FR_INVALID_PARAMETER: case FR_NOT_READY:
+#if _USE_LFN == 0 && !_FS_EXFAT
+        case FR_DENIED: /* Read-only/directory target, full SFN table or no free cluster. */
+#endif
+            if(file->obj.fs) preset_sharedFailure = res;
+            break;
+        default:
+            preset_sharedFailure = res;
+            break;
+        }
+    }
     return res;
 }
 static FRESULT preset_closeShared(FIL *file)
@@ -601,21 +629,21 @@ FRESULT preset_clearTmpFolder()
 void preset_processTimer()
 {
     FRESULT res = FR_OK;
-    if(preset_sharedFailure != FR_OK) {
-        preset_resetAllSaveTimers();
-        return;
-    }
+    if(preset_sharedFailure != FR_OK || preset_autosavePaused) return;
     if(preset_patDirty && HAL_GetTick() - preset_patTimer >= PRESET_SAVE_TIME) {
-        preset_patDirty = 0;
         res = preset_saveTmpPat();
+        if(res == FR_OK) preset_patDirty = 0;
     }
     if(res == FR_OK && preset_kitDirty && HAL_GetTick() - preset_kitTimer >= PRESET_SAVE_TIME) {
-        preset_kitDirty = 0;
         res = preset_saveTmpKit();
+        if(res == FR_OK) preset_kitDirty = 0;
     }
     if(res != FR_OK) {
-        preset_resetAllSaveTimers();
-        menu_showSdError(res); /* This service is called only by the foreground loop. */
+        /* Keep RAM dirty state; manual saves remain available after logical errors.
+         * Do not restart autosave on edits or notifications: no implicit replay.
+         */
+        preset_autosavePaused = 1;
+        menu_showSdError(res);
     }
 }
 
@@ -2304,7 +2332,14 @@ FRESULT preset_saveProject(uint8_t presetNr)
 
 //	soundengine_process();
 	//save globals
-	preset_saveGlobals();
+	res = preset_saveGlobals();
+    if(res != FR_OK) {
+        lcd_process_display_interrupt = 1;
+#if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
+        HAL_TIM_Base_Stop_IT(&htim2);
+#endif
+        return res; /* No later project writes or temporary-file deletion. */
+    }
 	//save all drumkits, patterns and songs
 	for(uint8_t i=0;i<NUM_KIT_SLOTS;i++)
 	{
