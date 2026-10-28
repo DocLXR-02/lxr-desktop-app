@@ -1,66 +1,66 @@
-# R4 — Hardwarevalidierung und SD-Speichertest
+# R4 — Hardware Validation and SD-Card Storage Tests
 
-**Datum:** 2026-10-28 (Europe/Vienna) · **Testgerät:** Daniels Erica Synths LXR-02 Desktop · **Stand:** erster erfolgreicher eigener Hardware-/Speichertest.
+**Date:** 2026-10-28 (Europe/Vienna) · **Test device:** Daniel's Erica Synths LXR-02 Desktop · **Status:** initial successful hands-on hardware and storage smoke test.
 
 > [!CAUTION]
-> **Experimentelle Firmware — keine allgemeine Sicherheitsfreigabe.** R4 wurde bislang nur auf **einem** LXR-02 und nicht über einen langen Zeitraum oder auf unterschiedlichen Geräten getestet. Der bestandene Kurztest ist **kein Nachweis**, dass Fehler, Datenverlust, Ausfälle oder Schäden am Gerät, an angeschlossener Audiotechnik oder am Gehör ausgeschlossen sind. Risiken wurden nicht vollständig untersucht. Wer die Firmware eigenverantwortlich testet, sollte vorhandene Projekte extern sichern, die offizielle Herstellerfirmware als Rückweg aufbewahren und Audio zunächst mit niedrigem Pegel prüfen. Besonders das noch **ungeklärte laute FX-Bus-`DRV/CLP`-Pfeifen** erfordert Vorsicht.
+> **Experimental firmware — no general safety clearance.** R4 has only been tested briefly on **one** LXR-02, without extended use or independent testing across multiple units. A successful smoke test **does not establish** that failures, data loss, instrument damage, damage to connected audio equipment, or hearing injury are impossible. These risks have not been comprehensively assessed. Anyone testing this firmware does so at their own risk and should back up existing projects, keep official manufacturer firmware available for recovery, and **begin audio tests at low volume**. In particular, the **unresolved loud FX-bus `DRV/CLP` whistle** warrants caution.
 
-## Reproduzierbare Firmware-Identität
+## Reproducible Firmware Identity
 
-| Gegenstand | Referenz |
+| Item | Reference |
 |---|---|
-| Eigenes R4-Image | `LXR_V2_V1.7.img`, **288.676 Bytes**, SHA-256 `1886a5484aedf7e53ed4aaf21b08c56073a1527a9ec0cc634c089db769281877` |
-| R4-Quellbranch | [`ui/kit-load-confirmation`](https://github.com/DocLXR-02/lxr-desktop-app/tree/ui/kit-load-confirmation), Commit `c870f7249d7ee0d65423bc8b7bfdb422dcc74482` |
-| Lieferung | [`delivery/lxr-lab-r4-kit-load-2026-10-28`](https://github.com/DocLXR-02/lxr-desktop-app/tree/delivery/lxr-lab-r4-kit-load-2026-10-28), Commit `eea1949f0641e375f8cc6082971242549aeed1d1` |
-| R4-Liefer-ZIP | `delivery/LXR_LAB_R4_KIT_LOAD_CONFIRMATION.zip`, SHA-256 `c83290aad78ffa469cd65cec009273c6c29ba029877274d3f59ee44373411a73` laut `delivery/PACKAGE_SHA256SUMS.txt` |
-| Offizielles Original | v1.71 `LXRV2_update_v1.71(1).img`, **273.544 Bytes**, SHA-256 `188695ea78cd3da0fb6a3e825732bd7fd365d4491a37126003ec513e163e1576` |
+| Custom R4 image | `LXR_V2_V1.7.img`, **288,676 bytes**, SHA-256 `1886a5484aedf7e53ed4aaf21b08c56073a1527a9ec0cc634c089db769281877` |
+| R4 source branch | [`ui/kit-load-confirmation`](https://github.com/DocLXR-02/lxr-desktop-app/tree/ui/kit-load-confirmation), commit `c870f7249d7ee0d65423bc8b7bfdb422dcc74482` |
+| R4 delivery | [`delivery/lxr-lab-r4-kit-load-2026-10-28`](https://github.com/DocLXR-02/lxr-desktop-app/tree/delivery/lxr-lab-r4-kit-load-2026-10-28), commit `eea1949f0641e375f8cc6082971242549aeed1d1` |
+| R4 delivery ZIP | `delivery/LXR_LAB_R4_KIT_LOAD_CONFIRMATION.zip`, SHA-256 `c83290aad78ffa469cd65cec009273c6c29ba029877274d3f59ee44373411a73`, per `delivery/PACKAGE_SHA256SUMS.txt` |
+| Official reference image | v1.71 `LXRV2_update_v1.71(1).img`, **273,544 bytes**, SHA-256 `188695ea78cd3da0fb6a3e825732bd7fd365d4491a37126003ec513e163e1576` |
 
-Das interne R4-Dateinamensfragment `V1.7` ist **keine Behauptung**, R4 sei binär identisch zur offiziellen Hersteller-v1.71. Zuvor wurde die offizielle v1.71 erfolgreich geflasht, der LXR startete und beide damaligen Projekte waren auswählbar. Das ist **kein** nach R4 separat erprobter Rollback.
+The `V1.7` fragment in the custom R4 filename **does not mean** the image is binary-identical to official manufacturer firmware v1.71. Before testing R4, the maintainer successfully installed official v1.71, booted the LXR, and selected both projects present at that time. This **was not** a separately verified rollback *after* R4.
 
-Der historische [R4-Paketbericht](https://github.com/DocLXR-02/lxr-desktop-app/blob/codex-reports/2026-10-28-r4-firmware-package/docs/codex-berichte/2026-10-28_r4-firmware-package.md) entstand **vor** dem Gerätetest und ist deshalb mit „not hardware validated“ gekennzeichnet. Dieser neue datierte Bericht ergänzt ihn, ohne die frühere Aussage rückwirkend zu überschreiben.
+The earlier [R4 packaging report](https://github.com/DocLXR-02/lxr-desktop-app/blob/codex-reports/2026-10-28-r4-firmware-package/docs/codex-berichte/2026-10-28_r4-firmware-package.md) was written **before** hardware testing and therefore stated “not hardware validated.” This dated report adds later evidence without retroactively changing that historical statement.
 
-## Gerätebeobachtungen und Testergebnisse
+## Hands-On Hardware Observations
 
-| Funktion/Test | Ergebnis und Grenze |
+| Test | Result and limitation |
 |---|---|
-| Flash/Start | **BESTANDEN (GERÄT):** Eigene Firmware installiert, Gerät startet, Klangerzeugung und Projektwahl funktionieren. |
-| **Bug 001: Filter-Drive-Morph** | **BESTANDEN (GERÄT):** Ursprünglich hörbares Knacksen/Drive-Rückspringen beim Kit-Morph nicht mehr vorhanden. |
-| **Bug 002: Filter Drive nach Patternwechsel** | **NICHT REPRODUZIERBAR (GERÄT):** Test mit AutoSave an und aus; kein eigener unabhängiger Ursachen-/Fixnachweis. |
-| Morph-Regelbereich **127** | **BESTANDEN (GERÄT):** Kürzerer Drehweg an echter Hardware angenehmer. |
-| `Load Kit` und `Load Morph Kit` | **BESTANDEN (GERÄT):** Jeweils kurzes `success!`-Feedback sichtbar. Keine zusätzliche UI-Veränderung für Pattern/Save/Song verlangt. |
-| Save Kit/Pattern/Project | **BESTANDEN IM SMOKETEST (GERÄT):** Mehrfach gespeichert, anschließend mehrfach neu gestartet; Inhalte verfügbar. |
-| R4-SD-Archiv | **BESTANDEN (DATEIPRÜFUNG):** `Archive_resetR4.zip` inhaltlich und strukturell plausibel; Details unten. |
+| Flash and boot | **PASS (HARDWARE):** Custom firmware installed; device boots, produces sound, and allows project selection. |
+| **Internal Bug 001: Filter Drive morph** | **PASS (HARDWARE):** The previously audible click / Drive jump during kit morphing did not recur. |
+| **Internal Bug 002: Filter Drive after pattern change** | **NOT REPRODUCIBLE (HARDWARE):** Checked with AutoSave both enabled and disabled; no separately established cause or fix. |
+| Morph control range **127** | **PASS (HARDWARE):** The shorter knob travel felt more comfortable during use. |
+| `Load Kit` and `Load Morph Kit` | **PASS (HARDWARE):** Both briefly displayed `success!`. No additional UI changes requested for pattern/save/song workflows. |
+| Save Kit/Pattern/Project | **PASS (LIMITED HARDWARE SMOKE TEST):** Multiple saves followed by repeated device reboots; saved content remained available. |
+| R4 SD-card archive | **PASS (FILE INSPECTION):** `Archive_resetR4.zip` appeared structurally consistent; details below. |
 
-## SD-Artefaktprüfung: `Archive_resetR4.zip`
+## SD-Card Artifact Inspection: `Archive_resetR4.zip`
 
-Der Nutzer richtete die zuvor problematische **32-GB-FAT32-microSDHC** für R4 neu ein und erzeugte **neue** Projektordner statt einer Migration alter Projektordner. Verwendet wurde ein anderer SD-Adapter; AutoSave war aus. Das Archiv enthält:
+For R4, the maintainer reset the previously troublesome **32 GB FAT32 microSDHC** card and created **new** project folders instead of migrating older ones. A different SD adapter was used, and AutoSave was off. The archive contained:
 
-- `PROJ00` (Name `R4`) und `PROJ01` (`X`), je **194** Datendateien: **64 SND** à 255 Bytes, **64 PAT** à 3.663 Bytes mit `PatV03`, **64 SNG** à 72 Bytes, `GLO.CFG` 30 Bytes und `PRJ.NFO` 8 Bytes.
-- In beiden Projektordnern **keine 0-Byte-Projektdateien**. Projekte enthalten plausible bearbeitete Kit-/Pattern-Daten.
-- `PROJ.IDX` enthält `0` und verweist auf ein vorhandenes `PROJ00`.
-- Keine offenen Transaktionsordner. `TMP/TMP.SND` (248 Bytes) und `TMP/TMP.PAT` (3.650 Bytes) sind vorhanden und für sich kein Fehlerbefund.
-- ZIP-Datenstruktur ist lesbar; das enthaltene R4-Image entspricht dem oben genannten SHA-256.
+- `PROJ00` (project name `R4`) and `PROJ01` (`X`), each with **194** data files: **64 SND** files of 255 bytes, **64 PAT** files of 3,663 bytes with `PatV03`, **64 SNG** files of 72 bytes, `GLO.CFG` of 30 bytes, and `PRJ.NFO` of 8 bytes.
+- **No zero-byte project data files** in either folder. Both contained plausible edited kit and pattern data.
+- `PROJ.IDX` contained `0` and referred to the existing `PROJ00`.
+- No unfinished transaction folders. `TMP/TMP.SND` (248 bytes) and `TMP/TMP.PAT` (3,650 bytes) were present and do not by themselves indicate a fault.
+- The ZIP structure was readable, and the included R4 image matched the SHA-256 above.
 
-**Resultat:** Neuanlage, gewöhnliche Save-/Load-Nutzung und Neustarts funktionierten unter diesen Bedingungen. Der Test beweist keine allgemeine Legacy-Kompatibilität oder Resistenz gegen Stromverlust in jedem Schreibfenster.
+**Result:** Under these conditions, creating new projects, normal save/load use, and reboots worked. This does not demonstrate universal compatibility with older projects or safety against interruption at every stage of an SD write.
 
-## Vorheriger SD-Vorfall (R3) — Befunde, nicht vermutete Ursache
+## Earlier SD-Card Incident (R3): Observations, Not a Confirmed Cause
 
-Im früheren Archiv `Archive.zip` wurden folgende konkrete Punkte beobachtet:
+The earlier `Archive.zip` showed the following:
 
-1. `PROJ.IDX` = `1`, aber **kein `PROJ01`**, weshalb beim Booten `SD error / Path? Retry save` auftrat.
-2. In `PROJ00`/`PROJ14` zusammen **21 0-Byte-Projektdateien**; andere Daten hatten normale Kennungen/Dateigrößen.
-3. `.img` auf SD nur **16.384 Bytes** (offensichtlich kein vollständiges eigenes R4-Image; frühere R3-Situation).
-4. Die iPhone-Dateien-App zeigte den Karteninhalt zeitweise nicht, während er am iPad sichtbar war; später kehrte die Anzeige am iPhone zurück.
+1. `PROJ.IDX` was `1`, but **`PROJ01` was absent**. The device showed `SD error / Path? Retry save` at startup.
+2. **21 zero-byte project data files** across `PROJ00` and `PROJ14`; other files retained plausible markers and sizes.
+3. The SD card's `.img` was only **16,384 bytes** (not a complete custom R4 image; this was the earlier R3 incident).
+4. The iPhone Files app intermittently displayed the card as empty while the iPad could see its contents; the files later reappeared on the iPhone.
 
-Die R4-Erprobung wechselte **zugleich** Dateisystemzustand (Neuformatierung), Adapter, Projektordner und AutoSave-Zustand. **Es ist daher nicht geklärt**, ob die R3-Probleme durch Firmwarelogik, unterbrochene Kopierprozesse, SD/FAT32, Adapter oder ungültige Altbestände entstanden. Keine Aussage „alte Projekte inkompatibel“ und keine absolute „R4 kann niemals korrumpieren“-Garantie.
+The R4 retest changed **four factors at once**: card formatting/file-system state, SD adapter, project folders, and AutoSave setting. Accordingly, the R3 incident **cannot yet be attributed** to firmware behavior, interrupted file copies, the card/FAT32, the adapter, or legacy project contents. We make **no claim** that older projects are incompatible, and **no absolute guarantee** that R4 can never corrupt stored data.
 
-## Bewusst offener Testumfang
+## Known Gaps in Validation
 
-- Altprojektordner von vor R4 wurden **nicht** separat auf Kompatibilität getestet.
-- Keine systematische Stromausfall-in-Write-Phase-Serie am Gerät; Recovery-/Full-Card-/Fremddateischutzprüfungen aus Hosttests nicht als Gerätetests ausgeben.
-- Keine umfassende Langzeit-Stresstestkampagne für Audio-DMA, CPU-Spitzen, Stack oder beliebige Projektdaten.
-- Original-v1.71 war ein funktionierender *Vor*-R4-Flash; ein Rück-Flash von R4 auf v1.71 ist nicht dokumentiert.
+- Compatibility of project folders created before R4 **has not** been tested separately.
+- No systematic series of real-device power interruptions during writes. Recovery, full-card, and unrelated-file protection checks performed as host tests must **not** be represented as hardware tests.
+- No comprehensive long-duration stress testing for audio DMA, CPU peaks, stack use, or arbitrary project data.
+- Official v1.71 was successfully installed *before* R4; an R4-to-v1.71 rollback has not been documented.
 
-## Abschluss und weitere Arbeit
+## Conclusion and Next Steps
 
-**Freigegebene Arbeits-Baseline ist R4.** Die Änderungen `LXR-001` und `LXR-003` (historisch Bug 001 und Bug 011) sind anhand des Nutzer-Gerätetests bestätigt; der ehemalige Fall Bug 002 ist derzeit nicht reproduzierbar, ohne getrennten kausalen Fixnachweis. Weitere Änderungen nur auf separaten Branches und mit neuen nachvollziehbaren Code-/Build-/Gerätetests. Das nächste primäre Klangthema ist das anhaltende **FX-Bus `DRV/CLP`-Pfeifen**, siehe [`CHANGELOG.md`](CHANGELOG.md); zunächst GitHub-Community-Lösungen und reproduzierbare Hardwarebedingungen prüfen. Die unabhängige Firmwareanpassung erfolgte unter Einsatz von ChatGPT und Codex; Details zur Rollenverteilung im README des Dokumentationsbranches.
+**R4 is the current working baseline for this experiment, not a generally certified release.** Changes `LXR-001` and `LXR-003` (historically internal Bugs 001 and 011) were confirmed by the maintainer's hands-on tests. Historical Bug 002 is currently not reproducible, with no independently established causal fix. Future changes should be made on separate branches and backed by traceable source, build, and real-device tests. The next sound-related investigation concerns the persistent **FX-bus `DRV/CLP` whistle**; see [`CHANGELOG.md`](CHANGELOG.md). Related GitHub community work and reproducible hardware conditions should be reviewed first. This independent firmware work was assisted by OpenAI ChatGPT and Codex; roles are described in this documentation branch's README.
