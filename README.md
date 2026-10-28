@@ -1,5 +1,32 @@
 # LXR V2 firmware (desktop, STM32F765VG)
 
+> [!CAUTION]
+> **Unofficial experimental R4 firmware — no general safety approval.** This custom build has had
+> only short-term hands-on testing by one user on **one** LXR-02. It has **not** been independently
+> safety-reviewed, stress-tested over time, or validated across multiple devices. Bugs, lost
+> project data, malfunction, and damage to the instrument, connected audio equipment, or hearing
+> cannot be ruled out. Back up your projects, retain official manufacturer firmware as a
+> recovery option, and **begin audio tests at low volume**. A loud, sustained FX-bus DRV/CLP
+> whistle has been observed and remains unresolved. **Use at your own risk.**
+>
+> **Independent R4 experiment and AI assistance:** This repository branch documents custom
+> firmware work led by the maintainer (musical requirements, usability decisions, hands-on
+> hardware testing) with research, code-change assistance, test design and documentation
+> support from OpenAI ChatGPT and Codex. The maintainer is **not a professional firmware
+> developer**, and AI-assisted changes do not constitute independent technical or safety
+> certification. This is **not an official Erica Synths release**. Original upstream credits
+> and GPLv3 terms remain applicable.
+>
+> **R4 resources:** [Change log](docs/CHANGELOG.md) ·
+> [Hardware-validation scope and limitations](docs/R4_HARDWARE_VALIDATION.md) ·
+> [R4 delivery archive](delivery/LXR_LAB_R4_KIT_LOAD_CONFIRMATION.zip).
+>
+> **Branch note:** This documentation branch is based on the tested R4 delivery commit.
+> The repository's default `main` branch remains an original-source reference, **not**
+> the tested R4 binary.
+
+---
+
 Firmware for the LXR V2 desktop drum machine: an STM32F765 (Cortex-M7, 216 MHz) running the
 drum voices, FX bus, step sequencer, MIDI (DIN + USB), SD-card preset storage and the LCD/button UI.
 
