@@ -510,7 +510,7 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 
 
 	    /*PAR_ROLL*/ 			DTYPE_MENU | (MENU_ROLL_RATES<<8),
-	    /*PAR_MORPH*/ 			DTYPE_0B255,
+	    /*PAR_MORPH*/ 			DTYPE_0B127,
 	    /*PAR_ACTIVE_STEP */ 	DTYPE_0B127,							//230
 	    /*PAR_STEP_VOLUME*/ 	DTYPE_0B127,
 	    /*PAR_STEP_PROB*/ 		DTYPE_0B100,

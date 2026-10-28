@@ -135,10 +135,12 @@ static void equivalence(void)
 {
  unsigned cases=0;
  for(unsigned seed=0;seed<3;seed++) {
-  contents();activeParameters[PAR_MORPH]=(BYTE)(seed==2?255:seed*127);
+  contents();const BYTE ui[]={0,64,126},legacy[]={0,129,254};
   for(unsigned kind=0;kind<8;kind++)for(unsigned slot=0;slot<NUM_KIT_SLOTS;slot++){
+   activeParameters[PAR_MORPH]=legacy[seed];
    session();assert(save(kind,slot,1)==FR_OK);size_t expected=used;unsigned calls=writes;
    memcpy(oracle,output,used);strcpy(oracle_name,last_name);
+   activeParameters[PAR_MORPH]=ui[seed];
    session();assert(save(kind,slot,0)==FR_OK && used==expected && writes==calls);
    assert(!memcmp(output,oracle,used));
    if(kind==0 || kind==3){assert(!strcmp(last_name,kind==0?"/tmp/tmp.snd":"/tmp/tmp.pat"));assert(!strcmp(last_name+5,oracle_name));}
@@ -146,7 +148,7 @@ static void equivalence(void)
    assert(opens==1 && closes==1 && !SDFile.obj.fs && starts==stops);cases++;
   }
  }
- printf("PASS %u byte-for-byte S3 oracle saves: eight variants, all 64 slots, Morph endpoints/midpoint, identical resolved /tmp targets/write counts and balanced timer hooks\n",cases);
+ printf("PASS %u byte-for-byte S3 oracle saves: eight variants, all 64 slots, mapped Morph source/mid/near-target weights (full endpoint tested separately), identical resolved /tmp targets/write counts and balanced timer hooks\n",cases);
 }
 static void quarantined(FRESULT expected)
 {

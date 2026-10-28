@@ -1138,11 +1138,13 @@ error:
 #endif
 }
 //----------------------------------------------------
-//val is interpolation value between 0 and 255
-//uses bankers rounding
+// Morph control is 0..127; retain the existing 8-bit fractional precision
+// and intermediate rounding. The destination endpoint is exact.
 static uint8_t interpolate(uint8_t a, uint8_t b, uint8_t x)
 {
-	uint16_t fixedPointValue = (uint16_t)(((a*256) + (b-a)*x));
+	if(x >= 127) return b; // Saturate invalid internal amounts as well.
+	const uint16_t fraction = ((uint16_t)x * 256u + 63u) / 127u;
+	uint16_t fixedPointValue = (uint16_t)((a*256) + (b-a)*fraction);
 	uint8_t result = (uint8_t)(fixedPointValue/256);
 
 	return (uint8_t)((fixedPointValue&0xff) < 0x7f ? result : result+1);
@@ -2076,6 +2078,8 @@ void preset_morph_tick()
 // to the back
 void preset_morph(uint8_t morph)
 {
+	// Runtime-only control: no kit, pattern or project field is rescaled.
+	activeParameters[PAR_MORPH] = morph > 127 ? 127 : morph;
 #if 1
 	//initialize new morph
 	morph_state = 1; //start morph

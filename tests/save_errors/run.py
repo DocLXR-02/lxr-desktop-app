@@ -39,15 +39,18 @@ def main():
     text=preset_source()
     funcs=['preset_sharedStatus','preset_openShared','preset_closeShared','preset_writeChecked',
            'preset_finishSave','preset_childPath','preset_isTmpFile','interpolate','preset_getMorphValue']+WRITERS+['preset_resetAllSaveTimers','preset_touchTimer','preset_completeAutosave','preset_autosaveCanRetry','preset_autosaveOne','preset_processTimer','preset_initTmpFolder','preset_clearTmpFolder','preset_makeFileNameLoad','preset_loadDefaultGlobals','preset_createGlobals']
-    names='\n'.join('#define '+n+' baseline_'+n for n in WRITERS)
-    unnames='\n'.join('#undef '+n for n in WRITERS)
+    names='\n'.join('#define '+n+' baseline_'+n for n in WRITERS+['interpolate','preset_getMorphValue'])
+    unnames='\n'.join('#undef '+n for n in WRITERS+['interpolate','preset_getMorphValue'])
     menu=(ROOT/'Core/Src/menu/menu.c').read_text()
+    frozen_morph=(HERE/'baseline_morph_s3.inc').read_text()
     for name,digest in json.loads((HERE/'common_s3.json').read_text()).items():
-        assert hashlib.sha256(extract(menu if name=='numtostrpu_2Bytes' else text,name).encode()).hexdigest()==digest
+        source_text=menu if name=='numtostrpu_2Bytes' else frozen_morph if name in ['interpolate','preset_getMorphValue'] else text
+        assert hashlib.sha256(extract(source_text,name).encode()).hexdigest()==digest
+    assert extract(text,'preset_getMorphValue')==extract(frozen_morph,'preset_getMorphValue')
     source=extract(menu,'numtostrpu_2Bytes')+extract(text,'clearIllegalCharacters')+extract(text,'preset_makeFileNameSave')
     source+=text[text.index('/* Autosave retry state:'):text.index('/* End autosave retry state. */')+len('/* End autosave retry state. */')]+'\n'
     source+=''.join(extract(text,n) for n in funcs)
-    source+='\n'+names+'\n#include "baseline_s3.inc"\n'+unnames+'\n'
+    source+='\n'+names+'\n#include "baseline_morph_s3.inc"\n#include "baseline_s3.inc"\n'+unnames+'\n'
     menu=(ROOT/'Core/Src/menu/menu.c').read_text()
     area=menu[menu.index('void menu_handleLoadSaveMenu('):]
     source+='void exercise_menu_save(unsigned category) { switch(category) {\n'+case(area,'SAVE_TYPE_PATTERN','SAVE_TYPE_KIT')+case(area,'SAVE_TYPE_KIT','SAVE_TYPE_MORPH')+case(area,'SAVE_TYPE_GLO','SAVE_TYPE_PROJECT')+'} menu_resetSaveParameters(); }\n'

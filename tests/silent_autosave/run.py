@@ -9,13 +9,17 @@ h=importlib.util.module_from_spec(spec);spec.loader.exec_module(h)
 text=(root/'Core/Src/Preset/presetManager.c').read_bytes().decode('latin1').replace('\r\n','\n')
 for path,want in json.loads((Path(__file__).parent/'baseline_sources.json').read_text()).items():
     actual=h.extract(text,path).encode() if path=='preset_touchTimer' else (root/path).read_bytes()
+    if path=='Core/Src/menu/menu.c':
+        old=b'/*PAR_MORPH*/ \t\t\tDTYPE_0B255';new=b'/*PAR_MORPH*/ \t\t\tDTYPE_0B127'
+        assert actual.count(new)==1
+        actual=actual.replace(new,old)
     assert hashlib.sha256(actual).hexdigest()==want,path
 for name in ['preset_processTimer','preset_autosaveOne','preset_autosaveCanRetry','preset_completeAutosave']:
     body=h.extract(text,name)
     assert not re.search(r'\b(?:menu_\w+|lcd_\w+|HAL_Delay|__disable_irq|__enable_irq|__set_PRIMASK|__set_BASEPRI|malloc|free|f_mount|BSP_SD_\w+|soundengine_\w+)\s*\(',body)
     assert not re.search(r'\b(?:while|for)\s*\(',body)
 assert h.extract(text,'preset_completeAutosave').count('__STREXB(')==1
-print('PASS static boundary: manual UI/audio/IRQ/S1 sources and edit hook unchanged; autosave helpers have no waits, allocation, notifications, polling or loops',flush=True)
+print('PASS static boundary: manual feedback/audio/IRQ/S1 sources (only Morph dtype differs) and edit hook unchanged; autosave helpers have no waits, allocation, notifications, polling or loops',flush=True)
 subprocess.run([sys.executable,str(root/'tests/save_errors/run.py'),'--autosave-regressions'],cwd=root,check=True)
 
 paths=[]

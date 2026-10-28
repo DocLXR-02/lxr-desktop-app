@@ -6,7 +6,9 @@ suite is reproducible without fetching history: baseline_s3.inc is a frozen
 copy of the actual S3 writer bodies at cbffa2d756658b6f32d8e6417ea40ec2cda828d5,
 with vendor/project license retained. Its committed SHA-256 is checked. The
 optional flag reconstructs it from that exact Git object and compares the text.
-Common serializer/naming/interpolation helpers have pinned source digests too.
+Common serializer/naming helpers have pinned source digests too. The original
+interpolation and getter bodies are frozen in baseline_morph_s3.inc and checked
+against their original digests, so the oracle does not share the new Morph math.
 
 The native suite extracts actual current save/data/ownership/timer functions,
 and actual kit/pattern/global menu cases and pattern-button branch bodies.
@@ -16,8 +18,11 @@ FatFs file operations, RAM-editor callbacks and UI notifications are mocks;
 this is not a physical card, LCD, audio or complete menu-state simulation.
 
 Coverage includes 1536 direct byte-for-byte comparisons with the S3 oracle:
-eight save variants, all 64 slots, Morph 0/127/255, identical resolved /tmp targets and write
-call counts. Every payload position is tested with an error, error plus full
+eight save variants, all 64 slots, new Morph 0/64/126 mapped to the original
+fixed-point fractions 0/129/254, identical resolved /tmp targets and write call
+counts. The exact new destination endpoint is tested by tests/morph_range;
+the old raw-255 interpolation did not guarantee that endpoint for every pair.
+Every payload position is tested with an error, error plus full
 byte count, short successful write, and disk error. Open/close failures, invalid
 indices, balanced existing timer hooks, first-error retention, object ownership,
 no further payload/close/reuse/directory work after quarantine, success-only UI
