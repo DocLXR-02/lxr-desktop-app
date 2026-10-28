@@ -24,6 +24,11 @@
 > **Branch note:** This documentation branch is based on the tested R4 delivery commit.
 > The repository's default `main` branch remains an original-source reference, **not**
 > the tested R4 binary.
+>
+> **Project language policy:** All new or revised GitHub-facing material must be written
+> **entirely in English**, including documentation, change logs, validation reports,
+> issue and pull-request text, release notes, and commit messages. Private research
+> notes may use other languages; public project documentation may not.
 
 ---
 
