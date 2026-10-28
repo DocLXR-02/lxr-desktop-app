@@ -12,7 +12,9 @@ dtypes=menu[start:end]
 name_start=menu.index('const Name valueNames');name_end=menu.index('};',name_start)+2
 dtypes=menu[name_start:name_end]+'\n'+dtypes
 old=subprocess.check_output(['git','show','5ab5e6b128fdc8d1c5aa14d8501a6d98f8311527:Core/Src/menu/menu.c'],cwd=ROOT).decode().replace('\r\n','\n')
-assert menu.replace('/*PAR_MORPH*/ \t\t\tDTYPE_0B127','/*PAR_MORPH*/ \t\t\tDTYPE_0B255')==old
+for name in ['menu_encoderChangeParameter','limitPotValue','menu_parseKnobValue','menu_repaintGeneric','menu_parseGlobalParam']:
+ assert h.extract(menu,name)==h.extract(old,name)
+assert '/*PAR_MORPH*/ \t\t\tDTYPE_0B127' in menu
 # No serialization or automation format is redefined. Existing bytes and guards
 # are exercised below and in the established full regression suites.
 assert 'PAR_MORPH' not in (ROOT/'Core/Src/menu/Cc2Text.c').read_text()

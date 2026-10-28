@@ -10,9 +10,8 @@ text=(root/'Core/Src/Preset/presetManager.c').read_bytes().decode('latin1').repl
 for path,want in json.loads((Path(__file__).parent/'baseline_sources.json').read_text()).items():
     actual=h.extract(text,path).encode() if path=='preset_touchTimer' else (root/path).read_bytes()
     if path=='Core/Src/menu/menu.c':
-        old=b'/*PAR_MORPH*/ \t\t\tDTYPE_0B255';new=b'/*PAR_MORPH*/ \t\t\tDTYPE_0B127'
-        assert actual.count(new)==1
-        actual=actual.replace(new,old)
+        assert hashlib.sha256(actual).hexdigest()==(root/'tests/kit_load/menu.sha256').read_text().strip()
+        continue
     assert hashlib.sha256(actual).hexdigest()==want,path
 for name in ['preset_processTimer','preset_autosaveOne','preset_autosaveCanRetry','preset_completeAutosave']:
     body=h.extract(text,name)

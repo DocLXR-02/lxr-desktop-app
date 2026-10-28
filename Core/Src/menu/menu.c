@@ -671,6 +671,11 @@ uint8_t menu_loadedPresetNr[NUM_CURRENT];
 
 uint32_t sucessTimer = 0;
 /* Notification only: no page/input/transport state is changed. Latest error wins. */
+/* Only the two synchronous manual RAM kit loads publish this notice. */
+static volatile uint8_t menu_kitLoadNotice;
+static volatile uint32_t menu_kitLoadSince;
+static void menu_showKitLoad(uint8_t morph);
+static uint8_t menu_renderKitLoad(void);
 static volatile uint8_t menu_sdError;
 static volatile uint8_t menu_sdErrorHeld;
 static volatile uint8_t menu_sdErrorAuto;
@@ -1818,6 +1823,7 @@ void menu_repaintGeneric()
 // repaint the screen
 void menu_repaint()
 {
+    if(menu_renderKitLoad()) return;
     if(menu_renderSdError()) return;
 	if(screensaver_Active) return;
 
@@ -1933,9 +1939,35 @@ void menu_handleSaveScreenKnobValue(uint8_t potNr, uint8_t value)
 
 }
 //-----------------------------------------------------------------
+static void menu_showKitLoad(uint8_t morph)
+{
+    menu_kitLoadSince = HAL_GetTick();
+    menu_kitLoadNotice = morph ? 2 : 1;
+    menu_repaintAll();
+}
+static uint8_t menu_renderKitLoad(void)
+{
+    uint8_t notice = menu_kitLoadNotice;
+    if(!notice) return 0;
+    if((uint32_t)(HAL_GetTick()-menu_kitLoadSince) >= 750u) {
+        menu_kitLoadNotice = 0;
+        return 0;
+    }
+    visibleCursor = 0;
+    memcpy(editDisplayBuffer[0], notice == 2 ? "Load Morph Kit  " : "Load Kit        ", 16);
+    memcpy(editDisplayBuffer[1], "success!        ", 16);
+    display_needs_refresh = 1;
+    /* Expiry may preempt a foreground copy; queue restoration in that case. */
+    if(menu_kitLoadNotice != notice) menu_repaintAll();
+    return 1;
+}
 /* Rendered by the existing bounded display refresh, never by a wait loop. */
 static void menu_expireSdError(void)
 {
+    if(menu_kitLoadNotice && (uint32_t)(HAL_GetTick()-menu_kitLoadSince) >= 750u) {
+        menu_kitLoadNotice = 0;
+        menu_repaintAll();
+    }
     if(menu_sdError != FR_OK && (uint32_t)(HAL_GetTick() - menu_sdErrorSince) >= 2000u) {
         menu_sdError = FR_OK;
         menu_repaintAll();
@@ -1979,6 +2011,8 @@ void menu_showSdError(uint8_t res)
 //-----------------------------------------------------------------
 void menu_handleLoadSaveMenu(int8_t inc, uint8_t btnClicked)
 {
+    /* A new explicit command supersedes only the transient load notice. */
+    if(btnClicked) menu_kitLoadNotice = 0;
 	//this is a special case because the load/save page differs from all the other pages
 	// when this is called, edit mode will have already been set or cleared. this is only
 	// called when something has changed
@@ -2190,9 +2224,11 @@ void menu_handleLoadSaveMenu(int8_t inc, uint8_t btnClicked)
 				switch(menu_saveOptions.category) {
 
 				case SAVE_TYPE_KIT:
+                    if(menu_selectedPresetNr[SAVE_TYPE_KIT] >= NUM_KIT_SLOTS) return;
 #if 1
 
 					preset_loadDrumsetRam(menu_selectedPresetNr[menu_saveOptions.category],0, 0);
+                    menu_showKitLoad(0);
 					menu_TargetVoiceGapIndex = getModTargetGapIndex(activeParameters[PAR_TARGET_LFO1 + menu_activeVoice]);
 
 					menu_loadedPresetNr[CURRENT_KIT] = menu_selectedPresetNr[menu_saveOptions.category];
@@ -2214,8 +2250,10 @@ void menu_handleLoadSaveMenu(int8_t inc, uint8_t btnClicked)
 					break;
 
 				case SAVE_TYPE_MORPH:
+                    if(menu_selectedPresetNr[SAVE_TYPE_MORPH] >= NUM_KIT_SLOTS) return;
 #if 1
 					preset_loadDrumsetRam(menu_selectedPresetNr[menu_saveOptions.category],1, 0);
+                    menu_showKitLoad(1);
 					activeParameters[PAR_MORPH_KIT_DEST] = menu_selectedPresetNr[menu_saveOptions.category];
 					menu_loadedPresetNr[CURRENT_MORPH] = menu_selectedPresetNr[menu_saveOptions.category];
 #else

@@ -8,7 +8,8 @@ spec=importlib.util.spec_from_file_location('save_helpers',ROOT/'tests/save_erro
 helpers=importlib.util.module_from_spec(spec);spec.loader.exec_module(helpers)
 text=(ROOT/'Core/Src/menu/menu.c').read_text()
 functions=['menu_expireSdError','menu_renderSdError','menu_showSdError','menu_tick','menu_repaintAll','menu_repaint']
-source=''.join(helpers.extract(text,n) for n in functions)
+functions=['menu_showKitLoad','menu_renderKitLoad']+functions
+source='static volatile uint8_t menu_kitLoadNotice; static volatile uint32_t menu_kitLoadSince;\n'+''.join(helpers.extract(text,n) for n in functions)
 for name in functions[:3]:
     body=helpers.extract(text,name)
     assert not re.search(r'\b(?:HAL_Delay|HAL_TIM_\w+|lcd_\w+|sendDisplayBuffer|f_\w+|soundengine_process)\s*\(',body)
