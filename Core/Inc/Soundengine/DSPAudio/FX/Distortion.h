@@ -37,6 +37,8 @@ typedef struct DistortionStruct
 
 	//some filter states used in rat
 	double hp1_state[2];
+	/* R6: incoming CLP HP history; hp1_state retains the R5 return voicing. */
+	double clipInputHp_state[2];
 	double hp2_state[2];
 	double hp3_state[2];
 	double lp1_state[2];

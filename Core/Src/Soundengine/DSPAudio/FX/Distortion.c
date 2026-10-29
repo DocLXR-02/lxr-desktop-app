@@ -165,6 +165,7 @@ static void Distortion_beginClip(MasterDistortion *dist)
     for(uint8_t channel = 0; channel < 2; channel++)
     {
         dist->hp1_state[channel] = 0.;
+        dist->clipInputHp_state[channel] = 0.;
         dist->hp2_state[channel] = 0.;
         dist->hp3_state[channel] = 0.;
         dist->lp1_state[channel] = 0.;
@@ -198,6 +199,26 @@ static inline float Distortion_clipFeedback(MasterDistortion *dist, int16_t left
     return dist->clipFeedbackGain;
 }
 
+/* R6 experimental input voicing. Only HP1 is split; everything following
+ * the sum, including the nonlinear core, is shared. At REAL_FS=44140 the
+ * input pole is 120 Hz. The 1/32 weight avoids the enormous bass gain that
+ * a literal 7.2 Hz substitution into the old common stage would introduce.
+ * Detection always observes the original bus, before this weighting.
+ */
+#define CLIP_INPUT_HP_ALPHA 0.016936545811725878252
+#define CLIP_INPUT_WEIGHT (1. / 32.)
+
+static inline double Distortion_clipInput(MasterDistortion *dist, uint8_t channel,
+                                         double input, double loopReturn)
+{
+    dist->clipInputHp_state[channel] += CLIP_INPUT_HP_ALPHA *
+                                     (input - dist->clipInputHp_state[channel]);
+    dist->hp1_state[channel] += 0.64116641920131193922 *
+                              (loopReturn - dist->hp1_state[channel]);
+    return (input - dist->clipInputHp_state[channel]) * CLIP_INPUT_WEIGHT +
+           (loopReturn - dist->hp1_state[channel]);
+}
+
 void Distortion_init(MasterDistortion *dist)
 {
 	Distortion_resetClip(dist);
@@ -214,6 +235,8 @@ void Distortion_init(MasterDistortion *dist)
 
 	dist->hp1_state[0] = 0.0;
 	dist->hp1_state[1] = 0.0;
+	dist->clipInputHp_state[0] = 0.0;
+	dist->clipInputHp_state[1] = 0.0;
 
 	dist->hp2_state[0] = 0.0;
 	dist->hp2_state[1] = 0.0;
@@ -473,45 +496,11 @@ void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL
 				double signal1 = ( (fxBuffer[idx1])  ) / 32768.;
 				double signal2 = ( (fxBuffer[idx2])  ) / 32768.;  //[-1:1]
 
-				//feedback thru hp
-				//dist->hp1_state[0] += 0.64116641920131193922 * ( dist->p2 * 0.125 - dist->hp1_state[0]);
-				//dist->hp1_state[1] += 0.64116641920131193922 * ( dist->p2 * 0.125 - dist->hp1_state[1]);
-
 				const float feedback = Distortion_clipFeedback(dist, fxBuffer[idx1], fxBuffer[idx2]);
-				signal1 += dist->lastOut[0] * dist->p1 * 0.125 * feedback;
-				signal2 += dist->lastOut[1] * dist->p1 * 0.125 * feedback;
-
-				//guitar levels are normally in mv range!
-				//seems like generally we think of a 100-300mv signal in designing distortions etc, but a big E chord can get near 1V!
-				//signal1 *= 0.3;
-				//signal2 *= 0.3;
-
-				//--- Clipper Amplifier
-				//input HP 7.2Hz
-
-				/*
-				Coefficient calculation:
-				x = exp(-2.0*pi*freq/samplerate);
-				a0 = 1.0-x;
-				b1 = -x;
-
-				for 7.2Hz
-				x = 0,35883358079868806078
-				a0 = 0,64116641920131193922
-				b1 = -0,35883358079868806078
-				 */
-
-				//const double a0 = 0.64116641920131193922;
-				//const double b1 = -0.35883358079868806078;
-				dist->hp1_state[0] += 0.64116641920131193922 * (signal1 - dist->hp1_state[0]);
-				dist->hp1_state[1] += 0.64116641920131193922 * (signal2 - dist->hp1_state[1]);
-
-				//we now have lowpass, substract from input for HP
-				signal1 = signal1 - dist->hp1_state[0];
-				signal2 = signal2 - dist->hp1_state[1];
-
-
-
+				signal1 = Distortion_clipInput(dist, 0, signal1,
+				                              dist->lastOut[0] * dist->p1 * 0.125 * feedback);
+				signal2 = Distortion_clipInput(dist, 1, signal2,
+				                              dist->lastOut[1] * dist->p1 * 0.125 * feedback);
 
 				//LP/HP around opAmp
 				//1 pole LP   1/(2*pi*R_dist*0.0000001)  min = 16kHz = 0.1025353241628911807
@@ -617,10 +606,8 @@ void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL
 				double signal1 = ( (fxBuffer[idx1])  ) / 32768.f;
 
 				const float feedback = Distortion_clipFeedback(dist, fxBuffer[idx1], 0);
-				signal1 += dist->lastOut[0] * dist->p1 * 0.125 * feedback;
-
-				dist->hp1_state[0] += 0.64116641920131193922 * (signal1 - dist->hp1_state[0]);
-				signal1 = signal1 - dist->hp1_state[0];
+				signal1 = Distortion_clipInput(dist, 0, signal1,
+				                              dist->lastOut[0] * dist->p1 * 0.125 * feedback);
 
 				//LP/HP around opAmp
 				//1 pole LP   1/(2*pi*R_dist*0.0000001)  min = 16kHz = 0.1025353241628911807
