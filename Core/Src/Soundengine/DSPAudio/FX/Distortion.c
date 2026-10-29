@@ -138,6 +138,9 @@ float diode(float in)
 	float index = (in+1.f) * 128.; // [0:256]
 	//float index = (in+4.2f) * 30.47f; // [0:256]
 
+	/* The positive clamp endpoint has no interpolation successor. */
+	if(index >= 256.f) return table_1n914[256];
+
 	uint16_t itg = (int16_t) index;
 	float frac = index - itg;
 	return lerp(table_1n914[itg], table_1n914[itg+1], frac);
