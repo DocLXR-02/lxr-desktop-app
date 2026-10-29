@@ -147,8 +147,62 @@ float diode(float in)
 
 }
 
+/* Modified LXR Lab CLP behavior: linked input inactivity reduces loop return.
+ * 441 frames ~= 10 ms at REAL_FS; 221 frames ~= 5 ms for the linear fade.
+ * Values at or below one int16 LSB do not hold the detector open.
+ */
+#define CLIP_IDLE_HOLD_SAMPLES 441u
+#define CLIP_FEEDBACK_FADE_STEP (1.f / 221.f)
+
+void Distortion_resetClip(MasterDistortion *dist)
+{
+    /* Only queue the reset here; the audio entry owns the DSP history. */
+    dist->clipStateActive = 0;
+}
+
+static void Distortion_beginClip(MasterDistortion *dist)
+{
+    for(uint8_t channel = 0; channel < 2; channel++)
+    {
+        dist->hp1_state[channel] = 0.;
+        dist->hp2_state[channel] = 0.;
+        dist->hp3_state[channel] = 0.;
+        dist->lp1_state[channel] = 0.;
+        dist->lp2_state[channel] = 0.;
+        dist->lp3_state[channel] = 0.;
+        dist->slewState[channel] = 0.;
+        dist->lastOut[channel] = 0.;
+    }
+    dist->clipSilentSamples = 0;
+    dist->clipFeedbackGain = 0.f;
+    dist->clipStateActive = 1;
+}
+
+static inline float Distortion_clipFeedback(MasterDistortion *dist, int16_t left, int16_t right)
+{
+    if(left > 1 || left < -1 || right > 1 || right < -1)
+    {
+        /* Open on the first usable sample; do not fade in the kick attack. */
+        dist->clipSilentSamples = 0;
+        dist->clipFeedbackGain = 1.f;
+    }
+    else if(dist->clipSilentSamples < CLIP_IDLE_HOLD_SAMPLES)
+    {
+        dist->clipSilentSamples++;
+    }
+    else
+    {
+        dist->clipFeedbackGain -= CLIP_FEEDBACK_FADE_STEP;
+        if(dist->clipFeedbackGain < 0.f) dist->clipFeedbackGain = 0.f;
+    }
+    return dist->clipFeedbackGain;
+}
+
 void Distortion_init(MasterDistortion *dist)
 {
+	Distortion_resetClip(dist);
+	dist->clipSilentSamples = 0;
+	dist->clipFeedbackGain = 0.f;
 	dist->distortionType = DISTORTION_TUBE;
 	dist->drive = 1.0f;
 	dist->p1 = 1.0f;
@@ -210,6 +264,8 @@ float foldback(float in, float threshold)
 
 void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL, int16_t* outR, uint16_t size, uint8_t channels, float dryWet)
 {
+	if(dist->distortionType != DISTORTION_RAT) Distortion_resetClip(dist);
+
 	if(dist->distortionType == DISTORTION_TUBE)
 	{
 		//--- Tone Control ---
@@ -392,6 +448,7 @@ void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL
 	}
 	else //DISTORTION_RAT
 	{
+		if(!dist->clipStateActive) Distortion_beginClip(dist);
 		int32_t* stereoOut = (int32_t*)outL;
 		int32_t x;
 		//simdBuffer simd;
@@ -420,8 +477,9 @@ void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL
 				//dist->hp1_state[0] += 0.64116641920131193922 * ( dist->p2 * 0.125 - dist->hp1_state[0]);
 				//dist->hp1_state[1] += 0.64116641920131193922 * ( dist->p2 * 0.125 - dist->hp1_state[1]);
 
-				signal1 += dist->lastOut[0] * dist->p1 * 0.125;
-				signal2 += dist->lastOut[1] * dist->p1 * 0.125;
+				const float feedback = Distortion_clipFeedback(dist, fxBuffer[idx1], fxBuffer[idx2]);
+				signal1 += dist->lastOut[0] * dist->p1 * 0.125 * feedback;
+				signal2 += dist->lastOut[1] * dist->p1 * 0.125 * feedback;
 
 				//guitar levels are normally in mv range!
 				//seems like generally we think of a 100-300mv signal in designing distortions etc, but a big E chord can get near 1V!
@@ -558,7 +616,8 @@ void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL
 				const uint8_t idx1 = i*2;
 				double signal1 = ( (fxBuffer[idx1])  ) / 32768.f;
 
-				signal1 += dist->lastOut[0] * dist->p1 * 0.125;
+				const float feedback = Distortion_clipFeedback(dist, fxBuffer[idx1], 0);
+				signal1 += dist->lastOut[0] * dist->p1 * 0.125 * feedback;
 
 				dist->hp1_state[0] += 0.64116641920131193922 * (signal1 - dist->hp1_state[0]);
 				signal1 = signal1 - dist->hp1_state[0];

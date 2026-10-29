@@ -1,5 +1,7 @@
 /* Actual extracted production functions. Filesystem/HAL/UI below are host mocks. */
 #include <assert.h>
+/* Audio reset requests are outside these filesystem fixtures. */
+void FxBus_prepareFxChange(void) {}
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>

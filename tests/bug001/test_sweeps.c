@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include <assert.h>
+/* The full-kit resend now also requests an audio-history reset. */
+void FxBus_prepareFxChange(void) {}
 #include <stdio.h>
 #include <string.h>
 #include "menu/menu.h"

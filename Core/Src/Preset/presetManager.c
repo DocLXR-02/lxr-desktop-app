@@ -30,6 +30,7 @@
 #include "Soundengine/MIDI/MidiParser.h"
 #include "Soundengine/Sequencer/sequencer.h"
 #include "Soundengine/Soundengine.h"
+#include "Soundengine/FxBus.h"
 
 
 
@@ -1162,6 +1163,7 @@ static uint8_t preset_isTransportParameter(uint8_t paramNr)
 //----------------------------------------------------
 IN_ITCM_RAM void preset_sendDrumsetParametersImmediate()
 {
+	FxBus_prepareFxChange();
 		//special case mod targets
 		for(uint8_t i=0;i<6;i++)
 		{
@@ -1254,6 +1256,7 @@ IN_ITCM_RAM void preset_sendDrumsetParametersImmediate()
 // send loaded parameters to back
 void preset_sendDrumsetParameters()
 {
+	FxBus_prepareFxChange();
 	uint8_t i;
 	//special case mod targets
 	for(i=0;i<6;i++)

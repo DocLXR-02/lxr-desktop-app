@@ -40,6 +40,9 @@ void FxBus_init()
 
 IN_ITCM_RAM void FxBus_process(int16_t *fxBuffer, int16_t* outL,int16_t* outR,int16_t* outL2, int16_t* outR2, uint32_t size)
 {
+	if(fxBus.fxType != FX_DISTORTION && fxBus.distortion.clipStateActive)
+		Distortion_resetClip(&fxBus.distortion);
+
 	int16_t* out;
 	int16_t* out2 = NULL;
 	// < MIXER_ROUTING_DAC1_L -> stereo 1 or 2
@@ -136,6 +139,8 @@ IN_ITCM_RAM void FxBus_process(int16_t *fxBuffer, int16_t* outL,int16_t* outR,in
 
 void FxBus_prepareFxChange()
 {
+	/* Re-entry to CLP starts from quiet runtime history, including same-type recalls. */
+	Distortion_resetClip(&fxBus.distortion);
 	//memset(FX_BUFFER, 0, FX_BUFFER_SIZE*sizeof(__fp16) );
 //	Ringmod_resetPhase(&fxBus.ringmod);
 }

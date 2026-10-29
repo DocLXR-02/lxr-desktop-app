@@ -1,0 +1,63 @@
+name: LXR CLP Test Build
+on:
+  push:
+    branches:
+      - fx/clp-input-silence
+permissions:
+  contents: read
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: CLP runtime and DSP tests
+        run: python3 tests/fx_clip/run.py --output build/fx_clip_results.json
+      - name: R4 parser, morph, kit-load and storage regressions
+        run: |
+          python3 tests/bug001/run.py
+          python3 tests/kit_load/run.py
+          python3 tests/project_storage/run.py
+          python3 tests/euclidean/run.py
+      - name: Install Arm GNU Toolchain 14.3.rel1
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz"
+          curl -fL --retry 3 "$URL" -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+      - name: Build unchanged R4 for resource comparison
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/lxr-r4" c870f7249d7ee0d65423bc8b7bfdb422dcc74482
+          cmake -S "$RUNNER_TEMP/lxr-r4" -B build/r4-baseline -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/r4-baseline --parallel 2
+      - name: Build R5 CLP test firmware
+        run: |
+          cmake --preset release
+          cmake --build --preset release --parallel 2
+      - name: Verify and package application-only test artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/clp-delivery
+          cp build/release/LXR_V2_V1.7.img build/clp-delivery/LXR_LAB_R5_CLP_TEST.img
+          cp build/release/LXR_V2_STM32F765.elf build/clp-delivery/
+          cp build/release/LXR_V2_STM32F765.map build/clp-delivery/
+          cp build/fx_clip_results.json build/clp-delivery/
+          arm-none-eabi-size -A build/r4-baseline/LXR_V2_STM32F765.elf > build/clp-delivery/R4_SECTIONS.txt
+          arm-none-eabi-size -A build/release/LXR_V2_STM32F765.elf > build/clp-delivery/R5_SECTIONS.txt
+          python3 tests/fx_clip/check_image.py build/clp-delivery/LXR_LAB_R5_CLP_TEST.img
+          git rev-parse HEAD > build/clp-delivery/SOURCE_COMMIT.txt
+          arm-none-eabi-gcc --version > build/clp-delivery/TOOLCHAIN.txt
+          git archive --format=zip --output=build/clp-delivery/SOURCE.zip HEAD
+          sha256sum build/clp-delivery/LXR_LAB_R5_CLP_TEST.img build/clp-delivery/SOURCE.zip > build/clp-delivery/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lxr-lab-r5-clp-test
+          path: build/clp-delivery/
+          retention-days: 14
+          if-no-files-found: error
+
