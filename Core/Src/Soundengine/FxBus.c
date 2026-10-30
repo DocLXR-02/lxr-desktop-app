@@ -13,6 +13,7 @@
  */
 
 
+#include <math.h>
 #include "Soundengine/FxBus.h"
 #include "Soundengine/DSPAudio/BufferTools.h"
 #include "Soundengine/DSPAudio/mixer.h"
@@ -38,6 +39,14 @@ void FxBus_init()
 #endif
 }
 
+/* Map the replayed squared fader: full output above half physical travel. */
+static inline float FxBus_clipCoreGain(float q)
+{
+    if(q <= 0.f) return 0.f;
+    if(q >= .25f) return 1.f;
+    return 2.f * sqrtf(q);
+}
+
 /* Audio-owned per-block snapshot. A silent routed voice still counts. */
 const float *FxBus_clipFaderGains(const uint8_t routes[6], const OnePoleFilter *const filters[6],
                                 const float targets[6], float *gains, uint16_t size)
@@ -52,7 +61,7 @@ const float *FxBus_clipFaderGains(const uint8_t routes[6], const OnePoleFilter *
     if(sole < 0) return NULL;
     OnePoleFilter replay = *filters[sole];
     for(uint16_t frame = 0; frame < size; frame++)
-        gains[frame] = calcOnePole(&replay, targets[sole]);
+        gains[frame] = FxBus_clipCoreGain(calcOnePole(&replay, targets[sole]));
     return gains;
 }
 

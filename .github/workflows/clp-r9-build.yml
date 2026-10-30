@@ -1,0 +1,63 @@
+name: LXR R9 Delayed Onset Fader Curve Test Build
+on:
+  push:
+    branches: [fx/clp-fader-curve-r9]
+permissions:
+  contents: read
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Host DSP and relevant regressions
+        run: |
+          set -euo pipefail
+          mkdir -p build/r9-evidence
+          cc --version > build/r9-evidence/HOST_COMPILER.txt
+          python3 -m pip install numpy==2.3.5
+          python3 tests/fx_clip_r9/run.py --output build/r9-host 2>&1 | tee build/r9-evidence/host.log
+          python3 tests/bug001/run.py 2>&1 | tee build/r9-evidence/bug001.log
+          python3 tests/kit_load/run.py 2>&1 | tee build/r9-evidence/kit-load.log
+          python3 tests/project_storage/run.py 2>&1 | tee build/r9-evidence/storage.log
+          python3 tests/euclidean/run.py 2>&1 | tee build/r9-evidence/euclidean.log
+      - name: Install the same Arm toolchain recorded for R8
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          sha256sum "$RUNNER_TEMP/arm-toolchain.tar.xz" > build/r9-evidence/TOOLCHAIN_ARCHIVE_SHA256.txt
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+      - name: One Release ARM build
+        run: |
+          set -euo pipefail
+          cmake --preset release 2>&1 | tee build/r9-evidence/configure.log
+          cmake --build --preset release --parallel 2 2>&1 | tee build/r9-evidence/build.log
+      - name: Validate and package
+        run: |
+          set -euo pipefail
+          python3 tests/fx_clip_r9/package.py
+          cp build/r9-validation.json build/r9-evidence/
+          cp build/release/LXR_V2_STM32F765.elf build/release/LXR_V2_STM32F765.map build/release/compile_commands.json build/r9-evidence/
+          cp -r build/r9-host build/r9-evidence/
+          arm-none-eabi-objdump -d build/release/LXR_V2_STM32F765.elf > build/r9-evidence/DISASSEMBLY.txt
+          arm-none-eabi-readelf -l build/release/LXR_V2_STM32F765.elf > build/r9-evidence/ELF_LOADS.txt
+          arm-none-eabi-size -A build/release/LXR_V2_STM32F765.elf > build/r9-evidence/R9_SECTIONS.txt
+          arm-none-eabi-gcc --version > build/r9-evidence/TOOLCHAIN.txt
+          git rev-parse HEAD > build/r9-evidence/SOURCE_COMMIT.txt
+          git archive --format=zip --output=build/r9-evidence/SOURCE.zip HEAD
+          sha256sum build/r9-delivery/* build/r9-evidence/SOURCE.zip > build/r9-evidence/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lxr-r9-image
+          path: build/r9-delivery/
+          retention-days: 30
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lxr-r9-source-build-evidence
+          path: build/r9-evidence/
+          retention-days: 30
+          if-no-files-found: error
