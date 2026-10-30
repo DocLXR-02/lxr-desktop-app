@@ -24,6 +24,7 @@
 #include "Soundengine/TriggerOut.h"
 #include "menu/menu.h"
 #include "Soundengine/FxBus.h"
+#include "IO/adcPots.h"
 
 	uint8_t r2_Available;
 	uint8_t l1_Available;
@@ -545,6 +546,22 @@ IN_ITCM_RAM static inline void mixer_addDataToOutput(uint8_t dest, const float p
 }
 //#pragma GCC pop_options
 //-----------------------------------------------------------------------
+/* One audio writer; this buffer is consumed synchronously and never retained. */
+static INDTCMZ float mixer_clipGains[OUTPUT_DMA_SIZE];
+static const float *mixer_clipFaderForBlock(void)
+{
+    if(fxBus.fxType != FX_DISTORTION || fxBus.distortion.distortionType != DISTORTION_RAT)
+        return NULL;
+    const OnePoleFilter *filters[6] = {
+        &voiceArray[0].FaderVolumeFilter, &voiceArray[1].FaderVolumeFilter,
+        &voiceArray[2].FaderVolumeFilter, &snareVoice.FaderVolumeFilter,
+        &cymbalVoice.FaderVolumeFilter, &hatVoice.FaderVolumeFilter
+    };
+    float targets[6];
+    for(uint8_t voice = 0; voice < 6; voice++) targets[voice] = adc_getFaderVolume(voice);
+    return FxBus_clipFaderGains(mixer_audioRouting, filters, targets, mixer_clipGains, OUTPUT_DMA_SIZE);
+}
+
 IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 {
 
@@ -597,6 +614,9 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 	bufferTool_clearBuffer(output2,OUTPUT_DMA_SIZE*2);
 
 	bufferTool_clearBuffer(fxBusData,OUTPUT_DMA_SIZE*2);
+
+	/* Capture before any voice advances its live fader smoother. */
+	const float *clipGains = mixer_clipFaderForBlock();
 
 	//calc voice 1
 	calcDrumVoiceSyncBlock(0, sampleData,OUTPUT_DMA_SIZE);
@@ -709,7 +729,7 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 #endif
 
 #endif
-	FxBus_process(fxBusData,  &output[pos],&output[pos+1],&output2[pos],&output2[pos+1], OUTPUT_DMA_SIZE);
+	FxBus_processWithClipGain(fxBusData, &output[pos], &output[pos+1], &output2[pos], &output2[pos+1], OUTPUT_DMA_SIZE, clipGains);
 /*
 	if(activeParameters[UNUSED_PAR_GLO_SAT])
 	{

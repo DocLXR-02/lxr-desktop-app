@@ -38,7 +38,30 @@ void FxBus_init()
 #endif
 }
 
+/* Audio-owned per-block snapshot. A silent routed voice still counts. */
+const float *FxBus_clipFaderGains(const uint8_t routes[6], const OnePoleFilter *const filters[6],
+                                const float targets[6], float *gains, uint16_t size)
+{
+    int8_t sole = -1;
+    for(uint8_t voice = 0; voice < 6; voice++)
+    {
+        if(routes[voice] != MIXER_ROUTING_FX_BUS) continue;
+        if(sole >= 0) return NULL;
+        sole = voice;
+    }
+    if(sole < 0) return NULL;
+    OnePoleFilter replay = *filters[sole];
+    for(uint16_t frame = 0; frame < size; frame++)
+        gains[frame] = calcOnePole(&replay, targets[sole]);
+    return gains;
+}
+
 IN_ITCM_RAM void FxBus_process(int16_t *fxBuffer, int16_t* outL,int16_t* outR,int16_t* outL2, int16_t* outR2, uint32_t size)
+{
+    FxBus_processWithClipGain(fxBuffer, outL, outR, outL2, outR2, size, NULL);
+}
+
+IN_ITCM_RAM void FxBus_processWithClipGain(int16_t *fxBuffer, int16_t* outL,int16_t* outR,int16_t* outL2, int16_t* outR2, uint32_t size, const float *clipGain)
 {
 	if(fxBus.fxType != FX_DISTORTION && fxBus.distortion.clipStateActive)
 		Distortion_resetClip(&fxBus.distortion);
@@ -106,7 +129,7 @@ IN_ITCM_RAM void FxBus_process(int16_t *fxBuffer, int16_t* outL,int16_t* outR,in
 	break;
 
 	case FX_DISTORTION:
-		Distortion_process(&fxBus.distortion, fxBuffer, out, out2, size, channels, fxBus.dryWet);
+		Distortion_processWithClipGain(&fxBus.distortion, fxBuffer, out, out2, size, channels, fxBus.dryWet, clipGain);
 		break;
 
 	case FX_RING:

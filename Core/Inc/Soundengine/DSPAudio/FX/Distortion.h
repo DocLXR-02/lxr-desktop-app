@@ -62,6 +62,8 @@ void Distortion_init(MasterDistortion *dist);
 /* Defer clearing CLP filter history until the audio processing entry. */
 void Distortion_resetClip(MasterDistortion *dist);
 void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL, int16_t* outR, uint16_t size,  uint8_t channels, float dryWet);
+/* Optional per-frame gain affects audible CLP core only; NULL is R7 unity. */
+void Distortion_processWithClipGain(MasterDistortion *dist, int16_t *fxBuffer, int16_t *outL, int16_t *outR, uint16_t size, uint8_t channels, float dryWet, const float *clipGain);
 void Distortion_setDrive(MasterDistortion *dist, float d);
 void Distortion_setParam1(MasterDistortion *dist, float p);
 void Distortion_setParam2(MasterDistortion *dist, float p);

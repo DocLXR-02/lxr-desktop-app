@@ -23,6 +23,8 @@
 #include "Soundengine/DSPAudio/FX/Delay.h"
 #include "Soundengine/DSPAudio/FX/Reverb.h"
 
+#include "Soundengine/DSPAudio/1PoleLp.h"
+
 #define USE_REVERB 0
 
 enum FxTypeEnum
@@ -64,6 +66,10 @@ extern INDTCMZ FxBus fxBus;
 
 void FxBus_init();
 void FxBus_process(int16_t *fxBuffer, int16_t* outL,int16_t* outR,int16_t* outL2, int16_t* outR2, uint32_t size);
+/* Caller owns gain storage for this synchronous audio call. NULL is unity. */
+void FxBus_processWithClipGain(int16_t *fxBuffer, int16_t *outL, int16_t *outR, int16_t *outL2, int16_t *outR2, uint32_t size, const float *clipGain);
+/* Replay exactly one routed voice's existing smoother on a private copy. */
+const float *FxBus_clipFaderGains(const uint8_t routes[6], const OnePoleFilter *const filters[6], const float targets[6], float *gains, uint16_t size);
 void FxBus_setParameter(uint8_t idx, float value);
 void FxBus_updateParameter();
 //to prevent NaN pollution from delay

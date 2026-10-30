@@ -284,6 +284,11 @@ float foldback(float in, float threshold)
 
 void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL, int16_t* outR, uint16_t size, uint8_t channels, float dryWet)
 {
+    Distortion_processWithClipGain(dist, fxBuffer, outL, outR, size, channels, dryWet, NULL);
+}
+
+void Distortion_processWithClipGain(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL, int16_t* outR, uint16_t size, uint8_t channels, float dryWet, const float *clipGain)
+{
 	if(dist->distortionType != DISTORTION_RAT) Distortion_resetClip(dist);
 
 	if(dist->distortionType == DISTORTION_TUBE)
@@ -621,9 +626,9 @@ void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL
 				dist->lastOut[1] = dist->lp3_state[1] * dist->p3;
 
 
-				int16_t wet = __SSAT((int32_t)((dist->lastOut[0] + bass1) * 32768.0f), 16);
+				int16_t wet = __SSAT((int32_t)((dist->lastOut[0] * (clipGain ? clipGain[i] : 1.f) + bass1) * 32768.0f), 16);
 				//simd.word[0] = fxBuffer[idx1] + __SSAT((wet - fxBuffer[idx1]) * dryWet,16);
-				int16_t wet2 = __SSAT((int32_t)((dist->lastOut[1] + bass2) * 32768.0f), 16);
+				int16_t wet2 = __SSAT((int32_t)((dist->lastOut[1] * (clipGain ? clipGain[i] : 1.f) + bass2) * 32768.0f), 16);
 				//simd.word[1] = fxBuffer[idx2] + __SSAT((wet2 - fxBuffer[idx2]) * dryWet,16);
 
 				x = __PKHBT(fxBuffer[idx1] + __SSAT((wet - fxBuffer[idx1]) * dryWet,16), fxBuffer[idx2] + __SSAT((wet2 - fxBuffer[idx2]) * dryWet,16), 16);
@@ -683,7 +688,7 @@ void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL
 				dist->lastOut[0] = dist->lp3_state[0] * dist->p3;
 
 
-				int16_t wet = __SSAT((int32_t)((dist->lastOut[0] + bass1) * 32768.0f), 16);
+				int16_t wet = __SSAT((int32_t)((dist->lastOut[0] * (clipGain ? clipGain[i] : 1.f) + bass1) * 32768.0f), 16);
 				int16_t dw = fxBuffer[idx1] + __SSAT((wet - fxBuffer[idx1]) * dryWet,16);
 				*outL = __QADD16(*outL, dw);
 				outL += 2;
