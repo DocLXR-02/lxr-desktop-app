@@ -12,6 +12,7 @@
  */
 
 
+#include "Soundengine/SoloMix.h"
 #include "Soundengine/DSPAudio/CymbalVoice.h"
 #include "Soundengine/DSPAudio/squareRootLut.h"
 #include "Soundengine/DSPAudio/modulationNode.h"
@@ -156,6 +157,8 @@ IN_ITCM_RAM void Cymbal_calcAsync()
 //---------------------------------------------------
 void Cymbal_calcSyncBlock(int16_t* buf, const uint8_t size)
 {
+    const float sourceMix = SoloMix_sourceLevel(4, cymbalVoice.vol);
+
 		int16_t mod[size];
 		int16_t mod2[size];
 		//calc next mod osc sample
@@ -186,7 +189,7 @@ void Cymbal_calcSyncBlock(int16_t* buf, const uint8_t size)
 		uint8_t j;
 		if(cymbalVoice.volumeMod)
 		{
-			cymbalVoice.combinedVolume = cymbalVoice.vol *cymbalVoice.velo *  cymbalVoice.egValueOscVol ;
+			cymbalVoice.combinedVolume = sourceMix *cymbalVoice.velo *  cymbalVoice.egValueOscVol ;
 			//const float vol = ;
 
 #if 1
@@ -215,7 +218,7 @@ void Cymbal_calcSyncBlock(int16_t* buf, const uint8_t size)
 		}
 		else
 		{
-			cymbalVoice.combinedVolume = cymbalVoice.vol * cymbalVoice.egValueOscVol;
+			cymbalVoice.combinedVolume = sourceMix * cymbalVoice.egValueOscVol;
 			//const float vol = cymbalVoice.combinedVolume ;
 
 #if 1

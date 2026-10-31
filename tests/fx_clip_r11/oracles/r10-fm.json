@@ -1,0 +1,247 @@
+[
+  {
+    "waveform": "sine",
+    "mod": -32768,
+    "elf": -29549,
+    "compatible": -29549,
+    "signed_modular": -29549
+  },
+  {
+    "waveform": "sine",
+    "mod": -100,
+    "elf": -29549,
+    "compatible": -29549,
+    "signed_modular": -29815
+  },
+  {
+    "waveform": "sine",
+    "mod": -1,
+    "elf": -29549,
+    "compatible": -29549,
+    "signed_modular": -29551
+  },
+  {
+    "waveform": "sine",
+    "mod": 0,
+    "elf": -29549,
+    "compatible": -29549,
+    "signed_modular": -29549
+  },
+  {
+    "waveform": "sine",
+    "mod": 1,
+    "elf": -29546,
+    "compatible": -29546,
+    "signed_modular": -29546
+  },
+  {
+    "waveform": "sine",
+    "mod": 100,
+    "elf": -29272,
+    "compatible": -29272,
+    "signed_modular": -29272
+  },
+  {
+    "waveform": "sine",
+    "mod": 32767,
+    "elf": -29551,
+    "compatible": -29551,
+    "signed_modular": -29551
+  },
+  {
+    "waveform": "triTable",
+    "mod": -32768,
+    "elf": -23602,
+    "compatible": -23602,
+    "signed_modular": -23602
+  },
+  {
+    "waveform": "triTable",
+    "mod": -100,
+    "elf": -23602,
+    "compatible": -23602,
+    "signed_modular": -25215
+  },
+  {
+    "waveform": "triTable",
+    "mod": -1,
+    "elf": -23602,
+    "compatible": -23602,
+    "signed_modular": -23618
+  },
+  {
+    "waveform": "triTable",
+    "mod": 0,
+    "elf": -23602,
+    "compatible": -23602,
+    "signed_modular": -23602
+  },
+  {
+    "waveform": "triTable",
+    "mod": 1,
+    "elf": -23586,
+    "compatible": -23586,
+    "signed_modular": -23586
+  },
+  {
+    "waveform": "triTable",
+    "mod": 100,
+    "elf": -21990,
+    "compatible": -21990,
+    "signed_modular": -21990
+  },
+  {
+    "waveform": "triTable",
+    "mod": 32767,
+    "elf": -23618,
+    "compatible": -23618,
+    "signed_modular": -23618
+  },
+  {
+    "waveform": "recTable",
+    "mod": -32768,
+    "elf": 32134,
+    "compatible": 32134,
+    "signed_modular": 32134
+  },
+  {
+    "waveform": "recTable",
+    "mod": -100,
+    "elf": 32134,
+    "compatible": 32134,
+    "signed_modular": 32149
+  },
+  {
+    "waveform": "recTable",
+    "mod": -1,
+    "elf": 32134,
+    "compatible": 32134,
+    "signed_modular": 32134
+  },
+  {
+    "waveform": "recTable",
+    "mod": 0,
+    "elf": 32134,
+    "compatible": 32134,
+    "signed_modular": 32134
+  },
+  {
+    "waveform": "recTable",
+    "mod": 1,
+    "elf": 32134,
+    "compatible": 32134,
+    "signed_modular": 32134
+  },
+  {
+    "waveform": "recTable",
+    "mod": 100,
+    "elf": 32122,
+    "compatible": 32122,
+    "signed_modular": 32122
+  },
+  {
+    "waveform": "recTable",
+    "mod": 32767,
+    "elf": 32134,
+    "compatible": 32134,
+    "signed_modular": 32134
+  },
+  {
+    "waveform": "sawTable",
+    "mod": -32768,
+    "elf": 28244,
+    "compatible": 28244,
+    "signed_modular": 28244
+  },
+  {
+    "waveform": "sawTable",
+    "mod": -100,
+    "elf": 28244,
+    "compatible": 28244,
+    "signed_modular": 29056
+  },
+  {
+    "waveform": "sawTable",
+    "mod": -1,
+    "elf": 28244,
+    "compatible": 28244,
+    "signed_modular": 28252
+  },
+  {
+    "waveform": "sawTable",
+    "mod": 0,
+    "elf": 28244,
+    "compatible": 28244,
+    "signed_modular": 28244
+  },
+  {
+    "waveform": "sawTable",
+    "mod": 1,
+    "elf": 28236,
+    "compatible": 28236,
+    "signed_modular": 28236
+  },
+  {
+    "waveform": "sawTable",
+    "mod": 100,
+    "elf": 27436,
+    "compatible": 27436,
+    "signed_modular": 27436
+  },
+  {
+    "waveform": "sawTable",
+    "mod": 32767,
+    "elf": 28252,
+    "compatible": 28252,
+    "signed_modular": 28252
+  },
+  {
+    "waveform": "pwm",
+    "mod": -32768,
+    "elf": 16474,
+    "compatible": 16474,
+    "signed_modular": 16474
+  },
+  {
+    "waveform": "pwm",
+    "mod": -100,
+    "elf": 16474,
+    "compatible": 16474,
+    "signed_modular": 16482
+  },
+  {
+    "waveform": "pwm",
+    "mod": -1,
+    "elf": 16474,
+    "compatible": 16474,
+    "signed_modular": 16474
+  },
+  {
+    "waveform": "pwm",
+    "mod": 0,
+    "elf": 16474,
+    "compatible": 16474,
+    "signed_modular": 16474
+  },
+  {
+    "waveform": "pwm",
+    "mod": 1,
+    "elf": 16474,
+    "compatible": 16474,
+    "signed_modular": 16474
+  },
+  {
+    "waveform": "pwm",
+    "mod": 100,
+    "elf": 16469,
+    "compatible": 16469,
+    "signed_modular": 16469
+  },
+  {
+    "waveform": "pwm",
+    "mod": 32767,
+    "elf": 16474,
+    "compatible": 16474,
+    "signed_modular": 16474
+  }
+]

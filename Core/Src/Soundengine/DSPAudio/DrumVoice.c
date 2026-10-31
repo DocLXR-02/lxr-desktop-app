@@ -12,6 +12,7 @@
  */
 
 
+#include "Soundengine/SoloMix.h"
 #include "Soundengine/DSPAudio/DrumVoice.h"
 #include "Soundengine/DSPAudio/Oscillator.h"
 #include "Soundengine/DSPAudio/random.h"
@@ -298,6 +299,12 @@ IN_ITCM_RAM void calcDrumVoiceSyncBlock(const uint8_t voiceNr, int16_t* buf, con
 	//channel volume
 	//bufferTool_addGain(buf,voiceArray[voiceNr].combinedVolume  ,size);
 
+    if(SoloMix_isVoice(voiceNr))
+    {
+        SoloMix_drum(voiceNr, buf, size, &voiceArray[voiceNr].MixerPageFilter[0],
+                     &voiceArray[voiceNr].FaderVolumeFilter, &voiceArray[voiceNr].combinedVolume);
+        return;
+    }
 	for(int i=0; i< size; i++)
 	{
 #if SMOOTH_MIXER_VOL_PAN_DRIVE

@@ -351,7 +351,7 @@ int main(void)
 #else
 	//print boot up message
 lcd_clear();
-lcd_string("LXR LAB R10");
+lcd_string("LXR LAB R11");
 #endif
 
 lcd_showSplash();

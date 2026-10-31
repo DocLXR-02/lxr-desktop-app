@@ -31,7 +31,8 @@ static inline int32_t audit_sub16(int32_t a,int32_t b){uint32_t lo=(uint16_t)hos
   if flag.startswith('-D') and '=' in flag:
    k,v=flag[2:].split('=');assert re.search(r'^#define '+k+r'\s+'+v+r'\b',config,re.M),flag
  files=['DrumVoice','Snare','CymbalVoice','HiHat','transientGenerator','transientTables','wavetable','SlopeEg2','Decay','snapEg','1PoleLp','distortion','ResonantFilter']
- return flags,[dsp/(n+'.c') for n in files]
+ extra=[source/'Core/Src/Soundengine/SoloMix.c'] if (source/'Core/Src/Soundengine/SoloMix.c').exists() else []
+ return flags,[dsp/(n+'.c') for n in files]+extra
 def compile_run(out,fixture,source=ROOT,extra=()):
  flags,files=prepare(out,source);cmd=flags+[str(fixture)]+list(map(str,files))+list(map(str,extra))+['-Wl,--gc-sections','-lm','-o',str(Path(out)/'check')]
  r=subprocess.run(cmd,text=True,capture_output=True);(Path(out)/'compile.log').write_text(' '.join(cmd)+'\n'+r.stdout+r.stderr);r.check_returncode();return Path(out)/'check'

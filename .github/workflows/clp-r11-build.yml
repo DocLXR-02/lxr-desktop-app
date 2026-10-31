@@ -1,0 +1,72 @@
+name: LXR R11 FILTER-OFF Solo Post-MIX Test Build
+on:
+  push:
+    branches: [fx/clp-solo-post-mix-r11]
+permissions:
+  contents: read
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Host DSP and relevant regressions
+        run: |
+          set -euo pipefail
+          mkdir -p build/r11-evidence
+          cc --version > build/r11-evidence/HOST_COMPILER.txt
+          python3 -m pip install numpy==2.3.5
+          python3 tests/fx_clip_r11/scope.py 2>&1 | tee build/r11-evidence/scope.log
+          python3 tests/fx_clip_r11/arithmetic.py 2>&1 | tee build/r11-evidence/arithmetic.log
+          python3 tests/fx_clip_r11/arm_compat.py 2>&1 | tee build/r11-evidence/arm-compat.log
+          python3 tests/fx_clip_r11/component.py 2>&1 | tee build/r11-evidence/component.log
+          python3 tests/fx_clip_r11/voices.py 2>&1 | tee build/r11-evidence/voices.log
+          python3 tests/fx_clip_r11/supplement.py 2>&1 | tee build/r11-evidence/supplement.log
+          python3 tests/fx_clip_r11/renders.py --baseline build/r11-voices/prerequisite 2>&1 | tee build/r11-evidence/renders.log
+          python3 tests/fx_clip_r11/inherited.py 2>&1 | tee build/r11-evidence/inherited.log
+          python3 tests/bug001/run.py 2>&1 | tee build/r11-evidence/bug001.log
+          python3 tests/kit_load/run.py 2>&1 | tee build/r11-evidence/kit-load.log
+          python3 tests/project_storage/run.py 2>&1 | tee build/r11-evidence/storage.log
+          python3 tests/euclidean/run.py 2>&1 | tee build/r11-evidence/euclidean.log
+      - name: Install the same Arm toolchain recorded for corrected R10
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          sha256sum "$RUNNER_TEMP/arm-toolchain.tar.xz" > build/r11-evidence/TOOLCHAIN_ARCHIVE_SHA256.txt
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+      - name: One Release ARM build
+        run: |
+          set -euo pipefail
+          cmake --preset release 2>&1 | tee build/r11-evidence/configure.log
+          cmake --build --preset release --parallel 2 2>&1 | tee build/r11-evidence/build.log
+      - name: Validate and package
+        run: |
+          set -euo pipefail
+          python3 tests/fx_clip_r11/package.py
+          cp build/r11-validation.json build/r11-evidence/
+          cp build/release/LXR_V2_STM32F765.elf build/release/LXR_V2_STM32F765.map build/release/compile_commands.json build/r11-evidence/
+          # Compact complete results/logs, not native binaries or duplicate source trees.
+          find build/r11-* -type f \( -name results.json -o -name metrics.csv -o -name '*.wav' -o -name '*.log' -o -name '*.json.gz' \) -not -path 'build/r11-evidence/*' -not -path '*/prerequisite/*' -print0 | tar --null -T - -czf build/r11-evidence/HOST_RESULTS.tar.gz
+          arm-none-eabi-objdump -d build/release/LXR_V2_STM32F765.elf > build/r11-evidence/DISASSEMBLY.txt
+          arm-none-eabi-readelf -l build/release/LXR_V2_STM32F765.elf > build/r11-evidence/ELF_LOADS.txt
+          arm-none-eabi-size -A build/release/LXR_V2_STM32F765.elf > build/r11-evidence/R11_SECTIONS.txt
+          arm-none-eabi-gcc --version > build/r11-evidence/TOOLCHAIN.txt
+          git rev-parse HEAD > build/r11-evidence/SOURCE_COMMIT.txt
+          git archive --format=zip --output=build/r11-evidence/SOURCE.zip HEAD
+          sha256sum build/r11-delivery/* > build/r11-evidence/SHA256SUMS
+          find build/r11-evidence -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum >> build/r11-evidence/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lxr-r11-image
+          path: build/r11-delivery/
+          retention-days: 30
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lxr-r11-source-build-evidence
+          path: build/r11-evidence/
+          retention-days: 30
+          if-no-files-found: error

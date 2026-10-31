@@ -24,6 +24,7 @@
 #include "Soundengine/TriggerOut.h"
 #include "menu/menu.h"
 #include "Soundengine/FxBus.h"
+#include "Soundengine/SoloMix.h"
 #include "IO/adcPots.h"
 
 	uint8_t r2_Available;
@@ -562,6 +563,13 @@ static const float *mixer_clipFaderForBlock(void)
     return FxBus_clipFaderGains(mixer_audioRouting, filters, targets, mixer_clipGains, OUTPUT_DMA_SIZE);
 }
 
+static void mixer_soloMixForBlock(void) __attribute__((noinline));
+static void mixer_soloMixForBlock(void)
+{
+    const float targets[6] = {voiceArray[0].vol, voiceArray[1].vol, voiceArray[2].vol,
+                              snareVoice.vol, cymbalVoice.vol, hatVoice.vol};
+    SoloMix_begin(mixer_audioRouting, fxBus.fxType, fxBus.distortion.distortionType, targets);
+}
 IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 {
 
@@ -617,11 +625,13 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 
 	/* Capture before any voice advances its live fader smoother. */
 	const float *clipGains = mixer_clipFaderForBlock();
+    mixer_soloMixForBlock();
 
 	//calc voice 1
 	calcDrumVoiceSyncBlock(0, sampleData,OUTPUT_DMA_SIZE);
 	//decimate voice
 	mixer_decimateBlock(0,sampleData);
+    SoloMix_gate(0, sampleData, OUTPUT_DMA_SIZE);
 	//copy to selected dma buffer
 #if USE_SQRT_LUT
 	mixer_addDataToOutput(mixer_audioRouting[0],squareRootLut[127-voiceArray[0].pan] ,squareRootLut[voiceArray[0].pan], sampleData,&output[pos],&output[pos+1],&output2[pos],&output2[pos+1], fxBusData);
@@ -647,6 +657,7 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 	calcDrumVoiceSyncBlock(1, sampleData,OUTPUT_DMA_SIZE);
 	//decimate voice
 	mixer_decimateBlock(1,sampleData);
+    SoloMix_gate(1, sampleData, OUTPUT_DMA_SIZE);
 	//copy to selected dma buffer
 #if USE_SQRT_LUT
 	mixer_addDataToOutput(mixer_audioRouting[1],squareRootLut[127-voiceArray[1].pan] ,squareRootLut[voiceArray[1].pan], sampleData,&output[pos],&output[pos+1],&output2[pos],&output2[pos+1], fxBusData);
@@ -667,6 +678,7 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 	calcDrumVoiceSyncBlock(2, sampleData,OUTPUT_DMA_SIZE);
 	//decimate voice
 	mixer_decimateBlock(2,sampleData);
+    SoloMix_gate(2, sampleData, OUTPUT_DMA_SIZE);
 	//copy to selected dma buffer
 #if USE_SQRT_LUT
 	mixer_addDataToOutput(mixer_audioRouting[2],squareRootLut[127-voiceArray[2].pan] ,squareRootLut[voiceArray[2].pan], sampleData,&output[pos],&output[pos+1],&output2[pos],&output2[pos+1], fxBusData);
@@ -686,6 +698,7 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 	Snare_calcSyncBlock(sampleData,OUTPUT_DMA_SIZE);
 	//decimate voice
 	mixer_decimateBlock(3,sampleData);
+    SoloMix_gate(3, sampleData, OUTPUT_DMA_SIZE);
 	//copy to selected dma buffer
 #if USE_SQRT_LUT
 	mixer_addDataToOutput(mixer_audioRouting[3],squareRootLut[127-snareVoice.pan], squareRootLut[snareVoice.pan], sampleData,&output[pos],&output[pos+1],&output2[pos],&output2[pos+1], fxBusData);
@@ -701,6 +714,7 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 	Cymbal_calcSyncBlock(sampleData,OUTPUT_DMA_SIZE);
 	//decimate voice
 	mixer_decimateBlock(4,sampleData);
+    SoloMix_gate(4, sampleData, OUTPUT_DMA_SIZE);
 	//copy to selected dma buffer
 #if USE_SQRT_LUT
 	mixer_addDataToOutput(mixer_audioRouting[4],squareRootLut[127-cymbalVoice.pan],	squareRootLut[cymbalVoice.pan], sampleData,&output[pos],&output[pos+1],&output2[pos],&output2[pos+1], fxBusData);
@@ -717,6 +731,7 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 	HiHat_calcSyncBlock(sampleData,OUTPUT_DMA_SIZE);
 	//decimate voice
 	mixer_decimateBlock(5,sampleData);
+    SoloMix_gate(5, sampleData, OUTPUT_DMA_SIZE);
 	//copy to selected dma buffer
 #if USE_SQRT_LUT
 	mixer_addDataToOutput(mixer_audioRouting[5],squareRootLut[127-hatVoice.pan],squareRootLut[hatVoice.pan], sampleData,&output[pos],&output[pos+1],&output2[pos],&output2[pos+1], fxBusData);
@@ -729,7 +744,7 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 #endif
 
 #endif
-	FxBus_processWithClipGain(fxBusData, &output[pos], &output[pos+1], &output2[pos], &output2[pos+1], OUTPUT_DMA_SIZE, clipGains);
+	SoloMix_process(fxBusData, &output[pos], &output[pos+1], &output2[pos], &output2[pos+1], OUTPUT_DMA_SIZE, clipGains);
 /*
 	if(activeParameters[UNUSED_PAR_GLO_SAT])
 	{

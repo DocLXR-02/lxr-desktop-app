@@ -1,0 +1,422 @@
+[
+  {
+    "row": 4,
+    "phase": "0x0",
+    "pwm": 0,
+    "float_sum": 0.0,
+    "elf_phase2": "0x0",
+    "modular_phase2": "0x0",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 4,
+    "phase": "0x0",
+    "pwm": 0.5,
+    "float_sum": 1073741824.0,
+    "elf_phase2": "0x40000000",
+    "modular_phase2": "0x40000000",
+    "elf_sample": -16451,
+    "modular_sample": -16451
+  },
+  {
+    "row": 4,
+    "phase": "0x0",
+    "pwm": 1,
+    "float_sum": 2147483648.0,
+    "elf_phase2": "0x80000000",
+    "modular_phase2": "0x80000000",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 4,
+    "phase": "0x7fffff00",
+    "pwm": 0,
+    "float_sum": 2147483392.0,
+    "elf_phase2": "0x7fffff00",
+    "modular_phase2": "0x7fffff00",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 4,
+    "phase": "0x7fffff00",
+    "pwm": 0.5,
+    "float_sum": 3221225216.0,
+    "elf_phase2": "0xbfffff00",
+    "modular_phase2": "0xbfffff00",
+    "elf_sample": 16451,
+    "modular_sample": 16451
+  },
+  {
+    "row": 4,
+    "phase": "0x7fffff00",
+    "pwm": 1,
+    "float_sum": 4294967040.0,
+    "elf_phase2": "0xffffff00",
+    "modular_phase2": "0xffffff00",
+    "elf_sample": 1,
+    "modular_sample": 1
+  },
+  {
+    "row": 4,
+    "phase": "0x7fffffff",
+    "pwm": 0,
+    "float_sum": 2147483648.0,
+    "elf_phase2": "0x80000000",
+    "modular_phase2": "0x7fffffff",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 4,
+    "phase": "0x7fffffff",
+    "pwm": 0.5,
+    "float_sum": 3221225472.0,
+    "elf_phase2": "0xc0000000",
+    "modular_phase2": "0xbfffffff",
+    "elf_sample": 16451,
+    "modular_sample": 16451
+  },
+  {
+    "row": 4,
+    "phase": "0x7fffffff",
+    "pwm": 1,
+    "float_sum": 4294967296.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0xffffffff",
+    "elf_sample": 1,
+    "modular_sample": 1
+  },
+  {
+    "row": 4,
+    "phase": "0x80000000",
+    "pwm": 0,
+    "float_sum": 2147483648.0,
+    "elf_phase2": "0x80000000",
+    "modular_phase2": "0x80000000",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 4,
+    "phase": "0x80000000",
+    "pwm": 0.5,
+    "float_sum": 3221225472.0,
+    "elf_phase2": "0xc0000000",
+    "modular_phase2": "0xc0000000",
+    "elf_sample": 16451,
+    "modular_sample": 16451
+  },
+  {
+    "row": 4,
+    "phase": "0x80000000",
+    "pwm": 1,
+    "float_sum": 4294967296.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0x0",
+    "elf_sample": 1,
+    "modular_sample": 0
+  },
+  {
+    "row": 4,
+    "phase": "0xc0000000",
+    "pwm": 0,
+    "float_sum": 3221225472.0,
+    "elf_phase2": "0xc0000000",
+    "modular_phase2": "0xc0000000",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 4,
+    "phase": "0xc0000000",
+    "pwm": 0.5,
+    "float_sum": 4294967296.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0x0",
+    "elf_sample": -16450,
+    "modular_sample": -16451
+  },
+  {
+    "row": 4,
+    "phase": "0xc0000000",
+    "pwm": 1,
+    "float_sum": 5368709120.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0x40000000",
+    "elf_sample": -16450,
+    "modular_sample": -32768
+  },
+  {
+    "row": 4,
+    "phase": "0xffff0000",
+    "pwm": 0,
+    "float_sum": 4294901760.0,
+    "elf_phase2": "0xffff0000",
+    "modular_phase2": "0xffff0000",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 4,
+    "phase": "0xffff0000",
+    "pwm": 0.5,
+    "float_sum": 5368643584.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0x3fff0000",
+    "elf_sample": -84,
+    "modular_sample": -16537
+  },
+  {
+    "row": 4,
+    "phase": "0xffff0000",
+    "pwm": 1,
+    "float_sum": 6442385408.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0x7fff0000",
+    "elf_sample": -84,
+    "modular_sample": -86
+  },
+  {
+    "row": 4,
+    "phase": "0xffffffff",
+    "pwm": 0,
+    "float_sum": 4294967296.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0xffffffff",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 4,
+    "phase": "0xffffffff",
+    "pwm": 0.5,
+    "float_sum": 5368709120.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0x3fffffff",
+    "elf_sample": 0,
+    "modular_sample": -16452
+  },
+  {
+    "row": 4,
+    "phase": "0xffffffff",
+    "pwm": 1,
+    "float_sum": 6442450944.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0x7fffffff",
+    "elf_sample": 0,
+    "modular_sample": -1
+  },
+  {
+    "row": 10,
+    "phase": "0x0",
+    "pwm": 0,
+    "float_sum": 0.0,
+    "elf_phase2": "0x0",
+    "modular_phase2": "0x0",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 10,
+    "phase": "0x0",
+    "pwm": 0.5,
+    "float_sum": 1073741824.0,
+    "elf_phase2": "0x40000000",
+    "modular_phase2": "0x40000000",
+    "elf_sample": -32767,
+    "modular_sample": -32767
+  },
+  {
+    "row": 10,
+    "phase": "0x0",
+    "pwm": 1,
+    "float_sum": 2147483648.0,
+    "elf_phase2": "0x80000000",
+    "modular_phase2": "0x80000000",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 10,
+    "phase": "0x7fffff00",
+    "pwm": 0,
+    "float_sum": 2147483392.0,
+    "elf_phase2": "0x7fffff00",
+    "modular_phase2": "0x7fffff00",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 10,
+    "phase": "0x7fffff00",
+    "pwm": 0.5,
+    "float_sum": 3221225216.0,
+    "elf_phase2": "0xbfffff00",
+    "modular_phase2": "0xbfffff00",
+    "elf_sample": 32767,
+    "modular_sample": 32767
+  },
+  {
+    "row": 10,
+    "phase": "0x7fffff00",
+    "pwm": 1,
+    "float_sum": 4294967040.0,
+    "elf_phase2": "0xffffff00",
+    "modular_phase2": "0xffffff00",
+    "elf_sample": -6191,
+    "modular_sample": -6191
+  },
+  {
+    "row": 10,
+    "phase": "0x7fffffff",
+    "pwm": 0,
+    "float_sum": 2147483648.0,
+    "elf_phase2": "0x80000000",
+    "modular_phase2": "0x7fffffff",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 10,
+    "phase": "0x7fffffff",
+    "pwm": 0.5,
+    "float_sum": 3221225472.0,
+    "elf_phase2": "0xc0000000",
+    "modular_phase2": "0xbfffffff",
+    "elf_sample": 32767,
+    "modular_sample": 32767
+  },
+  {
+    "row": 10,
+    "phase": "0x7fffffff",
+    "pwm": 1,
+    "float_sum": 4294967296.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0xffffffff",
+    "elf_sample": -6191,
+    "modular_sample": -6191
+  },
+  {
+    "row": 10,
+    "phase": "0x80000000",
+    "pwm": 0,
+    "float_sum": 2147483648.0,
+    "elf_phase2": "0x80000000",
+    "modular_phase2": "0x80000000",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 10,
+    "phase": "0x80000000",
+    "pwm": 0.5,
+    "float_sum": 3221225472.0,
+    "elf_phase2": "0xc0000000",
+    "modular_phase2": "0xc0000000",
+    "elf_sample": 32767,
+    "modular_sample": 32767
+  },
+  {
+    "row": 10,
+    "phase": "0x80000000",
+    "pwm": 1,
+    "float_sum": 4294967296.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0x0",
+    "elf_sample": -6191,
+    "modular_sample": 0
+  },
+  {
+    "row": 10,
+    "phase": "0xc0000000",
+    "pwm": 0,
+    "float_sum": 3221225472.0,
+    "elf_phase2": "0xc0000000",
+    "modular_phase2": "0xc0000000",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 10,
+    "phase": "0xc0000000",
+    "pwm": 0.5,
+    "float_sum": 4294967296.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0x0",
+    "elf_sample": -32768,
+    "modular_sample": -32767
+  },
+  {
+    "row": 10,
+    "phase": "0xc0000000",
+    "pwm": 1,
+    "float_sum": 5368709120.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0x40000000",
+    "elf_sample": -32768,
+    "modular_sample": -32768
+  },
+  {
+    "row": 10,
+    "phase": "0xffff0000",
+    "pwm": 0,
+    "float_sum": 4294901760.0,
+    "elf_phase2": "0xffff0000",
+    "modular_phase2": "0xffff0000",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 10,
+    "phase": "0xffff0000",
+    "pwm": 0.5,
+    "float_sum": 5368643584.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0x3fff0000",
+    "elf_sample": -99,
+    "modular_sample": -26674
+  },
+  {
+    "row": 10,
+    "phase": "0xffff0000",
+    "pwm": 1,
+    "float_sum": 6442385408.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0x7fff0000",
+    "elf_sample": -99,
+    "modular_sample": 6089
+  },
+  {
+    "row": 10,
+    "phase": "0xffffffff",
+    "pwm": 0,
+    "float_sum": 4294967296.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0xffffffff",
+    "elf_sample": 0,
+    "modular_sample": 0
+  },
+  {
+    "row": 10,
+    "phase": "0xffffffff",
+    "pwm": 0.5,
+    "float_sum": 5368709120.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0x3fffffff",
+    "elf_sample": 0,
+    "modular_sample": -26575
+  },
+  {
+    "row": 10,
+    "phase": "0xffffffff",
+    "pwm": 1,
+    "float_sum": 6442450944.0,
+    "elf_phase2": "0xffffffff",
+    "modular_phase2": "0x7fffffff",
+    "elf_sample": 0,
+    "modular_sample": 6191
+  }
+]

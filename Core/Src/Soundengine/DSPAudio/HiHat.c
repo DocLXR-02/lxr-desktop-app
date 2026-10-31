@@ -13,6 +13,7 @@
 
 
 
+#include "Soundengine/SoloMix.h"
 #include "Soundengine/DSPAudio/HiHat.h"
 #include "Soundengine/DSPAudio/squareRootLut.h"
 #include "Soundengine/DSPAudio/modulationNode.h"
@@ -164,6 +165,8 @@ IN_ITCM_RAM void HiHat_calcAsync( )
 //---------------------------------------------------
 void HiHat_calcSyncBlock(int16_t* buf, const uint8_t size)
 {
+    const float sourceMix = SoloMix_sourceLevel(5, hatVoice.vol);
+
 	//2 buffers for the mod oscs
 	int16_t mod1[size],mod2[size];
 	//calc next mod osc samples, scaled with mod amount
@@ -194,7 +197,7 @@ void HiHat_calcSyncBlock(int16_t* buf, const uint8_t size)
 	uint8_t j;
 	if(hatVoice.volumeMod)
 	{
-		hatVoice.combinedVolume = hatVoice.vol * hatVoice.velo * hatVoice.egValueOscVol; ;
+		hatVoice.combinedVolume = sourceMix * hatVoice.velo * hatVoice.egValueOscVol; ;
 		//const float vol =
 
 #if 1
@@ -223,7 +226,7 @@ void HiHat_calcSyncBlock(int16_t* buf, const uint8_t size)
 	}
 	else
 	{
-		hatVoice.combinedVolume = hatVoice.vol * hatVoice.egValueOscVol;
+		hatVoice.combinedVolume = sourceMix * hatVoice.egValueOscVol;
 		//const float vol = hatVoice.combinedVolume ;
 #if 1
 			int32_t* x = (int32_t*)buf;

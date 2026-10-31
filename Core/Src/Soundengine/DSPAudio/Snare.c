@@ -13,6 +13,7 @@
 
 
 
+#include "Soundengine/SoloMix.h"
 #include "Soundengine/DSPAudio/Snare.h"
 #include "Soundengine/DSPAudio/squareRootLut.h"
 #include "Soundengine/DSPAudio/modulationNode.h"
@@ -147,6 +148,9 @@ IN_ITCM_RAM void Snare_calcAsync()
 //---------------------------------------------------
 void Snare_calcSyncBlock(int16_t* buf, const uint8_t size)
 {
+    const float sourceMix = SoloMix_sourceLevel(3, snareVoice.vol);
+    const int solo = SoloMix_isVoice(3);
+
 	int16_t transBuf[size];
 	int16_t oscBuf[size];
 
@@ -180,7 +184,7 @@ void Snare_calcSyncBlock(int16_t* buf, const uint8_t size)
 	uint8_t j;
 	if(snareVoice.volumeMod)
 	{
-		snareVoice.combinedVolume = snareVoice.vol * snareVoice.velo * snareVoice.egValueOscVol ;
+		snareVoice.combinedVolume = sourceMix * snareVoice.velo * snareVoice.egValueOscVol ;
 		//const float vol = ;
 
 		for(j=0;j<size;j++)
@@ -193,7 +197,8 @@ void Snare_calcSyncBlock(int16_t* buf, const uint8_t size)
 			//add transient sample
 			//tmp	= __QADD16(transBuf[j],(int16_t)tmp);
 			tmp	+= transBuf[j];
-			buf[j] =   snareVoice.combinedVolume  * tmp * calcOnePole( &snareVoice.FaderVolumeFilter, adc_getFaderVolume(3));
+			const float sample = snareVoice.combinedVolume  * tmp * calcOnePole( &snareVoice.FaderVolumeFilter, adc_getFaderVolume(3));
+            buf[j] = solo ? SoloMix_snareSample(sample) : (int16_t)sample;
 
 #else
 
@@ -207,7 +212,7 @@ void Snare_calcSyncBlock(int16_t* buf, const uint8_t size)
 	}
 	else
 	{
-		snareVoice.combinedVolume = snareVoice.vol * snareVoice.egValueOscVol;
+		snareVoice.combinedVolume = sourceMix * snareVoice.egValueOscVol;
 		//const float vol = snareVoice.combinedVolume * ;
 
 		for(j=0;j<size;j++)
@@ -218,7 +223,8 @@ void Snare_calcSyncBlock(int16_t* buf, const uint8_t size)
 			//add transient sample
 			//tmp	= __QADD16(transBuf[j],(int16_t)tmp);
 			tmp	+= transBuf[j];
-			buf[j] =  snareVoice.combinedVolume * tmp * calcOnePole( &snareVoice.FaderVolumeFilter, adc_getFaderVolume(3));
+			const float sample = snareVoice.combinedVolume * tmp * calcOnePole( &snareVoice.FaderVolumeFilter, adc_getFaderVolume(3));
+            buf[j] = solo ? SoloMix_snareSample(sample) : (int16_t)sample;
 #else
 			//add filter to buffer
 			buf[j] *= snareVoice.mix;
