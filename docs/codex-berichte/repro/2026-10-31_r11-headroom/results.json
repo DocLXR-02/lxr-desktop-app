@@ -1,0 +1,240 @@
+{
+  "source_commit": "8082cc5e79496941ca126bc90dc3ac4e2d9a1ea7",
+  "status": "BLOCKED: production snare conversion exceeds int16",
+  "compiler": "cc (Debian 14.2.0-19) 14.2.0",
+  "cases": [
+    {
+      "mix": 0,
+      "velocity_mode": 0,
+      "transient": 0,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=0 velocity_mode=0 transient=0 oscillator0=-37 transient0=0 envelope=1 physical_squared=1 sum0=-37 converted0=-0\nmax_absolute_preconversion=0\nPASS native conversion sanitizer\n",
+      "log": "mix0-velocity0-transient0.log"
+    },
+    {
+      "mix": 0,
+      "velocity_mode": 0,
+      "transient": 127,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=0 velocity_mode=0 transient=127 oscillator0=-37 transient0=32512 envelope=1 physical_squared=1 sum0=32475 converted0=0\nmax_absolute_preconversion=0\nPASS native conversion sanitizer\n",
+      "log": "mix0-velocity0-transient127.log"
+    },
+    {
+      "mix": 0,
+      "velocity_mode": 1,
+      "transient": 0,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=0 velocity_mode=1 transient=0 oscillator0=-37 transient0=0 envelope=1 physical_squared=1 sum0=-37 converted0=-0\nmax_absolute_preconversion=0\nPASS native conversion sanitizer\n",
+      "log": "mix0-velocity1-transient0.log"
+    },
+    {
+      "mix": 0,
+      "velocity_mode": 1,
+      "transient": 127,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=0 velocity_mode=1 transient=127 oscillator0=-37 transient0=32512 envelope=1 physical_squared=1 sum0=32475 converted0=0\nmax_absolute_preconversion=0\nPASS native conversion sanitizer\n",
+      "log": "mix0-velocity1-transient127.log"
+    },
+    {
+      "mix": 1,
+      "velocity_mode": 0,
+      "transient": 0,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=1 velocity_mode=0 transient=0 oscillator0=-37 transient0=0 envelope=1 physical_squared=1 sum0=-37 converted0=-0.291338593\nmax_absolute_preconversion=257.937012\nPASS native conversion sanitizer\n",
+      "log": "mix1-velocity0-transient0.log"
+    },
+    {
+      "mix": 1,
+      "velocity_mode": 0,
+      "transient": 127,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=1 velocity_mode=0 transient=127 oscillator0=-37 transient0=32512 envelope=1 physical_squared=1 sum0=32475 converted0=255.708664\nmax_absolute_preconversion=415.64566\nPASS native conversion sanitizer\n",
+      "log": "mix1-velocity0-transient127.log"
+    },
+    {
+      "mix": 1,
+      "velocity_mode": 1,
+      "transient": 0,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=1 velocity_mode=1 transient=0 oscillator0=-37 transient0=0 envelope=1 physical_squared=1 sum0=-37 converted0=-0.291338593\nmax_absolute_preconversion=257.937012\nPASS native conversion sanitizer\n",
+      "log": "mix1-velocity1-transient0.log"
+    },
+    {
+      "mix": 1,
+      "velocity_mode": 1,
+      "transient": 127,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=1 velocity_mode=1 transient=127 oscillator0=-37 transient0=32512 envelope=1 physical_squared=1 sum0=32475 converted0=255.708664\nmax_absolute_preconversion=415.64566\nPASS native conversion sanitizer\n",
+      "log": "mix1-velocity1-transient127.log"
+    },
+    {
+      "mix": 5,
+      "velocity_mode": 0,
+      "transient": 0,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=5 velocity_mode=0 transient=0 oscillator0=-37 transient0=0 envelope=1 physical_squared=1 sum0=-37 converted0=-1.45669293\nmax_absolute_preconversion=1289.68506\nPASS native conversion sanitizer\n",
+      "log": "mix5-velocity0-transient0.log"
+    },
+    {
+      "mix": 5,
+      "velocity_mode": 0,
+      "transient": 127,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=5 velocity_mode=0 transient=127 oscillator0=-37 transient0=32512 envelope=1 physical_squared=1 sum0=32475 converted0=1278.54333\nmax_absolute_preconversion=2078.22827\nPASS native conversion sanitizer\n",
+      "log": "mix5-velocity0-transient127.log"
+    },
+    {
+      "mix": 5,
+      "velocity_mode": 1,
+      "transient": 0,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=5 velocity_mode=1 transient=0 oscillator0=-37 transient0=0 envelope=1 physical_squared=1 sum0=-37 converted0=-1.45669293\nmax_absolute_preconversion=1289.68506\nPASS native conversion sanitizer\n",
+      "log": "mix5-velocity1-transient0.log"
+    },
+    {
+      "mix": 5,
+      "velocity_mode": 1,
+      "transient": 127,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=5 velocity_mode=1 transient=127 oscillator0=-37 transient0=32512 envelope=1 physical_squared=1 sum0=32475 converted0=1278.54333\nmax_absolute_preconversion=2078.22827\nPASS native conversion sanitizer\n",
+      "log": "mix5-velocity1-transient127.log"
+    },
+    {
+      "mix": 10,
+      "velocity_mode": 0,
+      "transient": 0,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=10 velocity_mode=0 transient=0 oscillator0=-37 transient0=0 envelope=1 physical_squared=1 sum0=-37 converted0=-2.91338587\nmax_absolute_preconversion=2579.37012\nPASS native conversion sanitizer\n",
+      "log": "mix10-velocity0-transient0.log"
+    },
+    {
+      "mix": 10,
+      "velocity_mode": 0,
+      "transient": 127,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=10 velocity_mode=0 transient=127 oscillator0=-37 transient0=32512 envelope=1 physical_squared=1 sum0=32475 converted0=2557.08667\nmax_absolute_preconversion=4156.45654\nPASS native conversion sanitizer\n",
+      "log": "mix10-velocity0-transient127.log"
+    },
+    {
+      "mix": 10,
+      "velocity_mode": 1,
+      "transient": 0,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=10 velocity_mode=1 transient=0 oscillator0=-37 transient0=0 envelope=1 physical_squared=1 sum0=-37 converted0=-2.91338587\nmax_absolute_preconversion=2579.37012\nPASS native conversion sanitizer\n",
+      "log": "mix10-velocity1-transient0.log"
+    },
+    {
+      "mix": 10,
+      "velocity_mode": 1,
+      "transient": 127,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=10 velocity_mode=1 transient=127 oscillator0=-37 transient0=32512 envelope=1 physical_squared=1 sum0=32475 converted0=2557.08667\nmax_absolute_preconversion=4156.45654\nPASS native conversion sanitizer\n",
+      "log": "mix10-velocity1-transient127.log"
+    },
+    {
+      "mix": 20,
+      "velocity_mode": 0,
+      "transient": 0,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=20 velocity_mode=0 transient=0 oscillator0=-37 transient0=0 envelope=1 physical_squared=1 sum0=-37 converted0=-5.82677174\nmax_absolute_preconversion=5158.74023\nPASS native conversion sanitizer\n",
+      "log": "mix20-velocity0-transient0.log"
+    },
+    {
+      "mix": 20,
+      "velocity_mode": 0,
+      "transient": 127,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=20 velocity_mode=0 transient=127 oscillator0=-37 transient0=32512 envelope=1 physical_squared=1 sum0=32475 converted0=5114.17334\nmax_absolute_preconversion=8312.91309\nPASS native conversion sanitizer\n",
+      "log": "mix20-velocity0-transient127.log"
+    },
+    {
+      "mix": 20,
+      "velocity_mode": 1,
+      "transient": 0,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=20 velocity_mode=1 transient=0 oscillator0=-37 transient0=0 envelope=1 physical_squared=1 sum0=-37 converted0=-5.82677174\nmax_absolute_preconversion=5158.74023\nPASS native conversion sanitizer\n",
+      "log": "mix20-velocity1-transient0.log"
+    },
+    {
+      "mix": 20,
+      "velocity_mode": 1,
+      "transient": 127,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=20 velocity_mode=1 transient=127 oscillator0=-37 transient0=32512 envelope=1 physical_squared=1 sum0=32475 converted0=5114.17334\nmax_absolute_preconversion=8312.91309\nPASS native conversion sanitizer\n",
+      "log": "mix20-velocity1-transient127.log"
+    },
+    {
+      "mix": 127,
+      "velocity_mode": 0,
+      "transient": 0,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=127 velocity_mode=0 transient=0 oscillator0=-37 transient0=0 envelope=1 physical_squared=1 sum0=-37 converted0=-37\nmax_absolute_preconversion=32758\nPASS native conversion sanitizer\n",
+      "log": "mix127-velocity0-transient0.log"
+    },
+    {
+      "mix": 127,
+      "velocity_mode": 0,
+      "transient": 127,
+      "returncode": 1,
+      "expected_blocker": true,
+      "stdout": "mix=127 velocity_mode=0 transient=127 oscillator0=-37 transient0=32512 envelope=1 physical_squared=1 sum0=32475 converted0=32475\nfirst_overflow_frame=1 oscillator=2135 transient=32512 sum=34647 conversion=34647 frequency=466.272888 phase_increment=45369888\nmax_absolute_preconversion=52787\n",
+      "log": "mix127-velocity0-transient127.log"
+    },
+    {
+      "mix": 127,
+      "velocity_mode": 1,
+      "transient": 0,
+      "returncode": 0,
+      "expected_blocker": false,
+      "stdout": "mix=127 velocity_mode=1 transient=0 oscillator0=-37 transient0=0 envelope=1 physical_squared=1 sum0=-37 converted0=-37\nmax_absolute_preconversion=32758\nPASS native conversion sanitizer\n",
+      "log": "mix127-velocity1-transient0.log"
+    },
+    {
+      "mix": 127,
+      "velocity_mode": 1,
+      "transient": 127,
+      "returncode": 1,
+      "expected_blocker": true,
+      "stdout": "mix=127 velocity_mode=1 transient=127 oscillator0=-37 transient0=32512 envelope=1 physical_squared=1 sum0=32475 converted0=32475\nfirst_overflow_frame=1 oscillator=2135 transient=32512 sum=34647 conversion=34647 frequency=466.272888 phase_increment=45369888\nmax_absolute_preconversion=52787\n",
+      "log": "mix127-velocity1-transient127.log"
+    }
+  ],
+  "passed_controls": 22,
+  "confirmed_failures": 2,
+  "source_sha256": {
+    "Core/Src/Soundengine/DSPAudio/Snare.c": "a90658d03fa1adc0a63db82cfdbef5a2e4355de0aac7bb92919b7c8aff74902b",
+    "Core/Src/Soundengine/DSPAudio/transientGenerator.c": "27f5f905be94d33104d9879f37ad2ccc321614f623a9411bf7e273089aed9b8c",
+    "Core/Src/Soundengine/DSPAudio/transientTables.c": "c63409c5dad76afb507660848f72120b644a436ff2a592a9dbf5d358a7438c70",
+    "Core/Src/Soundengine/DSPAudio/wavetable.c": "9c7a333a0afdd625b94585f3e308d1d44c1da5e9f57f55708f9b04817cd4065d",
+    "Core/Src/Soundengine/DSPAudio/SlopeEg2.c": "8ac184403659fc5c6ffbb515904ac25bf1138f3521348e1b34cad4d4790298a0",
+    "Core/Src/Soundengine/DSPAudio/Decay.c": "95e4ab136c6ebf1d748de4661b99d49a26848d41c09c3a24ce8f754ccc7e3f19",
+    "Core/Src/Soundengine/DSPAudio/snapEg.c": "7cc01945c5e9c3c8c335007762a35bc03614cd91c314dca43d266937b3c4bc02",
+    "Core/Src/Soundengine/DSPAudio/1PoleLp.c": "ab43ccc3d0505e50f77453366ca9fc9626175003436fe4c8c09346e9f9d28545",
+    "Core/Src/Soundengine/DSPAudio/distortion.c": "8e1f54e1b4266232fc29db56c5950e355bbca71a961186b5b1ecdeb08b795efb",
+    "Core/Src/Soundengine/DSPAudio/ResonantFilter.c": "eb67155a54f153f050c22bc9f055640c2f901bceeef96a18b2d45b13121ab7b2",
+    "Core/Src/Soundengine/DSPAudio/Oscillator.c": "981933f091c453c6655450ec9d21c5c0896e2d751f26a6fe78d8262db60ac519",
+    "Core/Src/Soundengine/MIDI/MidiParser.c": "076c8129e7d159f5e80f70584e78c2c745e15c457907539df691fb0d5ed04fab"
+  },
+  "scope": "Native production snare component, mocked control/hardware services; not R11 firmware or full-engine validation."
+}
