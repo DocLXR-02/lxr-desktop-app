@@ -351,7 +351,7 @@ int main(void)
 #else
 	//print boot up message
 lcd_clear();
-lcd_string("LXR LAB R9-CLP");
+lcd_string("LXR LAB R10-CLP");
 //goto 2nd line
 lcd_setcursor(0,2);
 lcd_string("LXR2 Drums V");

@@ -51,17 +51,30 @@ static inline float FxBus_clipCoreGain(float q)
 const float *FxBus_clipFaderGains(const uint8_t routes[6], const OnePoleFilter *const filters[6],
                                 const float targets[6], float *gains, uint16_t size)
 {
-    int8_t sole = -1;
+    OnePoleFilter replay[6];
+    uint8_t routed[6];
+    uint8_t count = 0;
     for(uint8_t voice = 0; voice < 6; voice++)
     {
         if(routes[voice] != MIXER_ROUTING_FX_BUS) continue;
-        if(sole >= 0) return NULL;
-        sole = voice;
+        routed[count] = voice;
+        replay[count] = *filters[voice];
+        count++;
     }
-    if(sole < 0) return NULL;
-    OnePoleFilter replay = *filters[sole];
+    /* No routed voice retains R9's explicit NULL/unity fallback. */
+    if(count == 0) return NULL;
     for(uint16_t frame = 0; frame < size; frame++)
-        gains[frame] = FxBus_clipCoreGain(calcOnePole(&replay, targets[sole]));
+    {
+        float maximum = 0.f;
+        for(uint8_t slot = 0; slot < count; slot++)
+        {
+            float q = calcOnePole(&replay[slot], targets[routed[slot]]);
+            if(q < 0.f) q = 0.f;
+            else if(q > 1.f) q = 1.f;
+            if(q > maximum) maximum = q;
+        }
+        gains[frame] = FxBus_clipCoreGain(maximum);
+    }
     return gains;
 }
 
