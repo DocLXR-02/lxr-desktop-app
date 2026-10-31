@@ -9,6 +9,8 @@ These rules apply to Codex tasks in `DocLXR-02/lxr-desktop-app`. Treat this repo
 - Diagnose before changing code. Do not broaden a bug fix into unrelated DSP, UI, timing, or preset modifications. Distinguish hardware observations, code evidence, hypotheses, and tests.
 - Respect explicit task restrictions. In particular, a task that expressly forbids *all* file changes, commits, or pushes is not authorization to make a report commit.
 
+- Lab startup convention: show only `LXR LAB R<revision>` on the first line; leave the second line blank, with no effect suffix or secondary version line.
+
 ## Mandatory handoff to ChatGPT
 
 At the end of **every** task, prepare a self-contained Markdown handoff report sufficient for another assistant to continue without access to this Codex conversation. Include, as applicable:

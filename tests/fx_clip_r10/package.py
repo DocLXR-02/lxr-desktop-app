@@ -9,7 +9,8 @@ b=(BUILD/'LXR_V2_V1.7.img').read_bytes();elf=(BUILD/'LXR_V2_STM32F765.elf').read
 assert b[:8]==b'LXRV2IMG' and len(b)>16
 assert struct.unpack_from('<I',b,8)[0]==len(b)-16
 assert b[12]==255-(sum(b[16:])&255) and b[13:16]==bytes(3)
-assert b'LXR LAB R10-CLP' in b
+assert b'LXR LAB R10\0' in b
+assert b'LXR LAB R10-CLP' not in b and b'LXR2 Drums V' not in b
 sp,reset=struct.unpack_from('<II',b,16)
 assert 0x20000000<=sp<=0x20080000 and sp%8==0
 assert reset&1 and 0x08008000<=reset<0x08100000

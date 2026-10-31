@@ -23,13 +23,56 @@ buspath='Core/Src/Soundengine/FxBus.c'
 bus=(ROOT/buspath).read_text()
 assert body(bus,'FxBus_clipCoreGain')==body(prior(buspath),'FxBus_clipCoreGain')
 assert bus.replace(body(bus,'FxBus_clipFaderGains'),body(prior(buspath),'FxBus_clipFaderGains'))==prior(buspath),'unexpected bus change'
-assert (ROOT/'Core/Src/main.c').read_text().replace('LXR LAB R10-CLP','LXR LAB R9-CLP')==prior('Core/Src/main.c')
+# Display-only correction: retain the original R10 audio/production bytes exactly.
+DISPLAY_BASE='1f7f4e99cf9d5d14ca859538f478ca26eb369238'
+original_main=subprocess.check_output(['git','show',DISPLAY_BASE+':Core/Src/main.c'],cwd=ROOT,text=True)
+main=(ROOT/'Core/Src/main.c').read_text()
+old_splash='lcd_string("LXR LAB R10-CLP");\n//goto 2nd line\nlcd_setcursor(0,2);\nlcd_string("LXR2 Drums V");\nlcd_string(FIRMWARE_VERSION);'
+assert original_main.count(old_splash)==1
+assert main==original_main.replace(old_splash,'lcd_string("LXR LAB R10");')
+assert original_main.replace('LXR LAB R10-CLP','LXR LAB R9-CLP')==prior('Core/Src/main.c')
+correction_files=subprocess.check_output(['git','diff',DISPLAY_BASE,'--name-only'],cwd=ROOT,text=True).splitlines()
+assert set(correction_files)<={'AGENTS.md','Core/Src/main.c','tests/fx_clip_r10/run.py','tests/fx_clip_r10/package.py'}
+assert subprocess.check_output(['git','diff',DISPLAY_BASE,'--','Core/Src/Soundengine','Core/Inc/Soundengine'],cwd=ROOT)==b''
+
 mixer=(ROOT/'Core/Src/Soundengine/DSPAudio/mixer.c').read_text()
 assert mixer==prior('Core/Src/Soundengine/DSPAudio/mixer.c')
 flags=[os.environ.get('CC','cc'),'-std=c11','-D_DEFAULT_SOURCE','-O2','-fno-strict-aliasing','-fsanitize=address,undefined,bounds,float-cast-overflow','-fno-sanitize-recover=all','-Werror=implicit-function-declaration','-I'+str(ROOT/'tests/fx_clip/include'),'-I'+str(ROOT/'Core/Inc')]
 cases=[];moving=[];windows=[]
 with tempfile.TemporaryDirectory() as tmp:
     d=Path(tmp);(d/'reference.c').write_text(base)
+    splash_end=main.index('lcd_showSplash();')+len('lcd_showSplash();')
+    splash=main[main.rindex('#if UPDATE_BOOTLOADER',0,splash_end):splash_end]
+    lcd=(ROOT/'Core/Src/lcd.c').read_text(encoding='latin1')
+    header=(ROOT/'Core/Inc/lcd.h').read_text(encoding='latin1')
+    clear_ms=int(re.search(r'#define LCD_CLEAR_DISPLAY_MS\s+(\d+)',header).group(1))
+    mock=r'''
+#include <assert.h>
+#include <stdint.h>
+#include <string.h>
+#define LCD_CLEAR_DISPLAY 1
+static char lines[2][16];static unsigned row,col,clears,delays,cursors,writes;
+static void lcd_command(uint8_t c){assert(c==LCD_CLEAR_DISPLAY);memset(lines,' ',sizeof lines);row=col=0;clears++;}
+static void _delay_ms(unsigned ms){assert(ms==LCD_CLEAR_DISPLAY_MS);delays++;}
+static void lcd_data(uint8_t c){assert(row<2 && col<16);lines[row][col++]=c;writes++;}
+static void lcd_setcursor(uint8_t x,uint8_t y){assert(x<16 && y>=1 && y<=2);row=y-1;col=x;cursors++;}
+'''
+    mock='#define LCD_CLEAR_DISPLAY_MS '+str(clear_ms)+'\n'+mock+'\n'+body(lcd,'lcd_clear')+'\n'+body(lcd,'lcd_string')+'\n'+body(lcd,'lcd_showSplash')+'\nint main(void){\nmemset(lines,\'x\',sizeof lines);\n'+splash+r'''
+#if UPDATE_BOOTLOADER
+assert(!memcmp(lines[0],"Updating        ",16) && !memcmp(lines[1],"Bootloader...   ",16));
+assert(cursors==1 && writes==21);
+#else
+assert(!memcmp(lines[0],"LXR LAB R10     ",16) && !memcmp(lines[1],"                ",16));
+assert(cursors==0 && writes==11);
+#endif
+assert(clears==1 && delays==1);return 0;}
+'''
+    (d/'splash.c').write_text(mock)
+    for update in [0,1]:
+        call(flags+['-DUPDATE_BOOTLOADER='+str(update),d/'splash.c','-o',d/'splash'])
+        call([d/'splash'])
+    print('PASS actual normal/update splash and LCD clear/string/show: exact first line, cleared second line, bootloader messages, clear delay; all other main/audio source unchanged')
+
     for label,path in [('inherited',ROOT/'tests/fx_clip/unit.c'),('r7state',ROOT/'tests/fx_clip_r7/state.c'),('state',ROOT/'tests/fx_clip_r8/state.c')]:
         call(flags+['-DDISTORTION_SOURCE="'+str(ROOT/REL)+'"',path,'-lm','-o',d/label]);call([d/label])
     (d/'reference.inc').write_text(body(prior(buspath),'FxBus_clipCoreGain').replace('FxBus_clipCoreGain','R9_coreGain')+'\n'+body(prior(buspath),'FxBus_clipFaderGains').replace('FxBus_clipFaderGains','R9_clipFaderGains').replace('FxBus_clipCoreGain','R9_coreGain'))
