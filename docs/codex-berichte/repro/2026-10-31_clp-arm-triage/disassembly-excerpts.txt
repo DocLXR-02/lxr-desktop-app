@@ -1,0 +1,772 @@
+; Existing artifact DISASSEMBLY.txt line 58409
+00001878 <calcFmSineBlock>:
+    1878:	2b00      	cmp	r3, #0
+    187a:	d04a      	beq.n	1912 <calcFmSineBlock+0x9a>
+    187c:	ed90 7a06 	vldr	s14, [r0, #24]
+    1880:	e92d 47f0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, lr}
+    1884:	4690      	mov	r8, r2
+    1886:	6882      	ldr	r2, [r0, #8]
+    1888:	6846      	ldr	r6, [r0, #4]
+    188a:	eb01 0743 	add.w	r7, r1, r3, lsl #1
+    188e:	f1a8 0502 	sub.w	r5, r8, #2
+    1892:	4696      	mov	lr, r2
+    1894:	4c1f      	ldr	r4, [pc, #124]	@ (1914 <calcFmSineBlock+0x9c>)
+    1896:	f931 cb02 	ldrsh.w	ip, [r1], #2
+    189a:	ee07 ca90 	vmov	s15, ip
+    189e:	428f      	cmp	r7, r1
+    18a0:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+    18a4:	ee67 7a87 	vmul.f32	s15, s15, s14
+    18a8:	eefc 7ae7 	vcvt.u32.f32	s15, s15
+    18ac:	ee17 aa90 	vmov	sl, s15
+    18b0:	eb0e 4a4a 	add.w	sl, lr, sl, lsl #17
+    18b4:	44b6      	add	lr, r6
+    18b6:	ea4f 5c1a 	mov.w	ip, sl, lsr #20
+    18ba:	f3ca 0a13 	ubfx	sl, sl, #0, #20
+    18be:	f934 901c 	ldrsh.w	r9, [r4, ip, lsl #1]
+    18c2:	f10c 0c01 	add.w	ip, ip, #1
+    18c6:	f934 c01c 	ldrsh.w	ip, [r4, ip, lsl #1]
+    18ca:	ebac 0c09 	sub.w	ip, ip, r9
+    18ce:	fb8c ca0a 	smull	ip, sl, ip, sl
+    18d2:	ea4f 5c1c 	mov.w	ip, ip, lsr #20
+    18d6:	ea4c 3c0a 	orr.w	ip, ip, sl, lsl #12
+    18da:	44cc      	add	ip, r9
+    18dc:	fa0f fc8c 	sxth.w	ip, ip
+    18e0:	ee07 ca90 	vmov	s15, ip
+    18e4:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+    18e8:	ee67 7a80 	vmul.f32	s15, s15, s0
+    18ec:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+    18f0:	ee17 ca90 	vmov	ip, s15
+    18f4:	fa0f fc8c 	sxth.w	ip, ip
+    18f8:	f825 cf02 	strh.w	ip, [r5, #2]!
+    18fc:	d1cb      	bne.n	1896 <calcFmSineBlock+0x1e>
+    18fe:	3b01      	subs	r3, #1
+    1900:	4432      	add	r2, r6
+    1902:	b2db      	uxtb	r3, r3
+    1904:	fb03 2206 	mla	r2, r3, r6, r2
+    1908:	6082      	str	r2, [r0, #8]
+    190a:	f828 c013 	strh.w	ip, [r8, r3, lsl #1]
+    190e:	e8bd 87f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, pc}
+    1912:	4770      	bx	lr
+    1914:	20006870 	.word	0x20006870
+
+
+; Existing artifact DISASSEMBLY.txt line 58459
+00001918 <calcFmBlock>:
+    1918:	e92d 4ff0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, lr}
+    191c:	f89d 8024 	ldrb.w	r8, [sp, #36]	@ 0x24
+    1920:	f1b8 0f00 	cmp.w	r8, #0
+    1924:	d04f      	beq.n	19c6 <calcFmBlock+0xae>
+    1926:	4699      	mov	r9, r3
+    1928:	7c46      	ldrb	r6, [r0, #17]
+    192a:	6883      	ldr	r3, [r0, #8]
+    192c:	eb02 0748 	add.w	r7, r2, r8, lsl #1
+    1930:	ed90 7a06 	vldr	s14, [r0, #24]
+    1934:	02f6      	lsls	r6, r6, #11
+    1936:	6845      	ldr	r5, [r0, #4]
+    1938:	f1a9 0402 	sub.w	r4, r9, #2
+    193c:	469e      	mov	lr, r3
+    193e:	f932 cb02 	ldrsh.w	ip, [r2], #2
+    1942:	ee07 ca90 	vmov	s15, ip
+    1946:	4297      	cmp	r7, r2
+    1948:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+    194c:	ee67 7a87 	vmul.f32	s15, s15, s14
+    1950:	eefc 7ae7 	vcvt.u32.f32	s15, s15
+    1954:	ee17 ba90 	vmov	fp, s15
+    1958:	eb0e 4bcb 	add.w	fp, lr, fp, lsl #19
+    195c:	44ae      	add	lr, r5
+    195e:	ea4f 5a9b 	mov.w	sl, fp, lsr #22
+    1962:	f3cb 0b15 	ubfx	fp, fp, #0, #22
+    1966:	eb06 0a4a 	add.w	sl, r6, sl, lsl #1
+    196a:	eb01 0c0a 	add.w	ip, r1, sl
+    196e:	f931 a00a 	ldrsh.w	sl, [r1, sl]
+    1972:	f9bc c002 	ldrsh.w	ip, [ip, #2]
+    1976:	ebac 0c0a 	sub.w	ip, ip, sl
+    197a:	fb8c cb0b 	smull	ip, fp, ip, fp
+    197e:	ea4f 5c9c 	mov.w	ip, ip, lsr #22
+    1982:	ea4c 2c8b 	orr.w	ip, ip, fp, lsl #10
+    1986:	44d4      	add	ip, sl
+    1988:	fa0f fc8c 	sxth.w	ip, ip
+    198c:	ee07 ca90 	vmov	s15, ip
+    1990:	f8a0 c000 	strh.w	ip, [r0]
+    1994:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+    1998:	ee67 7a80 	vmul.f32	s15, s15, s0
+    199c:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+    19a0:	ee17 aa90 	vmov	sl, s15
+    19a4:	fa0f fa8a 	sxth.w	sl, sl
+    19a8:	f824 af02 	strh.w	sl, [r4, #2]!
+    19ac:	d1c7      	bne.n	193e <calcFmBlock+0x26>
+    19ae:	f108 38ff 	add.w	r8, r8, #4294967295	@ 0xffffffff
+    19b2:	442b      	add	r3, r5
+    19b4:	f8a0 c000 	strh.w	ip, [r0]
+    19b8:	fa5f f888 	uxtb.w	r8, r8
+    19bc:	fb08 3305 	mla	r3, r8, r5, r3
+    19c0:	6083      	str	r3, [r0, #8]
+    19c2:	f829 a018 	strh.w	sl, [r9, r8, lsl #1]
+    19c6:	e8bd 8ff0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, pc}
+    19ca:	bf00      	nop
+
+
+; Existing artifact DISASSEMBLY.txt line 58836
+00001dd4 <calcPwmBlock>:
+    1dd4:	2a00      	cmp	r2, #0
+    1dd6:	d060      	beq.n	1e9a <calcPwmBlock+0xc6>
+    1dd8:	eddf 7a30 	vldr	s15, [pc, #192]	@ 1e9c <calcPwmBlock+0xc8>
+    1ddc:	e92d 4ff0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, lr}
+    1de0:	4689      	mov	r9, r1
+    1de2:	7c44      	ldrb	r4, [r0, #17]
+    1de4:	6881      	ldr	r1, [r0, #8]
+    1de6:	ee60 0aa7 	vmul.f32	s1, s1, s15
+    1dea:	02a4      	lsls	r4, r4, #10
+    1dec:	6847      	ldr	r7, [r0, #4]
+    1dee:	eb09 0842 	add.w	r8, r9, r2, lsl #1
+    1df2:	464e      	mov	r6, r9
+    1df4:	468e      	mov	lr, r1
+    1df6:	4d2a      	ldr	r5, [pc, #168]	@ (1ea0 <calcPwmBlock+0xcc>)
+    1df8:	eb04 539e 	add.w	r3, r4, lr, lsr #22
+    1dfc:	ee07 ea90 	vmov	s15, lr
+    1e00:	f3ce 0a15 	ubfx	sl, lr, #0, #22
+    1e04:	469c      	mov	ip, r3
+    1e06:	3301      	adds	r3, #1
+    1e08:	eef8 7a67 	vcvt.f32.u32	s15, s15
+    1e0c:	f935 c01c 	ldrsh.w	ip, [r5, ip, lsl #1]
+    1e10:	f935 3013 	ldrsh.w	r3, [r5, r3, lsl #1]
+    1e14:	ee77 7aa0 	vadd.f32	s15, s15, s1
+    1e18:	eba3 030c 	sub.w	r3, r3, ip
+    1e1c:	fb83 3a0a 	smull	r3, sl, r3, sl
+    1e20:	eefc 7ae7 	vcvt.u32.f32	s15, s15
+    1e24:	0d9b      	lsrs	r3, r3, #22
+    1e26:	ee17 ba90 	vmov	fp, s15
+    1e2a:	ea43 238a 	orr.w	r3, r3, sl, lsl #10
+    1e2e:	4463      	add	r3, ip
+    1e30:	eb04 5c9b 	add.w	ip, r4, fp, lsr #22
+    1e34:	f3cb 0b15 	ubfx	fp, fp, #0, #22
+    1e38:	f935 a01c 	ldrsh.w	sl, [r5, ip, lsl #1]
+    1e3c:	f10c 0c01 	add.w	ip, ip, #1
+    1e40:	b21b      	sxth	r3, r3
+    1e42:	f935 c01c 	ldrsh.w	ip, [r5, ip, lsl #1]
+    1e46:	ebac 0c0a 	sub.w	ip, ip, sl
+    1e4a:	fb8c cb0b 	smull	ip, fp, ip, fp
+    1e4e:	ea4f 5c9c 	mov.w	ip, ip, lsr #22
+    1e52:	ea4c 2c8b 	orr.w	ip, ip, fp, lsl #10
+    1e56:	44d4      	add	ip, sl
+    1e58:	fa0f fc8c 	sxth.w	ip, ip
+    1e5c:	fad3 f31c 	qsub16	r3, r3, ip
+    1e60:	b21b      	sxth	r3, r3
+    1e62:	44be      	add	lr, r7
+    1e64:	ee07 3a90 	vmov	s15, r3
+    1e68:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+    1e6c:	ee67 7a80 	vmul.f32	s15, s15, s0
+    1e70:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+    1e74:	ee17 ca90 	vmov	ip, s15
+    1e78:	fa0f fc8c 	sxth.w	ip, ip
+    1e7c:	f826 cb02 	strh.w	ip, [r6], #2
+    1e80:	45b0      	cmp	r8, r6
+    1e82:	d1b9      	bne.n	1df8 <calcPwmBlock+0x24>
+    1e84:	3a01      	subs	r2, #1
+    1e86:	4439      	add	r1, r7
+    1e88:	8003      	strh	r3, [r0, #0]
+    1e8a:	b2d2      	uxtb	r2, r2
+    1e8c:	fb02 1107 	mla	r1, r2, r7, r1
+    1e90:	6081      	str	r1, [r0, #8]
+    1e92:	f829 c012 	strh.w	ip, [r9, r2, lsl #1]
+    1e96:	e8bd 8ff0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, pc}
+    1e9a:	4770      	bx	lr
+    1e9c:	4f000000 	.word	0x4f000000
+    1ea0:	0803b870 	.word	0x0803b870
+
+
+; Existing artifact DISASSEMBLY.txt line 42399
+0802323c <calcPwmFmBlock>:
+ 802323c:	2b00      	cmp	r3, #0
+ 802323e:	d07d      	beq.n	802333c <calcPwmFmBlock+0x100>
+ 8023240:	eddf 7a3f 	vldr	s15, [pc, #252]	@ 8023340 <calcPwmFmBlock+0x104>
+ 8023244:	ed90 7a06 	vldr	s14, [r0, #24]
+ 8023248:	ee60 0aa7 	vmul.f32	s1, s1, s15
+ 802324c:	e92d 4ff0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, lr}
+ 8023250:	461f      	mov	r7, r3
+ 8023252:	f8d0 e008 	ldr.w	lr, [r0, #8]
+ 8023256:	460d      	mov	r5, r1
+ 8023258:	7c41      	ldrb	r1, [r0, #17]
+ 802325a:	b083      	sub	sp, #12
+ 802325c:	6843      	ldr	r3, [r0, #4]
+ 802325e:	0289      	lsls	r1, r1, #10
+ 8023260:	f1a2 0802 	sub.w	r8, r2, #2
+ 8023264:	eb05 0947 	add.w	r9, r5, r7, lsl #1
+ 8023268:	4676      	mov	r6, lr
+ 802326a:	4c36      	ldr	r4, [pc, #216]	@ (8023344 <calcPwmFmBlock+0x108>)
+ 802326c:	e9cd e200 	strd	lr, r2, [sp]
+ 8023270:	f935 2b02 	ldrsh.w	r2, [r5], #2
+ 8023274:	ee07 2a90 	vmov	s15, r2
+ 8023278:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 802327c:	ee67 7a87 	vmul.f32	s15, s15, s14
+ 8023280:	eefc 7ae7 	vcvt.u32.f32	s15, s15
+ 8023284:	ee17 ba90 	vmov	fp, s15
+ 8023288:	eb06 4bcb 	add.w	fp, r6, fp, lsl #19
+ 802328c:	ee07 ba90 	vmov	s15, fp
+ 8023290:	eb01 529b 	add.w	r2, r1, fp, lsr #22
+ 8023294:	eb01 5a9b 	add.w	sl, r1, fp, lsr #22
+ 8023298:	f3cb 0b15 	ubfx	fp, fp, #0, #22
+ 802329c:	eef8 7a67 	vcvt.f32.u32	s15, s15
+ 80232a0:	3201      	adds	r2, #1
+ 80232a2:	f934 a01a 	ldrsh.w	sl, [r4, sl, lsl #1]
+ 80232a6:	f934 2012 	ldrsh.w	r2, [r4, r2, lsl #1]
+ 80232aa:	ee77 7aa0 	vadd.f32	s15, s15, s1
+ 80232ae:	eba2 020a 	sub.w	r2, r2, sl
+ 80232b2:	eefc 7ae7 	vcvt.u32.f32	s15, s15
+ 80232b6:	fb82 2b0b 	smull	r2, fp, r2, fp
+ 80232ba:	0d92      	lsrs	r2, r2, #22
+ 80232bc:	ee17 ea90 	vmov	lr, s15
+ 80232c0:	ea42 228b 	orr.w	r2, r2, fp, lsl #10
+ 80232c4:	eb01 5c9e 	add.w	ip, r1, lr, lsr #22
+ 80232c8:	4452      	add	r2, sl
+ 80232ca:	eb01 5a9e 	add.w	sl, r1, lr, lsr #22
+ 80232ce:	f10c 0c01 	add.w	ip, ip, #1
+ 80232d2:	f3ce 0e15 	ubfx	lr, lr, #0, #22
+ 80232d6:	f934 a01a 	ldrsh.w	sl, [r4, sl, lsl #1]
+ 80232da:	b212      	sxth	r2, r2
+ 80232dc:	f934 c01c 	ldrsh.w	ip, [r4, ip, lsl #1]
+ 80232e0:	ebac 0c0a 	sub.w	ip, ip, sl
+ 80232e4:	fb8c ce0e 	smull	ip, lr, ip, lr
+ 80232e8:	ea4f 5c9c 	mov.w	ip, ip, lsr #22
+ 80232ec:	ea4c 2c8e 	orr.w	ip, ip, lr, lsl #10
+ 80232f0:	44d4      	add	ip, sl
+ 80232f2:	fa0f fc8c 	sxth.w	ip, ip
+ 80232f6:	fad2 f21c 	qsub16	r2, r2, ip
+ 80232fa:	b212      	sxth	r2, r2
+ 80232fc:	45a9      	cmp	r9, r5
+ 80232fe:	441e      	add	r6, r3
+ 8023300:	ee07 2a90 	vmov	s15, r2
+ 8023304:	8002      	strh	r2, [r0, #0]
+ 8023306:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 802330a:	ee67 7a80 	vmul.f32	s15, s15, s0
+ 802330e:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+ 8023312:	ee17 ca90 	vmov	ip, s15
+ 8023316:	fa0f fc8c 	sxth.w	ip, ip
+ 802331a:	f828 cf02 	strh.w	ip, [r8, #2]!
+ 802331e:	d1a7      	bne.n	8023270 <calcPwmFmBlock+0x34>
+ 8023320:	3f01      	subs	r7, #1
+ 8023322:	8002      	strh	r2, [r0, #0]
+ 8023324:	e9dd eb00 	ldrd	lr, fp, [sp]
+ 8023328:	b2ff      	uxtb	r7, r7
+ 802332a:	449e      	add	lr, r3
+ 802332c:	fb07 e303 	mla	r3, r7, r3, lr
+ 8023330:	6083      	str	r3, [r0, #8]
+ 8023332:	f82b c017 	strh.w	ip, [fp, r7, lsl #1]
+ 8023336:	b003      	add	sp, #12
+ 8023338:	e8bd 8ff0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, pc}
+ 802333c:	4770      	bx	lr
+ 802333e:	bf00      	nop
+ 8023340:	4f000000 	.word	0x4f000000
+ 8023344:	0803b870 	.word	0x0803b870
+
+
+; Existing artifact DISASSEMBLY.txt line 58793
+00001d54 <calcWavetableOscBlock>:
+    1d54:	2b00      	cmp	r3, #0
+    1d56:	d03c      	beq.n	1dd2 <calcWavetableOscBlock+0x7e>
+    1d58:	e92d 47f0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, lr}
+    1d5c:	4690      	mov	r8, r2
+    1d5e:	7c46      	ldrb	r6, [r0, #17]
+    1d60:	6882      	ldr	r2, [r0, #8]
+    1d62:	02f6      	lsls	r6, r6, #11
+    1d64:	6845      	ldr	r5, [r0, #4]
+    1d66:	eb08 0743 	add.w	r7, r8, r3, lsl #1
+    1d6a:	4644      	mov	r4, r8
+    1d6c:	4696      	mov	lr, r2
+    1d6e:	ea4f 5c9e 	mov.w	ip, lr, lsr #22
+    1d72:	eb06 0c4c 	add.w	ip, r6, ip, lsl #1
+    1d76:	eb01 0a0c 	add.w	sl, r1, ip
+    1d7a:	f931 900c 	ldrsh.w	r9, [r1, ip]
+    1d7e:	f9ba c002 	ldrsh.w	ip, [sl, #2]
+    1d82:	f3ce 0a15 	ubfx	sl, lr, #0, #22
+    1d86:	44ae      	add	lr, r5
+    1d88:	ebac 0c09 	sub.w	ip, ip, r9
+    1d8c:	fb8c ca0a 	smull	ip, sl, ip, sl
+    1d90:	ea4f 5c9c 	mov.w	ip, ip, lsr #22
+    1d94:	ea4c 2c8a 	orr.w	ip, ip, sl, lsl #10
+    1d98:	44cc      	add	ip, r9
+    1d9a:	fa0f fc8c 	sxth.w	ip, ip
+    1d9e:	ee07 ca90 	vmov	s15, ip
+    1da2:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+    1da6:	ee67 7a80 	vmul.f32	s15, s15, s0
+    1daa:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+    1dae:	ee17 ca90 	vmov	ip, s15
+    1db2:	fa0f fc8c 	sxth.w	ip, ip
+    1db6:	f824 cb02 	strh.w	ip, [r4], #2
+    1dba:	42a7      	cmp	r7, r4
+    1dbc:	d1d7      	bne.n	1d6e <calcWavetableOscBlock+0x1a>
+    1dbe:	3b01      	subs	r3, #1
+    1dc0:	442a      	add	r2, r5
+    1dc2:	b2db      	uxtb	r3, r3
+    1dc4:	fb03 2205 	mla	r2, r3, r5, r2
+    1dc8:	6082      	str	r2, [r0, #8]
+    1dca:	f828 c013 	strh.w	ip, [r8, r3, lsl #1]
+    1dce:	e8bd 87f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, pc}
+    1dd2:	4770      	bx	lr
+
+
+; Existing artifact DISASSEMBLY.txt line 42962
+080238fc <transient_calcBlock>:
+ 80238fc:	b5f0      	push	{r4, r5, r6, r7, lr}
+ 80238fe:	4686      	mov	lr, r0
+ 8023900:	4614      	mov	r4, r2
+ 8023902:	4608      	mov	r0, r1
+ 8023904:	f89e 200c 	ldrb.w	r2, [lr, #12]
+ 8023908:	2a01      	cmp	r2, #1
+ 802390a:	d955      	bls.n	80239b8 <transient_calcBlock+0xbc>
+ 802390c:	f8de 3004 	ldr.w	r3, [lr, #4]
+ 8023910:	492d      	ldr	r1, [pc, #180]	@ (80239c8 <transient_calcBlock+0xcc>)
+ 8023912:	428b      	cmp	r3, r1
+ 8023914:	d850      	bhi.n	80239b8 <transient_calcBlock+0xbc>
+ 8023916:	2c00      	cmp	r4, #0
+ 8023918:	d055      	beq.n	80239c6 <transient_calcBlock+0xca>
+ 802391a:	3a02      	subs	r2, #2
+ 802391c:	f640 059d 	movw	r5, #2205	@ 0x89d
+ 8023920:	4e2a      	ldr	r6, [pc, #168]	@ (80239cc <transient_calcBlock+0xd0>)
+ 8023922:	edde 5a04 	vldr	s11, [lr, #16]
+ 8023926:	fb05 6602 	mla	r6, r5, r2, r6
+ 802392a:	ed9e 6a02 	vldr	s12, [lr, #8]
+ 802392e:	eddf 6a28 	vldr	s13, [pc, #160]	@ 80239d0 <transient_calcBlock+0xd4>
+ 8023932:	4605      	mov	r5, r0
+ 8023934:	2200      	movs	r2, #0
+ 8023936:	0d1f      	lsrs	r7, r3, #20
+ 8023938:	ee07 3a90 	vmov	s15, r3
+ 802393c:	f102 0c01 	add.w	ip, r2, #1
+ 8023940:	3502      	adds	r5, #2
+ 8023942:	57f3      	ldrsb	r3, [r6, r7]
+ 8023944:	eeb8 7a67 	vcvt.f32.u32	s14, s15
+ 8023948:	fa5f fc8c 	uxtb.w	ip, ip
+ 802394c:	021b      	lsls	r3, r3, #8
+ 802394e:	eea6 7a26 	vfma.f32	s14, s12, s13
+ 8023952:	4564      	cmp	r4, ip
+ 8023954:	ee07 3a90 	vmov	s15, r3
+ 8023958:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 802395c:	ee67 7aa5 	vmul.f32	s15, s15, s11
+ 8023960:	eebc 7ac7 	vcvt.u32.f32	s14, s14
+ 8023964:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+ 8023968:	ee17 3a10 	vmov	r3, s14
+ 802396c:	ee17 7a90 	vmov	r7, s15
+ 8023970:	f825 7c02 	strh.w	r7, [r5, #-2]
+ 8023974:	ed8e 7a01 	vstr	s14, [lr, #4]
+ 8023978:	d025      	beq.n	80239c6 <transient_calcBlock+0xca>
+ 802397a:	428b      	cmp	r3, r1
+ 802397c:	d91a      	bls.n	80239b4 <transient_calcBlock+0xb8>
+ 802397e:	f102 0e02 	add.w	lr, r2, #2
+ 8023982:	2100      	movs	r1, #0
+ 8023984:	fa5f fe8e 	uxtb.w	lr, lr
+ 8023988:	8029      	strh	r1, [r5, #0]
+ 802398a:	4574      	cmp	r4, lr
+ 802398c:	d01b      	beq.n	80239c6 <transient_calcBlock+0xca>
+ 802398e:	eba4 030e 	sub.w	r3, r4, lr
+ 8023992:	f102 0c03 	add.w	ip, r2, #3
+ 8023996:	eb00 004e 	add.w	r0, r0, lr, lsl #1
+ 802399a:	1e5a      	subs	r2, r3, #1
+ 802399c:	fa5f fc8c 	uxtb.w	ip, ip
+ 80239a0:	b2d2      	uxtb	r2, r2
+ 80239a2:	3201      	adds	r2, #1
+ 80239a4:	0052      	lsls	r2, r2, #1
+ 80239a6:	4564      	cmp	r4, ip
+ 80239a8:	bf38      	it	cc
+ 80239aa:	2202      	movcc	r2, #2
+ 80239ac:	e8bd 40f0 	ldmia.w	sp!, {r4, r5, r6, r7, lr}
+ 80239b0:	f008 bd1f 	b.w	802c3f2 <memset>
+ 80239b4:	4662      	mov	r2, ip
+ 80239b6:	e7be      	b.n	8023936 <transient_calcBlock+0x3a>
+ 80239b8:	0862      	lsrs	r2, r4, #1
+ 80239ba:	2100      	movs	r1, #0
+ 80239bc:	0092      	lsls	r2, r2, #2
+ 80239be:	e8bd 40f0 	ldmia.w	sp!, {r4, r5, r6, r7, lr}
+ 80239c2:	f008 bd16 	b.w	802c3f2 <memset>
+ 80239c6:	bdf0      	pop	{r4, r5, r6, r7, pc}
+ 80239c8:	89bfffff 	.word	0x89bfffff
+ 80239cc:	20000000 	.word	0x20000000
+ 80239d0:	49800000 	.word	0x49800000
+ 80239d4:	00000000 	.word	0x00000000
+
+
+; Existing artifact DISASSEMBLY.txt line 59540
+00002714 <softClipTwo>:
+    2714:	eef6 7a00 	vmov.f32	s15, #96	@ 0x3f000000  0.5
+    2718:	eddf 6a0d 	vldr	s13, [pc, #52]	@ 2750 <softClipTwo+0x3c>
+    271c:	eef2 5a0e 	vmov.f32	s11, #46	@ 0x41700000  15.0
+    2720:	ed9f 7a0c 	vldr	s14, [pc, #48]	@ 2754 <softClipTwo+0x40>
+    2724:	ed9f 6a0c 	vldr	s12, [pc, #48]	@ 2758 <softClipTwo+0x44>
+    2728:	ee60 7a27 	vmul.f32	s15, s0, s15
+    272c:	ee67 7aa7 	vmul.f32	s15, s15, s15
+    2730:	eee7 6aa5 	vfma.f32	s13, s15, s11
+    2734:	ee37 6a86 	vadd.f32	s12, s15, s12
+    2738:	eef0 5a47 	vmov.f32	s11, s14
+    273c:	eee7 5a86 	vfma.f32	s11, s15, s12
+    2740:	eea7 7aa6 	vfma.f32	s14, s15, s13
+    2744:	eec5 7a87 	vdiv.f32	s15, s11, s14
+    2748:	ee27 0a80 	vmul.f32	s0, s15, s0
+    274c:	4770      	bx	lr
+    274e:	bf00      	nop
+    2750:	43d20000 	.word	0x43d20000
+    2754:	446c4000 	.word	0x446c4000
+    2758:	42d20000 	.word	0x42d20000
+
+
+; Existing artifact DISASSEMBLY.txt line 59561
+0000275c <SVF_calcBlockZDF>:
+    275c:	eddf 7ad4 	vldr	s15, [pc, #848]	@ 2ab0 <SVF_calcBlockZDF+0x354>
+    2760:	edd0 4a00 	vldr	s9, [r0]
+    2764:	eef4 4ae7 	vcmpe.f32	s9, s15
+    2768:	b5f8      	push	{r3, r4, r5, r6, r7, lr}
+    276a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+    276e:	4605      	mov	r5, r0
+    2770:	460f      	mov	r7, r1
+    2772:	4614      	mov	r4, r2
+    2774:	461e      	mov	r6, r3
+    2776:	ed2d 8b08 	vpush	{d8-d11}
+    277a:	bf54      	ite	pl
+    277c:	eeb7 9a00 	vmovpl.f32	s18, #112	@ 0x3f800000  1.0
+    2780:	ed90 9a02 	vldrmi	s18, [r0, #8]
+    2784:	2908      	cmp	r1, #8
+    2786:	f000 80aa 	beq.w	28de <SVF_calcBlockZDF+0x182>
+    278a:	2907      	cmp	r1, #7
+    278c:	f040 80aa 	bne.w	28e4 <SVF_calcBlockZDF+0x188>
+    2790:	eddf 7ac8 	vldr	s15, [pc, #800]	@ 2ab4 <SVF_calcBlockZDF+0x358>
+    2794:	ee64 4aa7 	vmul.f32	s9, s9, s15
+    2798:	2b00      	cmp	r3, #0
+    279a:	f000 80a0 	beq.w	28de <SVF_calcBlockZDF+0x182>
+    279e:	eeb7 5a00 	vmov.f32	s10, #112	@ 0x3f800000  1.0
+    27a2:	ed90 9a02 	vldr	s18, [r0, #8]
+    27a6:	eeb7 6ae4 	vcvt.f64.f32	d6, s9
+    27aa:	ed90 2a07 	vldr	s4, [r0, #28]
+    27ae:	eeb7 bb00 	vmov.f64	d11, #112	@ 0x3f800000  1.0
+    27b2:	eddf 7ac1 	vldr	s15, [pc, #772]	@ 2ab8 <SVF_calcBlockZDF+0x35c>
+    27b6:	ee35 9a49 	vsub.f32	s18, s10, s18
+    27ba:	ed90 7a05 	vldr	s14, [r0, #20]
+    27be:	ee22 2a27 	vmul.f32	s4, s4, s15
+    27c2:	eb02 0343 	add.w	r3, r2, r3, lsl #1
+    27c6:	ee3b bb46 	vsub.f64	d11, d11, d6
+    27ca:	eddf 0abe 	vldr	s1, [pc, #760]	@ 2ac4 <SVF_calcBlockZDF+0x368>
+    27ce:	eeb7 9ac9 	vcvt.f64.f32	d9, s18
+    27d2:	ed90 6a06 	vldr	s12, [r0, #24]
+    27d6:	eeb6 8a00 	vmov.f32	s16, #96	@ 0x3f000000  0.5
+    27da:	ed9f 4abb 	vldr	s8, [pc, #748]	@ 2ac8 <SVF_calcBlockZDF+0x36c>
+    27de:	eeb2 0a0e 	vmov.f32	s0, #46	@ 0x41700000  15.0
+    27e2:	48b6      	ldr	r0, [pc, #728]	@ (2abc <SVF_calcBlockZDF+0x360>)
+    27e4:	ee89 3b0b 	vdiv.f64	d3, d9, d11
+    27e8:	ed9f 1ab9 	vldr	s2, [pc, #740]	@ 2ad0 <SVF_calcBlockZDF+0x374>
+    27ec:	eddf 8ab4 	vldr	s17, [pc, #720]	@ 2ac0 <SVF_calcBlockZDF+0x364>
+    27f0:	eeff 1a00 	vmov.f32	s3, #240	@ 0xbf800000 -1.0
+    27f4:	ed9f abac 	vldr	d10, [pc, #688]	@ 2aa8 <SVF_calcBlockZDF+0x34c>
+    27f8:	eea9 3b0a 	vfma.f64	d3, d9, d10
+    27fc:	eeb7 9bc3 	vcvt.f32.f64	s18, d3
+    2800:	e019      	b.n	2836 <SVF_calcBlockZDF+0xda>
+    2802:	eeb7 7a00 	vmov.f32	s14, #112	@ 0x3f800000  1.0
+    2806:	ed85 5a05 	vstr	s10, [r5, #20]
+    280a:	ee77 7a46 	vsub.f32	s15, s14, s12
+    280e:	eea7 6aa4 	vfma.f32	s12, s15, s9
+    2812:	eeb4 6ac5 	vcmpe.f32	s12, s10
+    2816:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+    281a:	f340 812c 	ble.w	2a76 <SVF_calcBlockZDF+0x31a>
+    281e:	eeb7 6a00 	vmov.f32	s12, #112	@ 0x3f800000  1.0
+    2822:	f647 71ff 	movw	r1, #32767	@ 0x7fff
+    2826:	ed85 5a06 	vstr	s10, [r5, #24]
+    282a:	4293      	cmp	r3, r2
+    282c:	f301 010f 	ssat	r1, #16, r1
+    2830:	f822 1c02 	strh.w	r1, [r2, #-2]
+    2834:	d053      	beq.n	28de <SVF_calcBlockZDF+0x182>
+    2836:	f932 1b02 	ldrsh.w	r1, [r2], #2
+    283a:	ee77 7a46 	vsub.f32	s15, s14, s12
+    283e:	eef0 5a47 	vmov.f32	s11, s14
+    2842:	ee06 1a90 	vmov	s13, r1
+    2846:	eef0 3a41 	vmov.f32	s7, s2
+    284a:	eef0 2a44 	vmov.f32	s5, s8
+    284e:	eef8 6ae6 	vcvt.f32.s32	s13, s13
+    2852:	eed7 5a89 	vfnms.f32	s11, s15, s18
+    2856:	ee66 6a82 	vmul.f32	s13, s13, s4
+    285a:	ee66 7a88 	vmul.f32	s15, s13, s16
+    285e:	ee67 7aa7 	vmul.f32	s15, s15, s15
+    2862:	eee7 3a80 	vfma.f32	s7, s15, s0
+    2866:	ee37 3aa0 	vadd.f32	s6, s15, s1
+    286a:	eee3 2a27 	vfma.f32	s5, s6, s15
+    286e:	eeb0 3a44 	vmov.f32	s6, s8
+    2872:	eea3 3aa7 	vfma.f32	s6, s7, s15
+    2876:	eef0 7a65 	vmov.f32	s15, s11
+    287a:	eec2 3a83 	vdiv.f32	s7, s5, s6
+    287e:	eee6 7aa3 	vfma.f32	s15, s13, s7
+    2882:	eea7 7aa4 	vfma.f32	s14, s15, s9
+    2886:	eeb4 7ac5 	vcmpe.f32	s14, s10
+    288a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+    288e:	dcb8      	bgt.n	2802 <SVF_calcBlockZDF+0xa6>
+    2890:	eeb4 7ae1 	vcmpe.f32	s14, s3
+    2894:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+    2898:	f100 80fb 	bmi.w	2a92 <SVF_calcBlockZDF+0x336>
+    289c:	ed85 7a05 	vstr	s14, [r5, #20]
+    28a0:	e7b3      	b.n	280a <SVF_calcBlockZDF+0xae>
+    28a2:	eef0 7a00 	vmov.f32	s15, #0	@ 0x40000000  2.0
+    28a6:	eed9 6a27 	vfnms.f32	s13, s18, s15
+    28aa:	ee76 6aa9 	vadd.f32	s13, s13, s19
+    28ae:	eddf 7a84 	vldr	s15, [pc, #528]	@ 2ac0 <SVF_calcBlockZDF+0x364>
+    28b2:	ee66 6aa7 	vmul.f32	s13, s13, s15
+    28b6:	eefd 6ae6 	vcvt.s32.f32	s13, s13
+    28ba:	ee16 1a90 	vmov	r1, s13
+    28be:	f301 010f 	ssat	r1, #16, r1
+    28c2:	b209      	sxth	r1, r1
+    28c4:	f301 010f 	ssat	r1, #16, r1
+    28c8:	429a      	cmp	r2, r3
+    28ca:	b209      	sxth	r1, r1
+    28cc:	f822 1c02 	strh.w	r1, [r2, #-2]
+    28d0:	d149      	bne.n	2966 <SVF_calcBlockZDF+0x20a>
+    28d2:	ed85 6a03 	vstr	s12, [r5, #12]
+    28d6:	ed85 0a04 	vstr	s0, [r5, #16]
+    28da:	f822 1c02 	strh.w	r1, [r2, #-2]
+    28de:	ecbd 8b08 	vpop	{d8-d11}
+    28e2:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
+    28e4:	ed90 0a03 	vldr	s0, [r0, #12]
+    28e8:	ed90 8a01 	vldr	s16, [r0, #4]
+    28ec:	f001 fa00 	bl	3cf0 <__removeMaliciousSample_veneer>
+    28f0:	eef0 7a40 	vmov.f32	s15, s0
+    28f4:	ed95 0a04 	vldr	s0, [r5, #16]
+    28f8:	edc5 7a03 	vstr	s15, [r5, #12]
+    28fc:	f001 f9f8 	bl	3cf0 <__removeMaliciousSample_veneer>
+    2900:	ed85 0a04 	vstr	s0, [r5, #16]
+    2904:	2e00      	cmp	r6, #0
+    2906:	d0ea      	beq.n	28de <SVF_calcBlockZDF+0x182>
+    2908:	eef7 7a00 	vmov.f32	s15, #112	@ 0x3f800000  1.0
+    290c:	edd5 1a07 	vldr	s3, [r5, #28]
+    2910:	ee38 5a08 	vadd.f32	s10, s16, s16
+    2914:	eddf 6a68 	vldr	s13, [pc, #416]	@ 2ab8 <SVF_calcBlockZDF+0x35c>
+    2918:	ee68 4a08 	vmul.f32	s9, s16, s16
+    291c:	2f01      	cmp	r7, #1
+    291e:	eeb0 7a67 	vmov.f32	s14, s15
+    2922:	ed95 6a03 	vldr	s12, [r5, #12]
+    2926:	ee79 8a09 	vadd.f32	s17, s18, s18
+    292a:	4622      	mov	r2, r4
+    292c:	ee61 1aa6 	vmul.f32	s3, s3, s13
+    2930:	eb04 0346 	add.w	r3, r4, r6, lsl #1
+    2934:	eea9 7a05 	vfma.f32	s14, s18, s10
+    2938:	eef6 2a00 	vmov.f32	s5, #96	@ 0x3f000000  0.5
+    293c:	eeb2 3a0e 	vmov.f32	s6, #46	@ 0x41700000  15.0
+    2940:	ee87 2a87 	vdiv.f32	s4, s15, s14
+    2944:	ee64 4a82 	vmul.f32	s9, s9, s4
+    2948:	ee28 1a02 	vmul.f32	s2, s16, s4
+    294c:	ee34 7aa7 	vadd.f32	s14, s9, s15
+    2950:	eec7 0a87 	vdiv.f32	s1, s15, s14
+    2954:	f000 80be 	beq.w	2ad4 <SVF_calcBlockZDF+0x378>
+    2958:	1eb8      	subs	r0, r7, #2
+    295a:	eddf 3a5a 	vldr	s7, [pc, #360]	@ 2ac4 <SVF_calcBlockZDF+0x368>
+    295e:	eddf 5a5a 	vldr	s11, [pc, #360]	@ 2ac8 <SVF_calcBlockZDF+0x36c>
+    2962:	ed9f 4a5b 	vldr	s8, [pc, #364]	@ 2ad0 <SVF_calcBlockZDF+0x374>
+    2966:	f932 1b02 	ldrsh.w	r1, [r2], #2
+    296a:	ee26 7a22 	vmul.f32	s14, s12, s5
+    296e:	ee09 1a10 	vmov	s18, r1
+    2972:	eef0 6a44 	vmov.f32	s13, s8
+    2976:	eeb0 ba65 	vmov.f32	s22, s11
+    297a:	ee27 7a07 	vmul.f32	s14, s14, s14
+    297e:	eeb8 9ac9 	vcvt.f32.s32	s18, s18
+    2982:	eef0 ba65 	vmov.f32	s23, s11
+    2986:	eee7 6a03 	vfma.f32	s13, s14, s6
+    298a:	ee29 9a21 	vmul.f32	s18, s18, s3
+    298e:	ee37 aa23 	vadd.f32	s20, s14, s7
+    2992:	eef0 aa65 	vmov.f32	s21, s11
+    2996:	ee69 7a22 	vmul.f32	s15, s18, s5
+    299a:	eeea ba07 	vfma.f32	s23, s20, s14
+    299e:	eea6 ba87 	vfma.f32	s22, s13, s14
+    29a2:	ee67 7aa7 	vmul.f32	s15, s15, s15
+    29a6:	eef0 6a44 	vmov.f32	s13, s8
+    29aa:	eef0 9a40 	vmov.f32	s19, s0
+    29ae:	ee37 7aa3 	vadd.f32	s14, s15, s7
+    29b2:	eee7 6a83 	vfma.f32	s13, s15, s6
+    29b6:	eee1 9a06 	vfma.f32	s19, s2, s12
+    29ba:	eee7 aa27 	vfma.f32	s21, s14, s15
+    29be:	eeb0 7a65 	vmov.f32	s14, s11
+    29c2:	ee8b aa8b 	vdiv.f32	s20, s23, s22
+    29c6:	eea6 7aa7 	vfma.f32	s14, s13, s15
+    29ca:	eeca 6a87 	vdiv.f32	s13, s21, s14
+    29ce:	ee66 6a89 	vmul.f32	s13, s13, s18
+    29d2:	eeb0 9a69 	vmov.f32	s18, s19
+    29d6:	eea4 9aa6 	vfma.f32	s18, s9, s13
+    29da:	ee20 9a89 	vmul.f32	s18, s1, s18
+    29de:	ee76 7ac9 	vsub.f32	s15, s13, s18
+    29e2:	ee28 7a27 	vmul.f32	s14, s16, s15
+    29e6:	eeaa 7a06 	vfma.f32	s14, s20, s12
+    29ea:	ee22 7a07 	vmul.f32	s14, s4, s14
+    29ee:	ee68 9a87 	vmul.f32	s19, s17, s14
+    29f2:	eea5 0a07 	vfma.f32	s0, s10, s14
+    29f6:	ee77 7ae9 	vsub.f32	s15, s15, s19
+    29fa:	ee65 aa27 	vmul.f32	s21, s10, s15
+    29fe:	eeea aa06 	vfma.f32	s21, s20, s12
+    2a02:	eeb0 6a6a 	vmov.f32	s12, s21
+    2a06:	2804      	cmp	r0, #4
+    2a08:	f200 80e7 	bhi.w	2bda <SVF_calcBlockZDF+0x47e>
+    2a0c:	a101      	add	r1, pc, #4	@ (adr r1, 2a14 <SVF_calcBlockZDF+0x2b8>)
+    2a0e:	f851 f020 	ldr.w	pc, [r1, r0, lsl #2]
+    2a12:	bf00      	nop
+    2a14:	00002a5f 	.word	0x00002a5f
+    2a18:	00002a47 	.word	0x00002a47
+    2a1c:	00002a2f 	.word	0x00002a2f
+    2a20:	00002a29 	.word	0x00002a29
+    2a24:	000028a3 	.word	0x000028a3
+    2a28:	ee76 6ae9 	vsub.f32	s13, s13, s19
+    2a2c:	e73f      	b.n	28ae <SVF_calcBlockZDF+0x152>
+    2a2e:	eddf 7a24 	vldr	s15, [pc, #144]	@ 2ac0 <SVF_calcBlockZDF+0x364>
+    2a32:	ee69 9aa7 	vmul.f32	s19, s19, s15
+    2a36:	eefd 9ae9 	vcvt.s32.f32	s19, s19
+    2a3a:	ee19 1a90 	vmov	r1, s19
+    2a3e:	f301 010f 	ssat	r1, #16, r1
+    2a42:	b209      	sxth	r1, r1
+    2a44:	e73e      	b.n	28c4 <SVF_calcBlockZDF+0x168>
+    2a46:	eddf 7a1e 	vldr	s15, [pc, #120]	@ 2ac0 <SVF_calcBlockZDF+0x364>
+    2a4a:	ee27 7a27 	vmul.f32	s14, s14, s15
+    2a4e:	eebd 7ac7 	vcvt.s32.f32	s14, s14
+    2a52:	ee17 1a10 	vmov	r1, s14
+    2a56:	f301 010f 	ssat	r1, #16, r1
+    2a5a:	b209      	sxth	r1, r1
+    2a5c:	e732      	b.n	28c4 <SVF_calcBlockZDF+0x168>
+    2a5e:	ed9f 7a18 	vldr	s14, [pc, #96]	@ 2ac0 <SVF_calcBlockZDF+0x364>
+    2a62:	ee67 7a87 	vmul.f32	s15, s15, s14
+    2a66:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+    2a6a:	ee17 1a90 	vmov	r1, s15
+    2a6e:	f301 010f 	ssat	r1, #16, r1
+    2a72:	b209      	sxth	r1, r1
+    2a74:	e726      	b.n	28c4 <SVF_calcBlockZDF+0x168>
+    2a76:	eeb4 6ae1 	vcmpe.f32	s12, s3
+    2a7a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+    2a7e:	d40d      	bmi.n	2a9c <SVF_calcBlockZDF+0x340>
+    2a80:	ee66 7a28 	vmul.f32	s15, s12, s17
+    2a84:	ed85 6a06 	vstr	s12, [r5, #24]
+    2a88:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+    2a8c:	ee17 1a90 	vmov	r1, s15
+    2a90:	e6cb      	b.n	282a <SVF_calcBlockZDF+0xce>
+    2a92:	eebf 7a00 	vmov.f32	s14, #240	@ 0xbf800000 -1.0
+    2a96:	edc5 1a05 	vstr	s3, [r5, #20]
+    2a9a:	e6b6      	b.n	280a <SVF_calcBlockZDF+0xae>
+    2a9c:	eebf 6a00 	vmov.f32	s12, #240	@ 0xbf800000 -1.0
+    2aa0:	4601      	mov	r1, r0
+    2aa2:	edc5 1a06 	vstr	s3, [r5, #24]
+    2aa6:	e6c0      	b.n	282a <SVF_calcBlockZDF+0xce>
+    2aa8:	66666666 	.word	0x66666666
+    2aac:	3ff66666 	.word	0x3ff66666
+    2ab0:	3ee6594b 	.word	0x3ee6594b
+    2ab4:	400d70a4 	.word	0x400d70a4
+    2ab8:	38000100 	.word	0x38000100
+    2abc:	ffff8001 	.word	0xffff8001
+    2ac0:	46fffe00 	.word	0x46fffe00
+    2ac4:	42d20000 	.word	0x42d20000
+    2ac8:	446c4000 	.word	0x446c4000
+    2acc:	bff9999a 	.word	0xbff9999a
+    2ad0:	43d20000 	.word	0x43d20000
+    2ad4:	ed5f 3a05 	vldr	s7, [pc, #-20]	@ 2ac4 <SVF_calcBlockZDF+0x368>
+    2ad8:	ed5f 5a05 	vldr	s11, [pc, #-20]	@ 2ac8 <SVF_calcBlockZDF+0x36c>
+    2adc:	ed1f 4a04 	vldr	s8, [pc, #-16]	@ 2ad0 <SVF_calcBlockZDF+0x374>
+    2ae0:	ed1f 9a06 	vldr	s18, [pc, #-24]	@ 2acc <SVF_calcBlockZDF+0x370>
+    2ae4:	483f      	ldr	r0, [pc, #252]	@ (2be4 <SVF_calcBlockZDF+0x488>)
+    2ae6:	ee26 7a22 	vmul.f32	s14, s12, s5
+    2aea:	f932 1b02 	ldrsh.w	r1, [r2], #2
+    2aee:	eef0 7a44 	vmov.f32	s15, s8
+    2af2:	ee06 1a90 	vmov	s13, r1
+    2af6:	eeb0 aa65 	vmov.f32	s20, s11
+    2afa:	ee27 7a07 	vmul.f32	s14, s14, s14
+    2afe:	eef8 6ae6 	vcvt.f32.s32	s13, s13
+    2b02:	eef0 aa65 	vmov.f32	s21, s11
+    2b06:	eee7 7a03 	vfma.f32	s15, s14, s6
+    2b0a:	ee77 9a23 	vadd.f32	s19, s14, s7
+    2b0e:	ee66 6aa1 	vmul.f32	s13, s13, s3
+    2b12:	eee7 aa29 	vfma.f32	s21, s14, s19
+    2b16:	eea7 aa27 	vfma.f32	s20, s14, s15
+    2b1a:	ee66 7aa2 	vmul.f32	s15, s13, s5
+    2b1e:	eeb0 7a65 	vmov.f32	s14, s11
+    2b22:	ee67 7aa7 	vmul.f32	s15, s15, s15
+    2b26:	eeca 9a8a 	vdiv.f32	s19, s21, s20
+    2b2a:	eeb0 aa44 	vmov.f32	s20, s8
+    2b2e:	ee77 aaa3 	vadd.f32	s21, s15, s7
+    2b32:	eea7 aa83 	vfma.f32	s20, s15, s6
+    2b36:	eea7 7a8a 	vfma.f32	s14, s15, s20
+    2b3a:	eeb0 aa65 	vmov.f32	s20, s11
+    2b3e:	eea7 aaaa 	vfma.f32	s20, s15, s21
+    2b42:	eeca 7a07 	vdiv.f32	s15, s20, s14
+    2b46:	ed9f aa28 	vldr	s20, [pc, #160]	@ 2be8 <SVF_calcBlockZDF+0x48c>
+    2b4a:	eeb0 7a40 	vmov.f32	s14, s0
+    2b4e:	eea1 7a06 	vfma.f32	s14, s2, s12
+    2b52:	ee67 7aa6 	vmul.f32	s15, s15, s13
+    2b56:	eea4 7aa7 	vfma.f32	s14, s9, s15
+    2b5a:	ee27 7a20 	vmul.f32	s14, s14, s1
+    2b5e:	ee77 7ac7 	vsub.f32	s15, s15, s14
+    2b62:	eeb4 7ac9 	vcmpe.f32	s14, s18
+    2b66:	ee68 6a27 	vmul.f32	s13, s16, s15
+    2b6a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+    2b6e:	eee9 6a86 	vfma.f32	s13, s19, s12
+    2b72:	ee66 6a82 	vmul.f32	s13, s13, s4
+    2b76:	eee6 7ae8 	vfms.f32	s15, s13, s17
+    2b7a:	eea6 0a85 	vfma.f32	s0, s13, s10
+    2b7e:	ee67 7a85 	vmul.f32	s15, s15, s10
+    2b82:	eee9 7a86 	vfma.f32	s15, s19, s12
+    2b86:	eeb0 6a67 	vmov.f32	s12, s15
+    2b8a:	d411      	bmi.n	2bb0 <SVF_calcBlockZDF+0x454>
+    2b8c:	eeb4 7aca 	vcmpe.f32	s14, s20
+    2b90:	f647 71ff 	movw	r1, #32767	@ 0x7fff
+    2b94:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+    2b98:	dd0c      	ble.n	2bb4 <SVF_calcBlockZDF+0x458>
+    2b9a:	f301 010f 	ssat	r1, #16, r1
+    2b9e:	429a      	cmp	r2, r3
+    2ba0:	b209      	sxth	r1, r1
+    2ba2:	f301 010f 	ssat	r1, #16, r1
+    2ba6:	b209      	sxth	r1, r1
+    2ba8:	f822 1c02 	strh.w	r1, [r2, #-2]
+    2bac:	d19b      	bne.n	2ae6 <SVF_calcBlockZDF+0x38a>
+    2bae:	e690      	b.n	28d2 <SVF_calcBlockZDF+0x176>
+    2bb0:	4601      	mov	r1, r0
+    2bb2:	e7f2      	b.n	2b9a <SVF_calcBlockZDF+0x43e>
+    2bb4:	eddf 6a0d 	vldr	s13, [pc, #52]	@ 2bec <SVF_calcBlockZDF+0x490>
+    2bb8:	eddf 7a0d 	vldr	s15, [pc, #52]	@ 2bf0 <SVF_calcBlockZDF+0x494>
+    2bbc:	eee7 6a07 	vfma.f32	s13, s14, s14
+    2bc0:	ee27 7a27 	vmul.f32	s14, s14, s15
+    2bc4:	eec7 7a26 	vdiv.f32	s15, s14, s13
+    2bc8:	ed9f 7a0a 	vldr	s14, [pc, #40]	@ 2bf4 <SVF_calcBlockZDF+0x498>
+    2bcc:	ee67 7a87 	vmul.f32	s15, s15, s14
+    2bd0:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+    2bd4:	ee17 1a90 	vmov	r1, s15
+    2bd8:	e7df      	b.n	2b9a <SVF_calcBlockZDF+0x43e>
+    2bda:	edc5 aa03 	vstr	s21, [r5, #12]
+    2bde:	ed85 0a04 	vstr	s0, [r5, #16]
+    2be2:	e67c      	b.n	28de <SVF_calcBlockZDF+0x182>
+    2be4:	ffff8001 	.word	0xffff8001
+    2be8:	3ff9999a 	.word	0x3ff9999a
+    2bec:	408947ae 	.word	0x408947ae
+    2bf0:	4084cccd 	.word	0x4084cccd
+    2bf4:	46fffe00 	.word	0x46fffe00
+
+
+; Existing artifact DISASSEMBLY.txt line 42551
+0802341c <removeMaliciousSample>:
+ 802341c:	b082      	sub	sp, #8
+ 802341e:	ed8d 0a01 	vstr	s0, [sp, #4]
+ 8023422:	9b01      	ldr	r3, [sp, #4]
+ 8023424:	ee07 3a90 	vmov	s15, r3
+ 8023428:	eeb0 0a67 	vmov.f32	s0, s15
+ 802342c:	b002      	add	sp, #8
+ 802342e:	4770      	bx	lr
+
+
+; Existing artifact DISASSEMBLY.txt line 59495
+00002678 <SVF_directSetFilterValue>:
+    2678:	eddf 7a15 	vldr	s15, [pc, #84]	@ 26d0 <SVF_directSetFilterValue+0x58>
+    267c:	eef0 5a00 	vmov.f32	s11, #0	@ 0x40000000  2.0
+    2680:	eef9 6a04 	vmov.f32	s13, #148	@ 0xc0a00000 -5.0
+    2684:	ed9f 5a13 	vldr	s10, [pc, #76]	@ 26d4 <SVF_directSetFilterValue+0x5c>
+    2688:	ee20 0a27 	vmul.f32	s0, s0, s15
+    268c:	eeb2 6a0e 	vmov.f32	s12, #46	@ 0x41700000  15.0
+    2690:	ed9f 4b0d 	vldr	d4, [pc, #52]	@ 26c8 <SVF_directSetFilterValue+0x50>
+    2694:	eeb7 7ac0 	vcvt.f64.f32	d7, s0
+    2698:	ed80 0a00 	vstr	s0, [r0]
+    269c:	ee27 7b04 	vmul.f64	d7, d7, d4
+    26a0:	eeb7 7bc7 	vcvt.f32.f64	s14, d7
+    26a4:	ee67 7a07 	vmul.f32	s15, s14, s14
+    26a8:	ee27 7a05 	vmul.f32	s14, s14, s10
+    26ac:	eee7 6aa5 	vfma.f32	s13, s15, s11
+    26b0:	ee77 7ac6 	vsub.f32	s15, s15, s12
+    26b4:	ee67 7a87 	vmul.f32	s15, s15, s14
+    26b8:	ee87 7aa6 	vdiv.f32	s14, s15, s13
+    26bc:	ed80 7a01 	vstr	s14, [r0, #4]
+    26c0:	4770      	bx	lr
+    26c2:	bf00      	nop
+    26c4:	f3af 8000 	nop.w
+    26c8:	54442d18 	.word	0x54442d18
+    26cc:	400921fb 	.word	0x400921fb
+    26d0:	3ee66666 	.word	0x3ee66666
+    26d4:	3eaaaaab 	.word	0x3eaaaaab

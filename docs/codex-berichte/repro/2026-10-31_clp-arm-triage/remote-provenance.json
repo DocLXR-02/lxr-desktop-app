@@ -1,0 +1,24 @@
+{
+  "run": {
+    "id": 41177267846,
+    "head_sha": "8082cc5e79496941ca126bc90dc3ac4e2d9a1ea7",
+    "head_branch": "fx/clp-multivoice-max-r10",
+    "status": "completed",
+    "conclusion": "success",
+    "attempt": 1
+  },
+  "artifact": {
+    "id": 13032864252,
+    "name": "lxr-r10-source-build-evidence",
+    "bytes": 8941901,
+    "digest": "sha256:e5c6ca009efb0be182fcbd73711ff1e17372be5e3194dae256157d0bfee4839a",
+    "expired": false,
+    "workflow_run": {
+      "id": 41177267846,
+      "repository_id": 1433545727,
+      "head_repository_id": 1433545727,
+      "head_branch": "fx/clp-multivoice-max-r10",
+      "head_sha": "8082cc5e79496941ca126bc90dc3ac4e2d9a1ea7"
+    }
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "arm_runtime.py": {
+    "bytes": 2399,
+    "sha256": "7239e2857061c86ca2c0c4b1330c79e3119687cd566672409ae84af4246d2782"
+  },
+  "osc_elf.py": {
+    "bytes": 2313,
+    "sha256": "110dfa64092bc2cc7b68074eef7d83af6fa85385edb8911b1ca99eea2a9d076c"
+  },
+  "verified-artifact.json": {
+    "bytes": 546,
+    "sha256": "d7e707b943b3b66432f8a903a7c1801be692c656a6aa9e17c6dab7de38d86c48"
+  },
+  "capture.c": {
+    "bytes": 927,
+    "sha256": "4edaed90ad7f0c19862060ad2feb0e85e2e63eacbbb1f82db973befa6cd604cb"
+  },
+  "capture_driver.py": {
+    "bytes": 1932,
+    "sha256": "a4456dde8b5a7a1ba5c73736c310ea57d9a841eeaf393777019ad6e43bfcb601"
+  },
+  "run.py": {
+    "bytes": 1995,
+    "sha256": "f0109a7f01d19b9d1593c7562041e3328be62acc4b2a6a3de0e57ef8953b0161"
+  },
+  "filter_alternatives.py": {
+    "bytes": 3056,
+    "sha256": "c81dd4f32711991fc6e3fec844d8b14f0e4f06f114f909e6c9125ad54260a238"
+  },
+  "disassembly-excerpts.txt": {
+    "bytes": 32482,
+    "sha256": "bfd953235968bd316ccf8281277e8980eafb5421c030cf034f39dfa9fe9b6670"
+  },
+  "fm_waveforms.py": {
+    "bytes": 1963,
+    "sha256": "b3c2ce06939b751956396e29cc159ac981f4c1750d62fdea55cd3ccfcd650369"
+  },
+  "capture-metadata.json": {
+    "bytes": 4883,
+    "sha256": "6207a2842a19b9449e4df6c3c4da9e6cbb66e53fab76fe9df6d5f018ace70076"
+  },
+  "remote-provenance.json": {
+    "bytes": 684,
+    "sha256": "8bda6bdd3487482d1d4955063a8f9d180d129b07921bb104d12f0fba81dec6d4"
+  },
+  "verify_artifact.py": {
+    "bytes": 1929,
+    "sha256": "efd1689a36d6b93f757b0a1c49ee87ed616697292a3b0b7424b608b525fabe79"
+  },
+  "extra_elf.py": {
+    "bytes": 4560,
+    "sha256": "149081252d040eb2d9fd90145dfe7c5c9a58d753961a5daaeb99d70a657d32ec"
+  },
+  "filter_elf.py": {
+    "bytes": 3763,
+    "sha256": "005665783b377a41e47dca6e25c9654c2bc3fab01a7652f5c761b706c4305abd"
+  },
+  "results.json": {
+    "bytes": 77055,
+    "sha256": "a9b600898f96869bb641fa5e029501d7c5a784d88d8774dfaf1018ddc8dfdffa"
+  },
+  "inputs/voice4-C11-M0.bin": {
+    "bytes": 336,
+    "sha256": "99102a3191c989d110bb6fbc1f2911eec2bff0a0576202592d2630648e21b09e"
+  },
+  "inputs/voice1-C7-M0.bin": {
+    "bytes": 168,
+    "sha256": "4b5b29ce4c13d0bb51ba178a680874205a47b22bda43b2f205886d455a07d3a5"
+  },
+  "inputs/voice4-C11-UI3.bin": {
+    "bytes": 336,
+    "sha256": "9d858d51991abdeee07965e2cf6e6375446670b171220d859319328184189f5d"
+  },
+  "inputs/voice1-C4.bin": {
+    "bytes": 1344,
+    "sha256": "7ac6efeaa9c5eb9c198160de1a90aabd23f0663c3273c76d690c7f88a1c2aa6a"
+  },
+  "inputs/voice4-C11.bin": {
+    "bytes": 336,
+    "sha256": "99102a3191c989d110bb6fbc1f2911eec2bff0a0576202592d2630648e21b09e"
+  },
+  "inputs/voice1-C7.bin": {
+    "bytes": 168,
+    "sha256": "4b5b29ce4c13d0bb51ba178a680874205a47b22bda43b2f205886d455a07d3a5"
+  },
+  "inputs/voice1-C0.bin": {
+    "bytes": 21504,
+    "sha256": "b9ea631611f4fd5a20d59258439deefec0637ad40ad39031c11bd559bbb7e552"
+  },
+  "inputs/voice1-C11.bin": {
+    "bytes": 21504,
+    "sha256": "03b8d11d50a6d856484c60cdfe6641e996d708fb847bd4b89bf9848912f95174"
+  }
+}

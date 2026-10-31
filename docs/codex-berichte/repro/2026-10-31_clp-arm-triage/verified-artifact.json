@@ -1,0 +1,11 @@
+{
+  "source_commit": "8082cc5e79496941ca126bc90dc3ac4e2d9a1ea7",
+  "verified_source_blobs": 410,
+  "artifact_id": 13032864252,
+  "artifact_bytes": 8941901,
+  "artifact_sha256": "e5c6ca009efb0be182fcbd73711ff1e17372be5e3194dae256157d0bfee4839a",
+  "elf_bytes": 392356,
+  "elf_sha256": "3cc3b78888aaacf4341f9775efcb7c675cb9e11a11954e3501b289f869418f0b",
+  "disassembly_sha256": "d297538e69d5a694a7bfabc962130ac58bfce53d48273907a277f3452e72217b",
+  "toolchain": "arm-none-eabi-gcc (Arm GNU Toolchain 14.3.Rel1 (Build arm-14.174)) 14.3.1 20250623"
+}

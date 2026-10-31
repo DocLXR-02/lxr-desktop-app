@@ -1,0 +1,111 @@
+{
+  "pin": "8082cc5e79496941ca126bc90dc3ac4e2d9a1ea7",
+  "compiler": "cc (Debian 14.2.0-19) 14.2.0",
+  "command": [
+    "cc",
+    "-std=c11",
+    "-D_DEFAULT_SOURCE",
+    "-DNUM_DRUM_VOICES=3",
+    "-DOUTPUT_DMA_SIZE=64",
+    "-DUSE_BIG_SAMPLE_BUFFER=1",
+    "-DINTERPOLATE_OSC=1",
+    "-DINTERPOLATE_FM_OSC=1",
+    "-DSMOOTH_MIXER_VOL_PAN_DRIVE=1",
+    "-DENABLE_DRUM_SVF=1",
+    "-DENABLE_MIX_OSC=1",
+    "-DAMP_EG_SYNC=0",
+    "-DUSE_FILTER_DRIVE=0",
+    "-Dtrue=1",
+    "-Dfalse=0",
+    "-O2",
+    "-fno-strict-aliasing",
+    "-ffunction-sections",
+    "-fdata-sections",
+    "-fsanitize=address,undefined,bounds,float-cast-overflow",
+    "-fno-sanitize-recover=all",
+    "-Werror=implicit-function-declaration",
+    "-I/workspace/r11-all-audit/repro-smoke/include",
+    "-I/workspace/r11-all-audit/repro-smoke",
+    "-I/workspace/r11-all-audit/repro-smoke/source/tests/fx_clip/include",
+    "-I/workspace/r11-all-audit/repro-smoke/source/Core/Inc",
+    "/workspace/r11-all-audit/repro-smoke/audit.c",
+    "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/DrumVoice.c",
+    "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/Snare.c",
+    "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/CymbalVoice.c",
+    "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/HiHat.c",
+    "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/transientGenerator.c",
+    "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/transientTables.c",
+    "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/wavetable.c",
+    "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/SlopeEg2.c",
+    "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/Decay.c",
+    "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/snapEg.c",
+    "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/1PoleLp.c",
+    "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/distortion.c",
+    "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/ResonantFilter.c",
+    "-Wl,--gc-sections",
+    "-lm",
+    "-o",
+    "/workspace/clp-arm-triage/recaptured/capture-native",
+    "/workspace/clp-arm-triage/capture.c",
+    "-Wl,--wrap=SVF_calcBlockZDF",
+    "-Wl,--wrap=Snare_calcAsync"
+  ],
+  "cases": [
+    {
+      "name": "voice1-C7",
+      "returncode": 1,
+      "bytes": 168,
+      "sha256": "4b5b29ce4c13d0bb51ba178a680874205a47b22bda43b2f205886d455a07d3a5",
+      "diagnostic": "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/ResonantFilter.c:299:24: runtime error: -nan is outside the range of representable values of type 'int'"
+    },
+    {
+      "name": "voice4-C11",
+      "returncode": 1,
+      "bytes": 336,
+      "sha256": "99102a3191c989d110bb6fbc1f2911eec2bff0a0576202592d2630648e21b09e",
+      "diagnostic": "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/ResonantFilter.c:299:24: runtime error: -nan is outside the range of representable values of type 'int'"
+    },
+    {
+      "name": "voice1-C0",
+      "returncode": 0,
+      "bytes": 21504,
+      "sha256": "b9ea631611f4fd5a20d59258439deefec0637ad40ad39031c11bd559bbb7e552",
+      "diagnostic": ""
+    },
+    {
+      "name": "voice1-C11",
+      "returncode": 0,
+      "bytes": 21504,
+      "sha256": "03b8d11d50a6d856484c60cdfe6641e996d708fb847bd4b89bf9848912f95174",
+      "diagnostic": ""
+    },
+    {
+      "name": "voice1-C4",
+      "returncode": 0,
+      "bytes": 1344,
+      "sha256": "7ac6efeaa9c5eb9c198160de1a90aabd23f0663c3273c76d690c7f88a1c2aa6a",
+      "diagnostic": ""
+    },
+    {
+      "name": "voice1-C7-M0",
+      "returncode": 1,
+      "bytes": 168,
+      "sha256": "4b5b29ce4c13d0bb51ba178a680874205a47b22bda43b2f205886d455a07d3a5",
+      "diagnostic": "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/ResonantFilter.c:299:24: runtime error: -nan is outside the range of representable values of type 'int'"
+    },
+    {
+      "name": "voice4-C11-M0",
+      "returncode": 1,
+      "bytes": 336,
+      "sha256": "99102a3191c989d110bb6fbc1f2911eec2bff0a0576202592d2630648e21b09e",
+      "diagnostic": "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/ResonantFilter.c:299:24: runtime error: -nan is outside the range of representable values of type 'int'"
+    },
+    {
+      "name": "voice4-C11-UI3",
+      "returncode": 1,
+      "bytes": 336,
+      "sha256": "9d858d51991abdeee07965e2cf6e6375446670b171220d859319328184189f5d",
+      "diagnostic": "/workspace/r11-all-audit/repro-smoke/source/Core/Src/Soundengine/DSPAudio/ResonantFilter.c:299:24: runtime error: -nan is outside the range of representable values of type 'int'"
+    }
+  ]
+}
