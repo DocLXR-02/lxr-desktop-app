@@ -167,6 +167,8 @@ Preliminary issues and corrections:
 4. Initial transition zero occurred after some notes were nearly quantized away, and hat retriggers restored a longer decay. The final fixture moves zero into the active note, deliberately freezes the decimator and sets the same short hat decay for retriggers; final results are the 720-run set above. The earlier 576-run transition set is superseded, not added to final coverage counts.
 5. Creating the new report worktree initially used its not-yet-existing directory as the command working directory; the process did not launch. It was rerun from the existing source worktree.
 
+The initial publication whitespace check flagged standard CRLF record endings in the summary CSV. The summary was normalized to LF in a normal documentation follow-up commit; parsed cells were compared and remain identical. Its size/hash below reflect that formatting correction. No numerical result or sanitizer assertion changed.
+
 Other actual checks: git ls-remote --heads; git show of the three pinned reports; full voice/combinedVolume/source/filter reads with rg/nl; clean source/tree comparisons; native script syntax checks; compressed CSV integrity and row count; remote publication/ref/blob verification. No source commit, regression assertion, sanitizer flag or production fix was hidden to deliver a passing firmware.
 
 ## What remains unrun and why no build occurred
@@ -194,7 +196,7 @@ Only this report and native reproduction/evidence files are added under docs on 
 | Audit data (not firmware) | Bytes | SHA-256 |
 | --- | ---: | --- |
 | all-mix-values.csv.gz | 266318 | `de3e4e746e68c0233be1ee2d5e3ffef58eb5f4a55bb0c59475e97bfbb4698568` |
-| audit-summary.csv | 11714 | `8ed3a552cd4f0f6428658d371e9aa5abbbb3d521f1ed3cd3787a2bf1f8ce9d9f` |
+| audit-summary.csv | 11401 | `24253fd2b410784688f70c3f72faa2a59b156cd1fbe7dbb17d9677c31980e145` |
 | transitions-results.json | 289695 | `247563821a060ea6ce6fc6d46b9f528cae39beae41b655f6bc656d7e10fffb3d` |
 
 The compressed sweep expands to 4211944 bytes and 39936 data rows. These files are native audit evidence, not an R11 image/ZIP, SOURCE.zip or firmware build artifact.
