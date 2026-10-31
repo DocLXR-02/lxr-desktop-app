@@ -57,7 +57,7 @@ void transient_trigger(TransientGenerator* transient)
 		{
 			uint32_t phase = transient->phase;
 			phase = phase >> 20;
-			buf[i] = transient->volume*(transientData[transient->waveform-2][phase]<<8) * (phase < TRANSIENT_SAMPLE_LENGTH);//* transientVolumeTable[phase>>5];
+			buf[i] = transient->volume*((int32_t)transientData[transient->waveform-2][phase] * 256) * (phase < TRANSIENT_SAMPLE_LENGTH);//* transientVolumeTable[phase>>5];
 			transient->phase +=  (transient->pitch*(1<<20)); //2311061504 => 2204<<20
 		}
 		else
@@ -83,7 +83,7 @@ void transient_calc(TransientGenerator* transient)
 	}
 	else
 	{
-		transient->output = transient->volume*(transientData[transient->waveform-1][phase]<<8) * transientVolumeTable[phase>>5];
+		transient->output = transient->volume*((int32_t)transientData[transient->waveform-1][phase] * 256) * transientVolumeTable[phase>>5];
 	}
 
 };
