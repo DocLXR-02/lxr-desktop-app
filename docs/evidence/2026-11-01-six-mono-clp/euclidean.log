@@ -1,0 +1,7 @@
+PASS generation: 2176 exact masks match lab-setup; literal lengths; CLZ unshimmed
+PASS bounds: all byte-valued track/pattern/length inputs
+PASS playback: 294912 flam/shift ticks; 4160 recording positions; mixed lengths
+PASS persistence: 130 full named/autosave roundtrips, unchanged layout/payload
+PASS malformed: 10210 truncation/range/I-O/legacy-tail cases; no partial lengths
+PASS protocol: 180802 byte-value/counter boundary calls; no wrap
+PASS all six ASan/UBSan groups

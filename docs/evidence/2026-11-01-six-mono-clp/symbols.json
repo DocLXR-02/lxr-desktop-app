@@ -1,0 +1,86 @@
+[
+  {
+    "symbol": "mixer_calcNextSampleBlock",
+    "R11": 3400,
+    "R12": 3806,
+    "delta": 406
+  },
+  {
+    "symbol": "SoloMix_begin",
+    "R11": 168,
+    "R12": 476,
+    "delta": 308
+  },
+  {
+    "symbol": "SoloMix_drum",
+    "R11": 140,
+    "R12": 156,
+    "delta": 16
+  },
+  {
+    "symbol": "SoloMix_sourceLevel",
+    "R11": 40,
+    "R12": 44,
+    "delta": 4
+  },
+  {
+    "symbol": "SoloMix_snareSample",
+    "R11": 64,
+    "R12": 64,
+    "delta": 0
+  },
+  {
+    "symbol": "SoloMix_gate",
+    "R11": 60,
+    "R12": 72,
+    "delta": 12
+  },
+  {
+    "symbol": "SoloMix_process",
+    "R11": 368,
+    "R12": 56,
+    "delta": -312
+  },
+  {
+    "symbol": "SoloMix_addVoice",
+    "R11": 0,
+    "R12": 728,
+    "delta": 728
+  },
+  {
+    "symbol": "SoloMix_captureFaders",
+    "R11": 0,
+    "R12": 136,
+    "delta": 136
+  },
+  {
+    "symbol": "FxBus_clipCoreGain",
+    "R11": 0,
+    "R12": 52,
+    "delta": 52
+  },
+  {
+    "symbol": "FxBus_clipFaderGains",
+    "R11": 412,
+    "R12": 0,
+    "delta": -412
+  },
+  {
+    "symbol": "FxBus_process",
+    "R11": 384,
+    "R12": 384,
+    "delta": 0
+  },
+  {
+    "symbol": "FxBus_processWithClipGain",
+    "R11": 388,
+    "R12": 388,
+    "delta": 0
+  },
+  {
+    "symbol": "Distortion_processWithClipGain",
+    "R11": 6132,
+    "R12": 6132,
+    "delta": 0
+  }
+]

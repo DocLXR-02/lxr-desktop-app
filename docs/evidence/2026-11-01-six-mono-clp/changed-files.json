@@ -1,0 +1,20 @@
+[
+  ".github/workflows/clp-r12-build.yml",
+  "Core/Inc/Soundengine/FxBus.h",
+  "Core/Inc/Soundengine/SoloMix.h",
+  "Core/Src/Soundengine/DSPAudio/mixer.c",
+  "Core/Src/Soundengine/FxBus.c",
+  "Core/Src/Soundengine/SoloMix.c",
+  "Core/Src/main.c",
+  "tests/fx_clip_r12/README.md",
+  "tests/fx_clip_r12/build.py",
+  "tests/fx_clip_r12/component.c",
+  "tests/fx_clip_r12/component.py",
+  "tests/fx_clip_r12/integration.c",
+  "tests/fx_clip_r12/package.py",
+  "tests/fx_clip_r12/regressions.py",
+  "tests/fx_clip_r12/renders.py",
+  "tests/fx_clip_r12/run.py",
+  "tests/fx_clip_r12/scope.py",
+  "tests/fx_clip_r12/stack.py"
+]

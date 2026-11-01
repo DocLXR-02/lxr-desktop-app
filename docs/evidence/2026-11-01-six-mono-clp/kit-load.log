@@ -1,0 +1,3 @@
+PASS actual notification/tick/repaint bodies: queued/busy display, 1999/2000ms and wrap, latest error, all result codes, expiry/copy interleaving, page/RAM independence, no storage unlock or blocking calls
+PASS both actual labels, 749/750ms and wrap, repeated notices, current-page restoration, actual memcpy/IRQ-expiry interleaving and unchanged legacy errors
+PASS 512 actual RAM load/menu cases: source copy/destination pointer, invalid indices no action/confirmation, no SD access

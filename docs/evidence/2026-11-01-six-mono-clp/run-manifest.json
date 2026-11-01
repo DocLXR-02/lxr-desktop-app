@@ -1,0 +1,32 @@
+{
+  "source_commit": "ff47d945d283fd3def4af3aff974bdcafb69ffd3",
+  "source_tree": "c1f9bb2e6233f9516fe4b26386dcb39e72b10109",
+  "ci": {
+    "run": 41355689765,
+    "job": 124995110571,
+    "attempt": 1,
+    "conclusion": "success",
+    "arm_builds": 1
+  },
+  "artifacts": [
+    {
+      "id": 13103162036,
+      "name": "lxr-r12-offline-candidate",
+      "bytes": 423664,
+      "sha256": "ba0c338a32cbdf25b163a423cd0a91b91dac64b92758f725c8a4daf232d72a69"
+    },
+    {
+      "id": 13103142005,
+      "name": "lxr-r12-source-build-evidence",
+      "bytes": 4817472,
+      "sha256": "67cefeab0042246b9d455c89543248a3ea2c9edf0842c0f1f742649e1dfa5fa8"
+    }
+  ],
+  "artifact_expiry": "2027-01-30T22:09:35Z",
+  "private_KnowledgeBase": "read; excluded from all artifacts",
+  "limits": [
+    "No device action",
+    "No realtime/stack/thermal measurements",
+    "Expiring full binary/WAV evidence; compact primary results retained in this branch"
+  ]
+}

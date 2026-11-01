@@ -1,0 +1,8 @@
+{
+  "main_cases": 1476,
+  "passed": 1476,
+  "fallback_pairs": 192,
+  "moderate_filter_cases": 4,
+  "expected_legacy_failures": 6,
+  "coverage": "Actual six voice trigger/async/sync paths and verbatim mixer; deterministic hardware/control shims; inherited CLZ-zero host substitution; unsupported user sample synthesis aborts. No device/SD/morph boot claims."
+}

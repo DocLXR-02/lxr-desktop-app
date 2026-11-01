@@ -1,0 +1,1 @@
+PASS 8 compile-only stack reports; executable sections match original build objects; no second link
