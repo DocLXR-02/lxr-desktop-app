@@ -2,6 +2,10 @@
 
 Snapshot: 2026-11-01. This is a documentation synchronization, not a new development authorization.
 
+## Evidence retention and reproducibility
+
+Follow [RECORDKEEPING_STANDARD.md](RECORDKEEPING_STANDARD.md) for the task report, raw decisive failures, reproducible commands/scripts, test outputs, run manifests, expiring GitHub Actions artifacts and explicit NOT ARCHIVED gaps. Technical summaries do not replace underlying evidence; do not rerun historical tests just to regenerate redundant logs. This is a documentation policy, not authorization to alter production source or start an agent task.
+
 ## Starting or resuming a task
 
 1. Read [current project state](PROJECT_STATUS.md), applicable AGENTS.md and the exact report relevant to the requested change. Check live heads against the pinned source. Documentation-branch ancestry is not a firmware baseline.
