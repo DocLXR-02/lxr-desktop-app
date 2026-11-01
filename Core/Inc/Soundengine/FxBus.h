@@ -64,6 +64,8 @@ typedef struct FxStruct
 
 extern INDTCMZ FxBus fxBus;
 
+extern volatile uint32_t fxBus_clipResetSerial;
+float FxBus_clipCoreGain(float q);
 void FxBus_init();
 void FxBus_process(int16_t *fxBuffer, int16_t* outL,int16_t* outR,int16_t* outL2, int16_t* outR2, uint32_t size);
 /* Caller owns gain storage for this synchronous audio call. NULL is unity. */

@@ -18,9 +18,12 @@
 #include "Soundengine/DSPAudio/BufferTools.h"
 #include "Soundengine/DSPAudio/mixer.h"
 INDTCMZ FxBus fxBus;
+/* Control requests only; audio-owned per-voice histories consume this epoch. */
+volatile uint32_t fxBus_clipResetSerial;
 
 void FxBus_init()
 {
+	fxBus_clipResetSerial++;
 	fxBus.dryWet = 0;
 	fxBus.audioRouting = 0;
 	fxBus.fxType = FX_OFF;
@@ -40,7 +43,7 @@ void FxBus_init()
 }
 
 /* Map the replayed squared fader: full output above half physical travel. */
-static inline float FxBus_clipCoreGain(float q)
+float FxBus_clipCoreGain(float q)
 {
     if(q <= 0.f) return 0.f;
     if(q >= .25f) return 1.f;
@@ -184,6 +187,7 @@ IN_ITCM_RAM void FxBus_processWithClipGain(int16_t *fxBuffer, int16_t* outL,int1
 
 void FxBus_prepareFxChange()
 {
+    fxBus_clipResetSerial++;
 	/* Re-entry to CLP starts from quiet runtime history, including same-type recalls. */
 	Distortion_resetClip(&fxBus.distortion);
 	//memset(FX_BUFFER, 0, FX_BUFFER_SIZE*sizeof(__fp16) );
