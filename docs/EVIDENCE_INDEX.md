@@ -1,6 +1,6 @@
 # LXR Firmware Lab — evidence index
 
-Snapshot: 2026-11-01. Start with [PROJECT_STATUS.md](PROJECT_STATUS.md). The following links pin historical content by commit. Later owner observations supplement reports; they do not rewrite what a task knew at its execution date.
+Snapshot: 2026-11-01. Start with [PROJECT_STATUS.md](PROJECT_STATUS.md). The following links pin historical content by commit. Later owner observations supplement reports; they do not rewrite what a task knew at its execution date. The [evidence retention standard](RECORDKEEPING_STANDARD.md) distinguishes published reproducible artifacts from local-only or expiring evidence, and [WORKFLOW.md](WORKFLOW.md) sets the mandatory pre-Codex efficiency gate.
 
 | Evidence | Immutable report |
 |---|---|
