@@ -1,0 +1,71 @@
+{
+  "source_commit": "64263ed25f2e9c7f5d880b493d943bfba29271a8",
+  "verified_source_blobs": 432,
+  "checked_manifest_files": 29,
+  "wrappers": [
+    {
+      "kind": "image",
+      "bytes": 422404,
+      "sha256": "566e335f41546c43313f96b4648e86e7f2dacc82eb67d99e2fd2d47d49d7cbcc"
+    },
+    {
+      "kind": "evidence",
+      "bytes": 8719802,
+      "sha256": "341324a0b404bfd1775c7eccc77bac4dc9686a94ac335b63b31eb67b64899d83"
+    }
+  ],
+  "vector_entries": 126,
+  "nonreserved_vectors": 115,
+  "payload_bytes": 291324,
+  "internal_checksum": "0xd",
+  "stack": "0x20080000",
+  "reset": "0x8013555",
+  "load_segments": [
+    {
+      "start": "0x8008000",
+      "end_exclusive": "0x8042158",
+      "bytes": 237912
+    },
+    {
+      "start": "0x8042158",
+      "end_exclusive": "0x80424b0",
+      "bytes": 856
+    },
+    {
+      "start": "0x80424b0",
+      "end_exclusive": "0x804b534",
+      "bytes": 36996
+    },
+    {
+      "start": "0x804b534",
+      "end_exclusive": "0x804f1fc",
+      "bytes": 15560
+    }
+  ],
+  "files": {
+    "image/LXR_V2_R11.img": {
+      "bytes": 291340,
+      "sha256": "f1779db7861d4c9a54aded8121eb5659a445256ee64453635fcfa4fb1593d2b0"
+    },
+    "image/LXR_V2_R11.zip": {
+      "bytes": 207732,
+      "sha256": "b31c93b5742732e1c280a4789b5ebde75e4354e7acf44cead54ec23a3fce8a30"
+    },
+    "evidence/SOURCE.zip": {
+      "bytes": 1787323,
+      "sha256": "4c1b17d51fe290d0a42accadef9d7d30947b2f485910cea5c148cc838f17b9cf"
+    },
+    "evidence/LXR_V2_STM32F765.elf": {
+      "bytes": 397620,
+      "sha256": "350696b2365c973d07b2670a57c72950a65f9a818090e3599c8487f59d313043"
+    },
+    "evidence/LXR_V2_STM32F765.map": {
+      "bytes": 544145,
+      "sha256": "2b7edab25607c147b06fa2b98d23375732b995a74c09adaaad7261ef114d7d28"
+    },
+    "evidence/HOST_RESULTS.tar.gz": {
+      "bytes": 6154837,
+      "sha256": "3db412a4f3353ee40452031b286c23f72f95bd2742a7df516f94a768c30bd121"
+    }
+  }
+}

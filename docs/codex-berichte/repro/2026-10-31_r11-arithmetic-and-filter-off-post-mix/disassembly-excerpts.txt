@@ -1,0 +1,609 @@
+000018e4 <calcFmSineBlock>:
+    18e4:	2b00      	cmp	r3, #0
+    18e6:	d05c      	beq.n	19a2 <calcFmSineBlock+0xbe>
+    18e8:	ed90 7a06 	vldr	s14, [r0, #24]
+    18ec:	eddf 6a2d 	vldr	s13, [pc, #180]	@ 19a4 <calcFmSineBlock+0xc0>
+    18f0:	e92d 47f0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, lr}
+    18f4:	4690      	mov	r8, r2
+    18f6:	6882      	ldr	r2, [r0, #8]
+    18f8:	6846      	ldr	r6, [r0, #4]
+    18fa:	eb01 0743 	add.w	r7, r1, r3, lsl #1
+    18fe:	f1a8 0502 	sub.w	r5, r8, #2
+    1902:	4696      	mov	lr, r2
+    1904:	4c28      	ldr	r4, [pc, #160]	@ (19a8 <calcFmSineBlock+0xc4>)
+    1906:	e02a      	b.n	195e <calcFmSineBlock+0x7a>
+    1908:	eef4 7ae6 	vcmpe.f32	s15, s13
+    190c:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+    1910:	da3a      	bge.n	1988 <calcFmSineBlock+0xa4>
+    1912:	ea4f 591c 	mov.w	r9, ip, lsr #20
+    1916:	f3cc 0a13 	ubfx	sl, ip, #0, #20
+    191a:	42b9      	cmp	r1, r7
+    191c:	44b6      	add	lr, r6
+    191e:	f109 0c01 	add.w	ip, r9, #1
+    1922:	f934 9019 	ldrsh.w	r9, [r4, r9, lsl #1]
+    1926:	f934 c01c 	ldrsh.w	ip, [r4, ip, lsl #1]
+    192a:	ebac 0c09 	sub.w	ip, ip, r9
+    192e:	fb8c ca0a 	smull	ip, sl, ip, sl
+    1932:	ea4f 5c1c 	mov.w	ip, ip, lsr #20
+    1936:	ea4c 3c0a 	orr.w	ip, ip, sl, lsl #12
+    193a:	44cc      	add	ip, r9
+    193c:	fa0f fc8c 	sxth.w	ip, ip
+    1940:	ee07 ca90 	vmov	s15, ip
+    1944:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+    1948:	ee67 7a80 	vmul.f32	s15, s15, s0
+    194c:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+    1950:	ee17 ca90 	vmov	ip, s15
+    1954:	fa0f fc8c 	sxth.w	ip, ip
+    1958:	f825 cf02 	strh.w	ip, [r5, #2]!
+    195c:	d017      	beq.n	198e <calcFmSineBlock+0xaa>
+    195e:	f931 cb02 	ldrsh.w	ip, [r1], #2
+    1962:	ee07 ca90 	vmov	s15, ip
+    1966:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+    196a:	ee67 7a87 	vmul.f32	s15, s15, s14
+    196e:	eef5 7ac0 	vcmpe.f32	s15, #0.0
+    1972:	eebc 6ae7 	vcvt.u32.f32	s12, s15
+    1976:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+    197a:	ee16 ca10 	vmov	ip, s12
+    197e:	eb0e 4c4c 	add.w	ip, lr, ip, lsl #17
+    1982:	d8c1      	bhi.n	1908 <calcFmSineBlock+0x24>
+    1984:	46f4      	mov	ip, lr
+    1986:	e7c4      	b.n	1912 <calcFmSineBlock+0x2e>
+    1988:	f5ae 3c00 	sub.w	ip, lr, #131072	@ 0x20000
+    198c:	e7c1      	b.n	1912 <calcFmSineBlock+0x2e>
+    198e:	3b01      	subs	r3, #1
+    1990:	4432      	add	r2, r6
+    1992:	b2db      	uxtb	r3, r3
+    1994:	fb03 2206 	mla	r2, r3, r6, r2
+    1998:	6082      	str	r2, [r0, #8]
+    199a:	f828 c013 	strh.w	ip, [r8, r3, lsl #1]
+    199e:	e8bd 87f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, pc}
+    19a2:	4770      	bx	lr
+    19a4:	4f800000 	.word	0x4f800000
+    19a8:	20006870 	.word	0x20006870
+
+00001d24 <calcPwmBlock>:
+    1d24:	2a00      	cmp	r2, #0
+    1d26:	f000 8085 	beq.w	1e34 <calcPwmBlock+0x110>
+    1d2a:	eddf 7a43 	vldr	s15, [pc, #268]	@ 1e38 <calcPwmBlock+0x114>
+    1d2e:	ed9f 7a43 	vldr	s14, [pc, #268]	@ 1e3c <calcPwmBlock+0x118>
+    1d32:	ee60 0aa7 	vmul.f32	s1, s1, s15
+    1d36:	e92d 4ff0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, lr}
+    1d3a:	4689      	mov	r9, r1
+    1d3c:	6884      	ldr	r4, [r0, #8]
+    1d3e:	b083      	sub	sp, #12
+    1d40:	7c45      	ldrb	r5, [r0, #17]
+    1d42:	4690      	mov	r8, r2
+    1d44:	6841      	ldr	r1, [r0, #4]
+    1d46:	02ad      	lsls	r5, r5, #10
+    1d48:	464f      	mov	r7, r9
+    1d4a:	eb09 0a42 	add.w	sl, r9, r2, lsl #1
+    1d4e:	46a6      	mov	lr, r4
+    1d50:	4e3b      	ldr	r6, [pc, #236]	@ (1e40 <calcPwmBlock+0x11c>)
+    1d52:	e9cd 4000 	strd	r4, r0, [sp]
+    1d56:	e03f      	b.n	1dd8 <calcPwmBlock+0xb4>
+    1d58:	eef4 7ac7 	vcmpe.f32	s15, s14
+    1d5c:	f3c2 0209 	ubfx	r2, r2, #0, #10
+    1d60:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+    1d64:	da51      	bge.n	1e0a <calcPwmBlock+0xe6>
+    1d66:	ea4f 539e 	mov.w	r3, lr, lsr #22
+    1d6a:	442c      	add	r4, r5
+    1d6c:	eb05 5c9e 	add.w	ip, r5, lr, lsr #22
+    1d70:	442a      	add	r2, r5
+    1d72:	3301      	adds	r3, #1
+    1d74:	f936 b014 	ldrsh.w	fp, [r6, r4, lsl #1]
+    1d78:	f936 c01c 	ldrsh.w	ip, [r6, ip, lsl #1]
+    1d7c:	f3ce 0415 	ubfx	r4, lr, #0, #22
+    1d80:	f3c3 0309 	ubfx	r3, r3, #0, #10
+    1d84:	f936 2012 	ldrsh.w	r2, [r6, r2, lsl #1]
+    1d88:	442b      	add	r3, r5
+    1d8a:	eba2 020b 	sub.w	r2, r2, fp
+    1d8e:	f936 3013 	ldrsh.w	r3, [r6, r3, lsl #1]
+    1d92:	fb82 2000 	smull	r2, r0, r2, r0
+    1d96:	eba3 030c 	sub.w	r3, r3, ip
+    1d9a:	0d92      	lsrs	r2, r2, #22
+    1d9c:	fb83 3404 	smull	r3, r4, r3, r4
+    1da0:	ea42 2280 	orr.w	r2, r2, r0, lsl #10
+    1da4:	0d9b      	lsrs	r3, r3, #22
+    1da6:	445a      	add	r2, fp
+    1da8:	ea43 2384 	orr.w	r3, r3, r4, lsl #10
+    1dac:	b212      	sxth	r2, r2
+    1dae:	4463      	add	r3, ip
+    1db0:	b21b      	sxth	r3, r3
+    1db2:	fad3 f312 	qsub16	r3, r3, r2
+    1db6:	b21b      	sxth	r3, r3
+    1db8:	448e      	add	lr, r1
+    1dba:	ee07 3a90 	vmov	s15, r3
+    1dbe:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+    1dc2:	ee67 7a80 	vmul.f32	s15, s15, s0
+    1dc6:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+    1dca:	ee17 2a90 	vmov	r2, s15
+    1dce:	b212      	sxth	r2, r2
+    1dd0:	f827 2b02 	strh.w	r2, [r7], #2
+    1dd4:	45ba      	cmp	sl, r7
+    1dd6:	d01d      	beq.n	1e14 <calcPwmBlock+0xf0>
+    1dd8:	ee07 ea90 	vmov	s15, lr
+    1ddc:	eef8 7a67 	vcvt.f32.u32	s15, s15
+    1de0:	ee77 7aa0 	vadd.f32	s15, s15, s1
+    1de4:	eefc 6ae7 	vcvt.u32.f32	s13, s15
+    1de8:	eef5 7ac0 	vcmpe.f32	s15, #0.0
+    1dec:	ee16 0a90 	vmov	r0, s13
+    1df0:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+    1df4:	ea4f 5490 	mov.w	r4, r0, lsr #22
+    1df8:	f3c0 0015 	ubfx	r0, r0, #0, #22
+    1dfc:	f104 0201 	add.w	r2, r4, #1
+    1e00:	d8aa      	bhi.n	1d58 <calcPwmBlock+0x34>
+    1e02:	2000      	movs	r0, #0
+    1e04:	2201      	movs	r2, #1
+    1e06:	4604      	mov	r4, r0
+    1e08:	e7ad      	b.n	1d66 <calcPwmBlock+0x42>
+    1e0a:	480e      	ldr	r0, [pc, #56]	@ (1e44 <calcPwmBlock+0x120>)
+    1e0c:	2200      	movs	r2, #0
+    1e0e:	f240 34ff 	movw	r4, #1023	@ 0x3ff
+    1e12:	e7a8      	b.n	1d66 <calcPwmBlock+0x42>
+    1e14:	e9dd 4000 	ldrd	r4, r0, [sp]
+    1e18:	f108 38ff 	add.w	r8, r8, #4294967295	@ 0xffffffff
+    1e1c:	440c      	add	r4, r1
+    1e1e:	8003      	strh	r3, [r0, #0]
+    1e20:	fa5f f888 	uxtb.w	r8, r8
+    1e24:	fb08 4401 	mla	r4, r8, r1, r4
+    1e28:	6084      	str	r4, [r0, #8]
+    1e2a:	f829 2018 	strh.w	r2, [r9, r8, lsl #1]
+    1e2e:	b003      	add	sp, #12
+    1e30:	e8bd 8ff0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, pc}
+    1e34:	4770      	bx	lr
+    1e36:	bf00      	nop
+    1e38:	4f000000 	.word	0x4f000000
+    1e3c:	4f800000 	.word	0x4f800000
+    1e40:	0803bd80 	.word	0x0803bd80
+    1e44:	003fffff 	.word	0x003fffff
+
+00001a7c <calcNextOscSampleFmBlock>:
+    1a7c:	e92d 47f0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, lr}
+    1a80:	4604      	mov	r4, r0
+    1a82:	461d      	mov	r5, r3
+    1a84:	ed2d 8b02 	vpush	{d8}
+    1a88:	7c00      	ldrb	r0, [r0, #16]
+    1a8a:	eeb0 8a40 	vmov.f32	s16, s0
+    1a8e:	b082      	sub	sp, #8
+    1a90:	2805      	cmp	r0, #5
+    1a92:	d80b      	bhi.n	1aac <calcNextOscSampleFmBlock+0x30>
+    1a94:	e8df f000 	tbb	[pc, r0]
+    1a98:	03756918 	.word	0x03756918
+    1a9c:	0f81      	.short	0x0f81
+    1a9e:	4613      	mov	r3, r2
+    1aa0:	4620      	mov	r0, r4
+    1aa2:	460a      	mov	r2, r1
+    1aa4:	9500      	str	r5, [sp, #0]
+    1aa6:	495f      	ldr	r1, [pc, #380]	@ (1c24 <calcNextOscSampleFmBlock+0x1a8>)
+    1aa8:	f7ff ff80 	bl	19ac <calcFmBlock>
+    1aac:	b002      	add	sp, #8
+    1aae:	ecbd 8b02 	vpop	{d8}
+    1ab2:	e8bd 87f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, pc}
+    1ab6:	462b      	mov	r3, r5
+    1ab8:	4620      	mov	r0, r4
+    1aba:	b002      	add	sp, #8
+    1abc:	ecbd 8b02 	vpop	{d8}
+    1ac0:	e8bd 47f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, lr}
+    1ac4:	f002 b854 	b.w	3b70 <__calcPwmFmBlock_veneer>
+    1ac8:	2d00      	cmp	r5, #0
+    1aca:	d0ef      	beq.n	1aac <calcNextOscSampleFmBlock+0x30>
+    1acc:	f8d4 8008 	ldr.w	r8, [r4, #8]
+    1ad0:	f1a2 0e02 	sub.w	lr, r2, #2
+    1ad4:	ed94 7a06 	vldr	s14, [r4, #24]
+    1ad8:	eb01 0745 	add.w	r7, r1, r5, lsl #1
+    1adc:	eddf 6a52 	vldr	s13, [pc, #328]	@ 1c28 <calcNextOscSampleFmBlock+0x1ac>
+    1ae0:	4643      	mov	r3, r8
+    1ae2:	6866      	ldr	r6, [r4, #4]
+    1ae4:	4851      	ldr	r0, [pc, #324]	@ (1c2c <calcNextOscSampleFmBlock+0x1b0>)
+    1ae6:	e02b      	b.n	1b40 <calcNextOscSampleFmBlock+0xc4>
+    1ae8:	eef4 7ae6 	vcmpe.f32	s15, s13
+    1aec:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+    1af0:	f280 8087 	bge.w	1c02 <calcNextOscSampleFmBlock+0x186>
+    1af4:	ea4f 591c 	mov.w	r9, ip, lsr #20
+    1af8:	f3cc 0a13 	ubfx	sl, ip, #0, #20
+    1afc:	42b9      	cmp	r1, r7
+    1afe:	4433      	add	r3, r6
+    1b00:	f109 0c01 	add.w	ip, r9, #1
+    1b04:	f930 9019 	ldrsh.w	r9, [r0, r9, lsl #1]
+    1b08:	f930 c01c 	ldrsh.w	ip, [r0, ip, lsl #1]
+    1b0c:	ebac 0c09 	sub.w	ip, ip, r9
+    1b10:	fb8c ca0a 	smull	ip, sl, ip, sl
+    1b14:	ea4f 5c1c 	mov.w	ip, ip, lsr #20
+    1b18:	ea4c 3c0a 	orr.w	ip, ip, sl, lsl #12
+    1b1c:	44cc      	add	ip, r9
+    1b1e:	fa0f fc8c 	sxth.w	ip, ip
+    1b22:	ee07 ca90 	vmov	s15, ip
+    1b26:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+    1b2a:	ee67 7a88 	vmul.f32	s15, s15, s16
+    1b2e:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+    1b32:	ee17 ca90 	vmov	ip, s15
+    1b36:	fa0f fc8c 	sxth.w	ip, ip
+    1b3a:	f82e cf02 	strh.w	ip, [lr, #2]!
+    1b3e:	d063      	beq.n	1c08 <calcNextOscSampleFmBlock+0x18c>
+    1b40:	f931 cb02 	ldrsh.w	ip, [r1], #2
+    1b44:	ee07 ca90 	vmov	s15, ip
+    1b48:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+    1b4c:	ee67 7a87 	vmul.f32	s15, s15, s14
+    1b50:	eef5 7ac0 	vcmpe.f32	s15, #0.0
+    1b54:	eebc 6ae7 	vcvt.u32.f32	s12, s15
+    1b58:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+    1b5c:	ee16 ca10 	vmov	ip, s12
+    1b60:	eb03 4c4c 	add.w	ip, r3, ip, lsl #17
+    1b64:	d8c0      	bhi.n	1ae8 <calcNextOscSampleFmBlock+0x6c>
+    1b66:	469c      	mov	ip, r3
+    1b68:	e7c4      	b.n	1af4 <calcNextOscSampleFmBlock+0x78>
+    1b6a:	4613      	mov	r3, r2
+    1b6c:	4620      	mov	r0, r4
+    1b6e:	460a      	mov	r2, r1
+    1b70:	492f      	ldr	r1, [pc, #188]	@ (1c30 <calcNextOscSampleFmBlock+0x1b4>)
+    1b72:	9500      	str	r5, [sp, #0]
+    1b74:	f7ff ff1a 	bl	19ac <calcFmBlock>
+    1b78:	b002      	add	sp, #8
+    1b7a:	ecbd 8b02 	vpop	{d8}
+    1b7e:	e8bd 87f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, pc}
+    1b82:	4613      	mov	r3, r2
+    1b84:	4620      	mov	r0, r4
+    1b86:	460a      	mov	r2, r1
+    1b88:	492a      	ldr	r1, [pc, #168]	@ (1c34 <calcNextOscSampleFmBlock+0x1b8>)
+    1b8a:	9500      	str	r5, [sp, #0]
+    1b8c:	f7ff ff0e 	bl	19ac <calcFmBlock>
+    1b90:	b002      	add	sp, #8
+    1b92:	ecbd 8b02 	vpop	{d8}
+    1b96:	e8bd 87f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, pc}
+    1b9a:	2d00      	cmp	r5, #0
+    1b9c:	d086      	beq.n	1aac <calcNextOscSampleFmBlock+0x30>
+    1b9e:	4616      	mov	r6, r2
+    1ba0:	6862      	ldr	r2, [r4, #4]
+    1ba2:	eb06 0545 	add.w	r5, r6, r5, lsl #1
+    1ba6:	68a3      	ldr	r3, [r4, #8]
+    1ba8:	189b      	adds	r3, r3, r2
+    1baa:	60a3      	str	r3, [r4, #8]
+    1bac:	d214      	bcs.n	1bd8 <calcNextOscSampleFmBlock+0x15c>
+    1bae:	f9b4 3000 	ldrsh.w	r3, [r4]
+    1bb2:	ee07 3a90 	vmov	s15, r3
+    1bb6:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+    1bba:	ee67 7a88 	vmul.f32	s15, s15, s16
+    1bbe:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+    1bc2:	ee17 3a90 	vmov	r3, s15
+    1bc6:	f826 3b02 	strh.w	r3, [r6], #2
+    1bca:	42b5      	cmp	r5, r6
+    1bcc:	f43f af6e 	beq.w	1aac <calcNextOscSampleFmBlock+0x30>
+    1bd0:	68a3      	ldr	r3, [r4, #8]
+    1bd2:	189b      	adds	r3, r3, r2
+    1bd4:	60a3      	str	r3, [r4, #8]
+    1bd6:	d3ea      	bcc.n	1bae <calcNextOscSampleFmBlock+0x132>
+    1bd8:	f001 ffaa 	bl	3b30 <__GetRngValue_veneer>
+    1bdc:	b200      	sxth	r0, r0
+    1bde:	ee07 0a90 	vmov	s15, r0
+    1be2:	8020      	strh	r0, [r4, #0]
+    1be4:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+    1be8:	ee67 7a88 	vmul.f32	s15, s15, s16
+    1bec:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+    1bf0:	ee17 3a90 	vmov	r3, s15
+    1bf4:	f826 3b02 	strh.w	r3, [r6], #2
+    1bf8:	42b5      	cmp	r5, r6
+    1bfa:	f43f af57 	beq.w	1aac <calcNextOscSampleFmBlock+0x30>
+    1bfe:	6862      	ldr	r2, [r4, #4]
+    1c00:	e7d1      	b.n	1ba6 <calcNextOscSampleFmBlock+0x12a>
+    1c02:	f5a3 3c00 	sub.w	ip, r3, #131072	@ 0x20000
+    1c06:	e775      	b.n	1af4 <calcNextOscSampleFmBlock+0x78>
+    1c08:	3d01      	subs	r5, #1
+    1c0a:	44b0      	add	r8, r6
+    1c0c:	b2ed      	uxtb	r5, r5
+    1c0e:	fb05 8606 	mla	r6, r5, r6, r8
+    1c12:	60a6      	str	r6, [r4, #8]
+    1c14:	f822 c015 	strh.w	ip, [r2, r5, lsl #1]
+    1c18:	b002      	add	sp, #8
+    1c1a:	ecbd 8b02 	vpop	{d8}
+    1c1e:	e8bd 87f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, pc}
+    1c22:	bf00      	nop
+    1c24:	08036580 	.word	0x08036580
+    1c28:	4f800000 	.word	0x4f800000
+    1c2c:	20006870 	.word	0x20006870
+    1c30:	08030d80 	.word	0x08030d80
+    1c34:	0803bd80 	.word	0x0803bd80
+
+08023aa4 <transient_calcBlock>:
+ 8023aa4:	b5f0      	push	{r4, r5, r6, r7, lr}
+ 8023aa6:	4686      	mov	lr, r0
+ 8023aa8:	4614      	mov	r4, r2
+ 8023aaa:	4608      	mov	r0, r1
+ 8023aac:	f89e 200c 	ldrb.w	r2, [lr, #12]
+ 8023ab0:	2a01      	cmp	r2, #1
+ 8023ab2:	d955      	bls.n	8023b60 <transient_calcBlock+0xbc>
+ 8023ab4:	f8de 3004 	ldr.w	r3, [lr, #4]
+ 8023ab8:	492d      	ldr	r1, [pc, #180]	@ (8023b70 <transient_calcBlock+0xcc>)
+ 8023aba:	428b      	cmp	r3, r1
+ 8023abc:	d850      	bhi.n	8023b60 <transient_calcBlock+0xbc>
+ 8023abe:	2c00      	cmp	r4, #0
+ 8023ac0:	d055      	beq.n	8023b6e <transient_calcBlock+0xca>
+ 8023ac2:	3a02      	subs	r2, #2
+ 8023ac4:	f640 059d 	movw	r5, #2205	@ 0x89d
+ 8023ac8:	4e2a      	ldr	r6, [pc, #168]	@ (8023b74 <transient_calcBlock+0xd0>)
+ 8023aca:	edde 5a04 	vldr	s11, [lr, #16]
+ 8023ace:	fb05 6602 	mla	r6, r5, r2, r6
+ 8023ad2:	ed9e 6a02 	vldr	s12, [lr, #8]
+ 8023ad6:	eddf 6a28 	vldr	s13, [pc, #160]	@ 8023b78 <transient_calcBlock+0xd4>
+ 8023ada:	4605      	mov	r5, r0
+ 8023adc:	2200      	movs	r2, #0
+ 8023ade:	0d1f      	lsrs	r7, r3, #20
+ 8023ae0:	ee07 3a90 	vmov	s15, r3
+ 8023ae4:	f102 0c01 	add.w	ip, r2, #1
+ 8023ae8:	3502      	adds	r5, #2
+ 8023aea:	57f3      	ldrsb	r3, [r6, r7]
+ 8023aec:	eeb8 7a67 	vcvt.f32.u32	s14, s15
+ 8023af0:	fa5f fc8c 	uxtb.w	ip, ip
+ 8023af4:	021b      	lsls	r3, r3, #8
+ 8023af6:	eea6 7a26 	vfma.f32	s14, s12, s13
+ 8023afa:	4564      	cmp	r4, ip
+ 8023afc:	ee07 3a90 	vmov	s15, r3
+ 8023b00:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 8023b04:	ee67 7aa5 	vmul.f32	s15, s15, s11
+ 8023b08:	eebc 7ac7 	vcvt.u32.f32	s14, s14
+ 8023b0c:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+ 8023b10:	ee17 3a10 	vmov	r3, s14
+ 8023b14:	ee17 7a90 	vmov	r7, s15
+ 8023b18:	f825 7c02 	strh.w	r7, [r5, #-2]
+ 8023b1c:	ed8e 7a01 	vstr	s14, [lr, #4]
+ 8023b20:	d025      	beq.n	8023b6e <transient_calcBlock+0xca>
+ 8023b22:	428b      	cmp	r3, r1
+ 8023b24:	d91a      	bls.n	8023b5c <transient_calcBlock+0xb8>
+ 8023b26:	f102 0e02 	add.w	lr, r2, #2
+ 8023b2a:	2100      	movs	r1, #0
+ 8023b2c:	fa5f fe8e 	uxtb.w	lr, lr
+ 8023b30:	8029      	strh	r1, [r5, #0]
+ 8023b32:	4574      	cmp	r4, lr
+ 8023b34:	d01b      	beq.n	8023b6e <transient_calcBlock+0xca>
+ 8023b36:	eba4 030e 	sub.w	r3, r4, lr
+ 8023b3a:	f102 0c03 	add.w	ip, r2, #3
+ 8023b3e:	eb00 004e 	add.w	r0, r0, lr, lsl #1
+ 8023b42:	1e5a      	subs	r2, r3, #1
+ 8023b44:	fa5f fc8c 	uxtb.w	ip, ip
+ 8023b48:	b2d2      	uxtb	r2, r2
+ 8023b4a:	3201      	adds	r2, #1
+ 8023b4c:	0052      	lsls	r2, r2, #1
+ 8023b4e:	4564      	cmp	r4, ip
+ 8023b50:	bf38      	it	cc
+ 8023b52:	2202      	movcc	r2, #2
+ 8023b54:	e8bd 40f0 	ldmia.w	sp!, {r4, r5, r6, r7, lr}
+ 8023b58:	f008 becf 	b.w	802c8fa <memset>
+ 8023b5c:	4662      	mov	r2, ip
+ 8023b5e:	e7be      	b.n	8023ade <transient_calcBlock+0x3a>
+ 8023b60:	0862      	lsrs	r2, r4, #1
+ 8023b62:	2100      	movs	r1, #0
+ 8023b64:	0092      	lsls	r2, r2, #2
+ 8023b66:	e8bd 40f0 	ldmia.w	sp!, {r4, r5, r6, r7, lr}
+ 8023b6a:	f008 bec6 	b.w	802c8fa <memset>
+ 8023b6e:	bdf0      	pop	{r4, r5, r6, r7, pc}
+ 8023b70:	89bfffff 	.word	0x89bfffff
+ 8023b74:	20000000 	.word	0x20000000
+ 8023b78:	49800000 	.word	0x49800000
+ 8023b7c:	00000000 	.word	0x00000000
+
+08022a4c <mixer_soloMixForBlock>:
+ 8022a4c:	4b11      	ldr	r3, [pc, #68]	@ (8022a94 <mixer_soloMixForBlock+0x48>)
+ 8022a4e:	4812      	ldr	r0, [pc, #72]	@ (8022a98 <mixer_soloMixForBlock+0x4c>)
+ 8022a50:	6d59      	ldr	r1, [r3, #84]	@ 0x54
+ 8022a52:	f203 5cd4 	addw	ip, r3, #1492	@ 0x5d4
+ 8022a56:	4a11      	ldr	r2, [pc, #68]	@ (8022a9c <mixer_soloMixForBlock+0x50>)
+ 8022a58:	f8d0 0080 	ldr.w	r0, [r0, #128]	@ 0x80
+ 8022a5c:	f8d2 2080 	ldr.w	r2, [r2, #128]	@ 0x80
+ 8022a60:	b510      	push	{r4, lr}
+ 8022a62:	b086      	sub	sp, #24
+ 8022a64:	4c0e      	ldr	r4, [pc, #56]	@ (8022aa0 <mixer_soloMixForBlock+0x54>)
+ 8022a66:	9100      	str	r1, [sp, #0]
+ 8022a68:	f8d3 1314 	ldr.w	r1, [r3, #788]	@ 0x314
+ 8022a6c:	f8dc 3000 	ldr.w	r3, [ip]
+ 8022a70:	9101      	str	r1, [sp, #4]
+ 8022a72:	490c      	ldr	r1, [pc, #48]	@ (8022aa4 <mixer_soloMixForBlock+0x58>)
+ 8022a74:	f8d4 c054 	ldr.w	ip, [r4, #84]	@ 0x54
+ 8022a78:	9302      	str	r3, [sp, #8]
+ 8022a7a:	466b      	mov	r3, sp
+ 8022a7c:	9004      	str	r0, [sp, #16]
+ 8022a7e:	9205      	str	r2, [sp, #20]
+ 8022a80:	4809      	ldr	r0, [pc, #36]	@ (8022aa8 <mixer_soloMixForBlock+0x5c>)
+ 8022a82:	7e0a      	ldrb	r2, [r1, #24]
+ 8022a84:	7809      	ldrb	r1, [r1, #0]
+ 8022a86:	f8cd c00c 	str.w	ip, [sp, #12]
+ 8022a8a:	f003 ffad 	bl	80269e8 <SoloMix_begin>
+ 8022a8e:	b006      	add	sp, #24
+ 8022a90:	bd10      	pop	{r4, pc}
+ 8022a92:	bf00      	nop
+ 8022a94:	20009238 	.word	0x20009238
+ 8022a98:	200090b8 	.word	0x200090b8
+ 8022a9c:	20009a78 	.word	0x20009a78
+ 8022aa0:	20009da8 	.word	0x20009da8
+ 8022aa4:	2001a320 	.word	0x2001a320
+ 8022aa8:	20009d40 	.word	0x20009d40
+
+08026acc <SoloMix_drum>:
+ 8026acc:	e92d 4ff8 	stmdb	sp!, {r3, r4, r5, r6, r7, r8, r9, sl, fp, lr}
+ 8026ad0:	ed2d 8b02 	vpush	{d8}
+ 8026ad4:	f8dd b034 	ldr.w	fp, [sp, #52]	@ 0x34
+ 8026ad8:	b3b2      	cbz	r2, 8026b48 <SoloMix_drum+0x7c>
+ 8026ada:	4681      	mov	r9, r0
+ 8026adc:	469a      	mov	sl, r3
+ 8026ade:	4690      	mov	r8, r2
+ 8026ae0:	1e8c      	subs	r4, r1, #2
+ 8026ae2:	4f1b      	ldr	r7, [pc, #108]	@ (8026b50 <SoloMix_drum+0x84>)
+ 8026ae4:	2500      	movs	r5, #0
+ 8026ae6:	4e1b      	ldr	r6, [pc, #108]	@ (8026b54 <SoloMix_drum+0x88>)
+ 8026ae8:	ed96 0a00 	vldr	s0, [r6]
+ 8026aec:	4650      	mov	r0, sl
+ 8026aee:	3501      	adds	r5, #1
+ 8026af0:	eeb7 0ac0 	vcvt.f64.f32	d0, s0
+ 8026af4:	f007 f9b0 	bl	802de58 <__calcOnePole_veneer>
+ 8026af8:	ed96 8a00 	vldr	s16, [r6]
+ 8026afc:	4648      	mov	r0, r9
+ 8026afe:	eeb5 8a40 	vcmp.f32	s16, #0.0
+ 8026b02:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8026b06:	bf0c      	ite	eq
+ 8026b08:	eeb0 0a48 	vmoveq.f32	s0, s16
+ 8026b0c:	eeb7 8a00 	vmovne.f32	s16, #112	@ 0x3f800000  1.0
+ 8026b10:	eca7 0a01 	vstmia	r7!, {s0}
+ 8026b14:	f7ee f878 	bl	8014c08 <adc_getFaderVolume>
+ 8026b18:	980c      	ldr	r0, [sp, #48]	@ 0x30
+ 8026b1a:	eeb7 0ac0 	vcvt.f64.f32	d0, s0
+ 8026b1e:	f007 f99b 	bl	802de58 <__calcOnePole_veneer>
+ 8026b22:	f934 3f02 	ldrsh.w	r3, [r4, #2]!
+ 8026b26:	ee20 0a08 	vmul.f32	s0, s0, s16
+ 8026b2a:	4545      	cmp	r5, r8
+ 8026b2c:	ee07 3a90 	vmov	s15, r3
+ 8026b30:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 8026b34:	ed8b 0a00 	vstr	s0, [fp]
+ 8026b38:	ee67 7a80 	vmul.f32	s15, s15, s0
+ 8026b3c:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+ 8026b40:	ee17 3a90 	vmov	r3, s15
+ 8026b44:	8023      	strh	r3, [r4, #0]
+ 8026b46:	d1cf      	bne.n	8026ae8 <SoloMix_drum+0x1c>
+ 8026b48:	ecbd 8b02 	vpop	{d8}
+ 8026b4c:	e8bd 8ff8 	ldmia.w	sp!, {r3, r4, r5, r6, r7, r8, r9, sl, fp, pc}
+ 8026b50:	2001a598 	.word	0x2001a598
+ 8026b54:	200271a8 	.word	0x200271a8
+
+08026b58 <SoloMix_snareSample>:
+ 8026b58:	eddf 7a0c 	vldr	s15, [pc, #48]	@ 8026b8c <SoloMix_snareSample+0x34>
+ 8026b5c:	eeb4 0ae7 	vcmpe.f32	s0, s15
+ 8026b60:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8026b64:	dc0c      	bgt.n	8026b80 <SoloMix_snareSample+0x28>
+ 8026b66:	eddf 7a0a 	vldr	s15, [pc, #40]	@ 8026b90 <SoloMix_snareSample+0x38>
+ 8026b6a:	eeb4 0ae7 	vcmpe.f32	s0, s15
+ 8026b6e:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8026b72:	d408      	bmi.n	8026b86 <SoloMix_snareSample+0x2e>
+ 8026b74:	eebd 0ac0 	vcvt.s32.f32	s0, s0
+ 8026b78:	ee10 3a10 	vmov	r3, s0
+ 8026b7c:	b218      	sxth	r0, r3
+ 8026b7e:	4770      	bx	lr
+ 8026b80:	f647 70ff 	movw	r0, #32767	@ 0x7fff
+ 8026b84:	4770      	bx	lr
+ 8026b86:	4803      	ldr	r0, [pc, #12]	@ (8026b94 <SoloMix_snareSample+0x3c>)
+ 8026b88:	4770      	bx	lr
+ 8026b8a:	bf00      	nop
+ 8026b8c:	46fffe00 	.word	0x46fffe00
+ 8026b90:	c7000000 	.word	0xc7000000
+ 8026b94:	ffff8000 	.word	0xffff8000
+
+08026bd4 <SoloMix_process>:
+ 8026bd4:	e92d 4ff0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, lr}
+ 8026bd8:	f8df 8160 	ldr.w	r8, [pc, #352]	@ 8026d3c <SoloMix_process+0x168>
+ 8026bdc:	b087      	sub	sp, #28
+ 8026bde:	f8d8 7000 	ldr.w	r7, [r8]
+ 8026be2:	f8dd 9048 	ldr.w	r9, [sp, #72]	@ 0x48
+ 8026be6:	2f00      	cmp	r7, #0
+ 8026be8:	9004      	str	r0, [sp, #16]
+ 8026bea:	9305      	str	r3, [sp, #20]
+ 8026bec:	e9dd a510 	ldrd	sl, r5, [sp, #64]	@ 0x40
+ 8026bf0:	f2c0 8092 	blt.w	8026d18 <SoloMix_process+0x144>
+ 8026bf4:	006b      	lsls	r3, r5, #1
+ 8026bf6:	460e      	mov	r6, r1
+ 8026bf8:	4614      	mov	r4, r2
+ 8026bfa:	d004      	beq.n	8026c06 <SoloMix_process+0x32>
+ 8026bfc:	00aa      	lsls	r2, r5, #2
+ 8026bfe:	2100      	movs	r1, #0
+ 8026c00:	484b      	ldr	r0, [pc, #300]	@ (8026d30 <SoloMix_process+0x15c>)
+ 8026c02:	f005 fe7a 	bl	802c8fa <memset>
+ 8026c06:	f8df b138 	ldr.w	fp, [pc, #312]	@ 8026d40 <SoloMix_process+0x16c>
+ 8026c0a:	9804      	ldr	r0, [sp, #16]
+ 8026c0c:	f89b 3001 	ldrb.w	r3, [fp, #1]
+ 8026c10:	f8cd 9008 	str.w	r9, [sp, #8]
+ 8026c14:	2b01      	cmp	r3, #1
+ 8026c16:	4b46      	ldr	r3, [pc, #280]	@ (8026d30 <SoloMix_process+0x15c>)
+ 8026c18:	bf98      	it	ls
+ 8026c1a:	4a46      	ldrls	r2, [pc, #280]	@ (8026d34 <SoloMix_process+0x160>)
+ 8026c1c:	4619      	mov	r1, r3
+ 8026c1e:	bf88      	it	hi
+ 8026c20:	4a43      	ldrhi	r2, [pc, #268]	@ (8026d30 <SoloMix_process+0x15c>)
+ 8026c22:	e9cd 2500 	strd	r2, r5, [sp]
+ 8026c26:	f007 f913 	bl	802de50 <__FxBus_processWithClipGain_veneer>
+ 8026c2a:	f89b 2001 	ldrb.w	r2, [fp, #1]
+ 8026c2e:	1e53      	subs	r3, r2, #1
+ 8026c30:	2b04      	cmp	r3, #4
+ 8026c32:	d86a      	bhi.n	8026d0a <SoloMix_process+0x136>
+ 8026c34:	e8df f003 	tbb	[pc, r3]
+ 8026c38:	65616927 	.word	0x65616927
+ 8026c3c:	03          	.byte	0x03
+ 8026c3d:	00          	.byte	0x00
+ 8026c3e:	b1dd      	cbz	r5, 8026c78 <SoloMix_process+0xa4>
+ 8026c40:	483d      	ldr	r0, [pc, #244]	@ (8026d38 <SoloMix_process+0x164>)
+ 8026c42:	2100      	movs	r1, #0
+ 8026c44:	4a3a      	ldr	r2, [pc, #232]	@ (8026d30 <SoloMix_process+0x15c>)
+ 8026c46:	f932 3021 	ldrsh.w	r3, [r2, r1, lsl #2]
+ 8026c4a:	ecb0 7a01 	vldmia	r0!, {s14}
+ 8026c4e:	ee07 3a90 	vmov	s15, r3
+ 8026c52:	f934 6021 	ldrsh.w	r6, [r4, r1, lsl #2]
+ 8026c56:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 8026c5a:	ee67 7a87 	vmul.f32	s15, s15, s14
+ 8026c5e:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+ 8026c62:	ee17 3a90 	vmov	r3, s15
+ 8026c66:	fa06 f383 	sxtah	r3, r6, r3
+ 8026c6a:	f303 030f 	ssat	r3, #16, r3
+ 8026c6e:	f824 3021 	strh.w	r3, [r4, r1, lsl #2]
+ 8026c72:	3101      	adds	r1, #1
+ 8026c74:	428d      	cmp	r5, r1
+ 8026c76:	d1e6      	bne.n	8026c46 <SoloMix_process+0x72>
+ 8026c78:	f04f 33ff 	mov.w	r3, #4294967295	@ 0xffffffff
+ 8026c7c:	f8c8 3000 	str.w	r3, [r8]
+ 8026c80:	b007      	add	sp, #28
+ 8026c82:	e8bd 8ff0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, pc}
+ 8026c86:	2d00      	cmp	r5, #0
+ 8026c88:	d0f6      	beq.n	8026c78 <SoloMix_process+0xa4>
+ 8026c8a:	4f2a      	ldr	r7, [pc, #168]	@ (8026d34 <SoloMix_process+0x160>)
+ 8026c8c:	2100      	movs	r1, #0
+ 8026c8e:	482a      	ldr	r0, [pc, #168]	@ (8026d38 <SoloMix_process+0x164>)
+ 8026c90:	1eba      	subs	r2, r7, #2
+ 8026c92:	f932 3021 	ldrsh.w	r3, [r2, r1, lsl #2]
+ 8026c96:	ecb0 7a01 	vldmia	r0!, {s14}
+ 8026c9a:	ee07 3a90 	vmov	s15, r3
+ 8026c9e:	f936 c021 	ldrsh.w	ip, [r6, r1, lsl #2]
+ 8026ca2:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 8026ca6:	ee67 7a87 	vmul.f32	s15, s15, s14
+ 8026caa:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+ 8026cae:	ee17 3a90 	vmov	r3, s15
+ 8026cb2:	fa0c f383 	sxtah	r3, ip, r3
+ 8026cb6:	f303 030f 	ssat	r3, #16, r3
+ 8026cba:	f826 3021 	strh.w	r3, [r6, r1, lsl #2]
+ 8026cbe:	f937 3021 	ldrsh.w	r3, [r7, r1, lsl #2]
+ 8026cc2:	f934 c021 	ldrsh.w	ip, [r4, r1, lsl #2]
+ 8026cc6:	ee07 3a90 	vmov	s15, r3
+ 8026cca:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 8026cce:	ee67 7a87 	vmul.f32	s15, s15, s14
+ 8026cd2:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+ 8026cd6:	ee17 3a90 	vmov	r3, s15
+ 8026cda:	fa0c f383 	sxtah	r3, ip, r3
+ 8026cde:	f303 030f 	ssat	r3, #16, r3
+ 8026ce2:	f824 3021 	strh.w	r3, [r4, r1, lsl #2]
+ 8026ce6:	3101      	adds	r1, #1
+ 8026ce8:	428d      	cmp	r5, r1
+ 8026cea:	d1d2      	bne.n	8026c92 <SoloMix_process+0xbe>
+ 8026cec:	f04f 33ff 	mov.w	r3, #4294967295	@ 0xffffffff
+ 8026cf0:	f8c8 3000 	str.w	r3, [r8]
+ 8026cf4:	b007      	add	sp, #28
+ 8026cf6:	e8bd 8ff0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, pc}
+ 8026cfa:	2d00      	cmp	r5, #0
+ 8026cfc:	d0bc      	beq.n	8026c78 <SoloMix_process+0xa4>
+ 8026cfe:	4654      	mov	r4, sl
+ 8026d00:	e79e      	b.n	8026c40 <SoloMix_process+0x6c>
+ 8026d02:	2d00      	cmp	r5, #0
+ 8026d04:	d0b8      	beq.n	8026c78 <SoloMix_process+0xa4>
+ 8026d06:	4634      	mov	r4, r6
+ 8026d08:	e79a      	b.n	8026c40 <SoloMix_process+0x6c>
+ 8026d0a:	2d00      	cmp	r5, #0
+ 8026d0c:	d0b4      	beq.n	8026c78 <SoloMix_process+0xa4>
+ 8026d0e:	2a01      	cmp	r2, #1
+ 8026d10:	d80b      	bhi.n	8026d2a <SoloMix_process+0x156>
+ 8026d12:	4654      	mov	r4, sl
+ 8026d14:	9e05      	ldr	r6, [sp, #20]
+ 8026d16:	e7b8      	b.n	8026c8a <SoloMix_process+0xb6>
+ 8026d18:	e9cd 5911 	strd	r5, r9, [sp, #68]	@ 0x44
+ 8026d1c:	f8cd a040 	str.w	sl, [sp, #64]	@ 0x40
+ 8026d20:	b007      	add	sp, #28
+ 8026d22:	e8bd 4ff0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, lr}
+ 8026d26:	f007 b893 	b.w	802de50 <__FxBus_processWithClipGain_veneer>
+ 8026d2a:	9c05      	ldr	r4, [sp, #20]
+ 8026d2c:	e788      	b.n	8026c40 <SoloMix_process+0x6c>
+ 8026d2e:	bf00      	nop
+ 8026d30:	2001a498 	.word	0x2001a498
+ 8026d34:	2001a49a 	.word	0x2001a49a
+ 8026d38:	2001a598 	.word	0x2001a598
+ 8026d3c:	200202e4 	.word	0x200202e4
+ 8026d40:	2001a320 	.word	0x2001a320
