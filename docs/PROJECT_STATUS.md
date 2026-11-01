@@ -1,10 +1,18 @@
 # LXR Firmware Lab — current project state
 
-Snapshot: 2026-11-01 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-01-01**.
+Snapshot: 2026-11-01 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-01-02**.
 
-This is the current public entry point for continuing the lab. Read this file, [hardware observations](HARDWARE_VALIDATION.md), the [resource ledger](BUILD_RESOURCE_LEDGER.md), [evidence index](EVIDENCE_INDEX.md) and [workflow](WORKFLOW.md) before proposing another task. Reports are historical evidence at their pinned commits. A report branch is not a firmware source branch.
+This is the current public entry point for continuing the lab. Read this file, [hardware observations](HARDWARE_VALIDATION.md), the [resource ledger](BUILD_RESOURCE_LEDGER.md), [evidence index](EVIDENCE_INDEX.md), [workflow](WORKFLOW.md) and [recordkeeping standard](RECORDKEEPING_STANDARD.md) before proposing another task. Reports are historical evidence at their pinned commits. A report branch is not a firmware source branch.
 
 This documentation branch is based on historical lab-setup 5829398cea5d337200393757e39a37d4d8148256. **Do not build this branch to obtain R11.** Use the pinned firmware source below. This snapshot does not merge or release firmware and does not freeze CLP as final.
+
+## Chat-first continuation and retention
+
+Normal CHAT is the default place for source-level investigation, GitHub evidence reading, design discussion and verification. Codex is reserved for justified, narrowly authorized build/test/implementation work after the [mandatory efficiency gate](WORKFLOW.md#chat-first-execution-and-mandatory-codex-efficiency-gate). Work is used only for autonomous app/browser/computer workflows with demonstrated incremental value. The private KnowledgeBase and project instructions contain the owner's plan/model/budget preferences; do not place them or the internal language rule into the public README.
+
+The [recordkeeping standard](RECORDKEEPING_STANDARD.md) requires a reasoned task report **and** durable reproducible critical evidence. Prior R11 audit Markdown reports and hashes are published, but their listed local-only analysis scripts and JSON/log outputs were **not** all archived to GitHub. This gap remains open and should not trigger an indiscriminate rerun. CI logs/artifacts expire; preserve decisive evidence, commands, inputs and hashes with provenance. The next Codex task must explicitly link this documentation branch because the existing R11 firmware source branch does not inherit new documentation-branch instructions.
+
+Documentation-only reconciliation. No firmware changes, new images, measurements or CLP acceptance beyond those already documented.
 
 ## Current firmware identity
 
