@@ -1,0 +1,121 @@
+{
+  "snapshot": "2026-11-01",
+  "synchronization_id": "LXR-SYNC-2026-11-01-01",
+  "source_commit": "64263ed25f2e9c7f5d880b493d943bfba29271a8",
+  "units": "bytes",
+  "timing_stack_high_water_thermal": "UNMEASURED",
+  "notes": [
+    "R6 and R7 are alternatives from R5; do not sum both.",
+    "DTCM gap is shared with runtime stack, not free scratch capacity.",
+    "Full payload includes initialized RAM load images; do not sum overlapping memory categories."
+  ],
+  "revisions": [
+    {
+      "revision": 5,
+      "filename": "LXR_V2_R5.img",
+      "file_bytes": 286880,
+      "sha256": "90caf0cc55203a828f02a108e0bd62f4ac8396c94e823e9680ee433991284a3f",
+      "itcm_used": 15104,
+      "itcm_free": 1280,
+      "dtcm_static_extent": 107400,
+      "dtcm_gap_before_runtime_stack_use": 23672,
+      "general_sram_static_data_bss": 274136,
+      "flash_payload_extent": 286864,
+      "flash_unoccupied_after_payload": 728944
+    },
+    {
+      "revision": 6,
+      "filename": "LXR_V2_R6.img",
+      "file_bytes": 287104,
+      "sha256": "898a235f31d1fd314322ddca1e4b565898f3a5af3302c8cd2f8dabd6ce7f1ac6",
+      "itcm_used": 15104,
+      "itcm_free": 1280,
+      "dtcm_static_extent": 107416,
+      "dtcm_gap_before_runtime_stack_use": 23656,
+      "general_sram_static_data_bss": 274136,
+      "flash_payload_extent": 287088,
+      "flash_unoccupied_after_payload": 728720
+    },
+    {
+      "revision": 7,
+      "filename": "LXR_V2_R7.img",
+      "file_bytes": 287128,
+      "sha256": "991f484b57a3367fe4a93728ff076bdfdd2ebd86e600e392f609bc149958f844",
+      "itcm_used": 15104,
+      "itcm_free": 1280,
+      "dtcm_static_extent": 107416,
+      "dtcm_gap_before_runtime_stack_use": 23656,
+      "general_sram_static_data_bss": 274136,
+      "flash_payload_extent": 287112,
+      "flash_unoccupied_after_payload": 728696
+    },
+    {
+      "revision": 8,
+      "filename": "LXR_V2_R8.img",
+      "file_bytes": 289936,
+      "sha256": "af2e08aa08177d27ae970cf00e5075bf60721530136ace508fcbf918a7830ce5",
+      "itcm_used": 15608,
+      "itcm_free": 776,
+      "dtcm_static_extent": 107672,
+      "dtcm_gap_before_runtime_stack_use": 23400,
+      "general_sram_static_data_bss": 274136,
+      "flash_payload_extent": 289920,
+      "flash_unoccupied_after_payload": 725888
+    },
+    {
+      "revision": 9,
+      "filename": "LXR_V2_R9.img",
+      "file_bytes": 290008,
+      "sha256": "b128d5387f421f9e20a64850f6aeac179770dbe12a2382a3fdd7e8845591516c",
+      "itcm_used": 15608,
+      "itcm_free": 776,
+      "dtcm_static_extent": 107672,
+      "dtcm_gap_before_runtime_stack_use": 23400,
+      "general_sram_static_data_bss": 274136,
+      "flash_payload_extent": 289992,
+      "flash_unoccupied_after_payload": 725816
+    },
+    {
+      "revision": 10,
+      "filename": "LXR_V2_R10.img",
+      "file_bytes": 290088,
+      "sha256": "3d8670d2d9a3448452108cc3bdd7e3cae7715aa85fc811c3a5532e11e205c119",
+      "itcm_used": 15608,
+      "itcm_free": 776,
+      "dtcm_static_extent": 107672,
+      "dtcm_gap_before_runtime_stack_use": 23400,
+      "general_sram_static_data_bss": 274136,
+      "flash_payload_extent": 290072,
+      "flash_unoccupied_after_payload": 725736
+    },
+    {
+      "revision": 11,
+      "filename": "LXR_V2_R11.img",
+      "file_bytes": 291340,
+      "sha256": "f1779db7861d4c9a54aded8121eb5659a445256ee64453635fcfa4fb1593d2b0",
+      "itcm_used": 15560,
+      "itcm_free": 824,
+      "dtcm_static_extent": 108184,
+      "dtcm_gap_before_runtime_stack_use": 22888,
+      "general_sram_static_data_bss": 274144,
+      "flash_payload_extent": 291324,
+      "flash_unoccupied_after_payload": 724484
+    }
+  ],
+  "official_1_71": {
+    "file_bytes": 273544,
+    "sha256": "188695ea78cd3da0fb6a3e825732bd7fd365d4491a37126003ec513e163e1576",
+    "itcm_used": 14552,
+    "dtcm_static_extent": 107392,
+    "general_sram_static_data_bss": 270500,
+    "flash_payload_extent": 273528,
+    "provenance": "Earlier independent ChatGPT supplied-binary analysis; official bytes unavailable to the separate Codex audit. Image hash reconfirmed during documentation sync."
+  },
+  "r4_matched_toolchain_comparator": {
+    "itcm_used": 15016,
+    "dtcm_static_extent": 107392,
+    "general_sram_static_data_bss": 274136,
+    "flash_payload_extent": 286112,
+    "provenance": "Historical report/retained R4 sections in R5 evidence; not original delivered GCC14.2 R4 image size."
+  }
+}

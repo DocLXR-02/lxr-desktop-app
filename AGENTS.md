@@ -24,3 +24,12 @@ Store the report at `docs/codex-berichte/YYYY-MM-DD_<short-task-description>.md`
 **Publishing:** If the task permits documentation writes and Git commits/pushes, commit and push the report to `lab-setup` or a **report-only branch based on `lab-setup`**. When source-code changes have not yet been approved for push, do not accidentally publish them with the report: use a separate documentation-only branch. Do not force-push or merge branches. Do not make unrelated project changes. For an expressly read-only/no-commit task, still produce the full report in the final response, clearly marking it **not uploaded**, and ask for permission before publishing.
 
 Verify the remote branch and exact file URL after pushing (not merely a local file or an attempted push). End your response with the verified GitHub report URL and branch. If GitHub write access or verification fails, say so plainly, explain where the report remains available, and provide the full report text as a fallback. Never claim that a report was saved without verification.
+
+
+## Current project context
+
+- Read docs/PROJECT_STATUS.md on branch docs/lab-project-state and its evidence index before continuing; that branch is documentation, not R11 firmware source. Use the source SHA explicitly pinned in the task.
+- Keep owner listening, source evidence, native tests, CI/build and unmeasured target gates separate. Do not repeat completed work because an older KnowledgeBase or blocker report predates the final R11 report.
+- Deliverable builds require a matched resource ledger including ITCM/DTCM/SRAM/full flash, transient stack where relevant, per-instance state versus shared code, and measured timing or UNMEASURED.
+- Follow functional/musical acceptance with a scoped efficiency/robustness review. Sound changes for efficiency require an explicit comparison and owner approval; preserve the previous reference.
+- Lab delivery: LXR_V2_R<N>.zip contains only LXR_V2_R<N>.img; keep evidence separate. Normal startup line1 is LXR LAB R<N>; line2 is blank.

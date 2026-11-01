@@ -1,0 +1,83 @@
+# LXR Firmware Lab — current project state
+
+Snapshot: 2026-11-01 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-01-01**.
+
+This is the current public entry point for continuing the lab. Read this file, [hardware observations](HARDWARE_VALIDATION.md), the [resource ledger](BUILD_RESOURCE_LEDGER.md), [evidence index](EVIDENCE_INDEX.md) and [workflow](WORKFLOW.md) before proposing another task. Reports are historical evidence at their pinned commits. A report branch is not a firmware source branch.
+
+This documentation branch is based on historical lab-setup 5829398cea5d337200393757e39a37d4d8148256. **Do not build this branch to obtain R11.** Use the pinned firmware source below. This snapshot does not merge or release firmware and does not freeze CLP as final.
+
+## Current firmware identity
+
+| Role | Exact identity |
+|---|---|
+| Current owner-tested experimental image | LXR_V2_R11.img; 291340 bytes |
+| Image SHA-256 | f1779db7861d4c9a54aded8121eb5659a445256ee64453635fcfa4fb1593d2b0 |
+| Owner delivery ZIP | LXR_V2_R11.zip; 207732 bytes; contains only LXR_V2_R11.img |
+| ZIP SHA-256 | b31c93b5742732e1c280a4789b5ebde75e4354e7acf44cead54ec23a3fce8a30 |
+| Firmware source branch / commit | fx/clp-solo-post-mix-r11 / 64263ed25f2e9c7f5d880b493d943bfba29271a8 |
+| Source tree | ad5d81b94ede2af0ff776254e539c50be24c76e1 |
+| Arithmetic prerequisite | d949b3e132fd8afe5f076e6465aae1ffe507c938 |
+| Corrected R10 comparator | 8082cc5e79496941ca126bc90dc3ac4e2d9a1ea7 |
+| Existing successful CI | [41214348060](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/41214348060), exact R11 source |
+| Final R11 handoff | [Recovered publication](https://github.com/DocLXR-02/lxr-desktop-app/blob/84bc8a8c81fbc3d348c509ee5a2c7d5329d4cf8c/docs/codex-berichte/2026-10-31_r11-arithmetic-and-filter-off-post-mix.md) |
+| Current offline audit | [Report](https://github.com/DocLXR-02/lxr-desktop-app/blob/fa3c5b711733d022301669f0bdacd650cde5d6d9/docs/codex-berichte/2026-11-01_r11-resource-reliability-audit.md), [evidence](https://github.com/DocLXR-02/lxr-desktop-app/blob/fa3c5b711733d022301669f0bdacd650cde5d6d9/docs/codex-berichte/2026-11-01_r11-resource-audit-evidence.md), [measurement design](https://github.com/DocLXR-02/lxr-desktop-app/blob/fa3c5b711733d022301669f0bdacd650cde5d6d9/docs/codex-berichte/2026-11-01_r11-resource-measurement-plan.md), [input reconciliation](https://github.com/DocLXR-02/lxr-desktop-app/blob/3ca14c236a2301b3883b6ebd377f9dee68385d4e/docs/codex-berichte/2026-11-01_r11-resource-audit-knowledgebase-addendum.md) |
+
+The final R11 report gap is now closed. Earlier R11 blocker/design reports remain valid accounts of their own earlier stage; they are not the final-build report. The latest audit changed no production source. Its proposed diagnostics are not implemented or delivered.
+
+## Accepted behavior and actual scope
+
+- The owner confirmed that the original unwanted idle whistle disappeared with the R5 policy, both with a voice fader at zero and during missing steps. This intentionally changes the manual's original feedback behavior; it is not evidence of a hardware-protection feature being removed.
+- R6's bass-through-feedback experiment was not selected: bass strongly suppressed the desired scream. R7's parallel bass approach was selected and positively evaluated. R6 is not an extra stage in the selected lineage.
+- R8 added audible core attenuation with the voice fader. R9 moved its knee to 50% physical travel: settled additional core gain is min(1, 2u), where u is normalized physical travel. This preserves internal feedback rather than scaling its history. It is an additional core gain, not a claim that the whole nonlinear sound has linear loudness.
+- R10 uses the maximum fader among configured FX-routed synthesis paths. A routed but silent/high-fader voice can hold the shared core open. This owner-authorized compromise remains; no activity detector or independently separable wet stems were added.
+- R11 moves MIX/VOL outside the nonlinear effect for **exactly one configured CLP route**. Positive MIX changes the post-return level while the eligible source remains full-level relative to MIX. Physical fader, envelopes and velocity still act. The owner reports that this works audibly as intended.
+- Zero or multiple configured routes fall back to the arithmetic-prerequisite/R10 shared-bus behavior. Silent, muted and zero-velocity routes still count as configured routes. R11 is **not** independent multi-voice post-MIX balancing.
+- Seven musical tracks map to six synthesis/mixer paths, including shared open/closed hi-hat handling. Software coverage of six paths does not establish seven independent insert processors.
+- Current listening boundary: manually set **all six voice filters to FILTER_OFF**, including directly routed voices. No code turns filters off. This avoids known unresolved filter failures; it does not fix them.
+- The eligible snare source has a local saturation policy. Ordinary/direct/other-FX/multi-route snare over-range conversion is still unresolved. R11 arithmetic also deliberately corrects waveform-row seams; exact sound identity to R10 is not claimed for those cases.
+- A 0.5–1 second idle release was discussed, but is **not implemented**. Existing short hold/fade remains. Fader-curve refinement did not add a long time release.
+
+## Validation gates
+
+| Gate | Current result / limit |
+|---|---|
+| Source/build provenance and static fit | Identified R11 image/ELF and successful existing CI; no new build in synchronization |
+| Intended solo CLP MIX/VOL behavior | Owner-confirmed listening under FILTER-OFF conditions; no complete per-voice device test matrix claimed |
+| Numerical robustness | PARTIAL; disclosed inherited failures remain |
+| Native endurance | QUALIFIED PASS: twelve separate ~120-second processes, ~24 simulated minutes aggregate; not one uninterrupted soak or instrument uptime |
+| Native continuation restrictions | All filters OFF; ARM-compatible host CLZ(0) substitution; Delay stereo only; Compressor unity makeup |
+| Whole-engine stack bound | INCOMPLETE; compiler frames do not include all indirect/library/interrupt paths |
+| Actual render deadlines / buffer freshness | UNMEASURED on the instrument |
+| Actual stack high-water / temperature / long-run audio | UNMEASURED |
+| More simultaneous effect processors | Not established or approved by current capacity evidence |
+
+No device damage, device underrun or general absence of clicks was demonstrated by the audit. Source defects can produce incorrect audio or memory accesses without implying physical hardware damage. No unconditional hardware-safety or lifetime guarantee follows.
+
+## Open technical findings
+
+These are audit findings, not newly assigned public completed-change IDs. Inherited source defects must not be attributed to CLP changes without evidence.
+
+| Finding | Evidence and next boundary |
+|---|---|
+| Resonant-filter instability | Retained failing selected fixtures; all-six FILTER_OFF is a workaround. Separate diagnosis required. |
+| Legacy non-solo snare conversion | Still fails for selected over-range inputs; eligible R11 snare clamp does not cover fallback paths. |
+| USB TX wrap / ownership and RX full ambiguity | Source/extracted tests and isolated ARM probe; e.g. 128-byte ring yields 132-byte send length at read124/write0. Busy/ownership and unread-ring handling need a bounded transport task. No physical USB failure measured. |
+| Delay mono-right word-width read | Native sanitizer and delivered instruction evidence; potential final-array overread. Full emulation hits an unsupported instruction, which is a tool limit, not a device fault. |
+| Compressor mono float-to-int16 conversion | Valid controls produce about33683.1 before conversion; stereo path already saturates. Future saturation/headroom policy needs a sound decision. |
+| CLZ(0) in full FX initialization | Undefined C input domain, but delivered ARM initialization completes; no device boot failure inferred. Host substitution is not a production fix. |
+| Audio readiness versus generation freshness | Injected late-render schedule can consume partial/stale data; no actual target deadline miss measured. Measure both DMA streams before scheduler redesign. |
+| Long-uptime timing and counters | Float absolute ticks lose single-tick precision around70min at ~4kHz; not a 70-minute crash. Counter-wrap/service-load paths need their own bounded review. |
+
+## Next work and product direction
+
+Current authorization is documentation synchronization only. No robustness patch, diagnostic implementation, optimization build, flash or FX expansion was started here. Agree a small next task before execution; do not automatically convert this list into one broad repair campaign.
+
+The product goal remains a larger effect library, different effects per musical voice and multiple serial/parallel effects per voice. A one/two/four-slot pool is an alternative architecture with different capabilities, not an equivalent implementation. Current timing evidence cannot certify any added instance count. Independent hi-hat processing and global Delay-history ownership need explicit design.
+
+Use two passes: first functional/musical acceptance, then efficiency/robustness review across ITCM, DTCM, SRAM, flash, stack/heap, CPU/IRQ/DMA, numerical behavior and transitions. Audible optimization differences are allowed only after their behavior and measured gain are compared and approved by the owner. Preserve the accepted reference artifact.
+
+Delivery convention: LXR_V2_R<N>.zip contains only LXR_V2_R<N>.img. Keep technical evidence separately. Normal startup: only LXR LAB R<N> on line1; line2 blank. No effect suffix.
+
+## Separate input investigation
+
+[DATA input status](INPUT_CONTROL_STATUS.md): earlier research is available; the separate encoder audit has not started. Its old blocked-R11 context is superseded. No encoder fix was made.

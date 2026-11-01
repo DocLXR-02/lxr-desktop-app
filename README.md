@@ -1,3 +1,5 @@
+> **LXR Firmware Lab: current state and evidence** — Start with [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md). This is a documentation branch based on historical lab-setup; use the pinned R11 source there for firmware work. Current owner observations, resource limits and open gates supersede older planning text.
+
 # LXR V2 firmware (desktop, STM32F765VG)
 
 Firmware for the LXR V2 desktop drum machine: an STM32F765 (Cortex-M7, 216 MHz) running the
