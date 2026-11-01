@@ -2,6 +2,23 @@
 
 Snapshot: 2026-11-01. This is a documentation synchronization, not a new development authorization.
 
+## Chat-first execution and mandatory Codex efficiency gate
+
+**Default to normal ChatGPT CHAT** for discussion, source and GitHub read-only analysis, architectural decisions, task planning and independent result reviews. Work is exceptional: recommend it only when autonomous multi-application, cloud-browser or computer interaction has concrete value beyond CHAT and targeted Codex. Use Codex for explicitly authorized implementation, toolchain-dependent builds, executable tests and tightly scoped engineering work. Neither a longer question nor higher reasoning effort alone justifies Work. Projects organize context; they are not an execution mode.
+
+Before **every** Codex handoff, independently inspect the current private KnowledgeBase, this workflow, [PROJECT_STATUS.md](PROJECT_STATUS.md), [EVIDENCE_INDEX.md](EVIDENCE_INDEX.md), applicable AGENTS.md at the **actual source SHA**, and relevant immutable reports, diffs, source code, test fixtures and CI/artifact metadata. Reuse established results; do not rediscover them without a stated gap. Present an explicit efficiency gate to the owner:
+
+1. Why CHAT alone cannot finish the work, and whether Work has any incremental value.
+2. Existing evidence to reuse, including open/failed/unmeasured boundaries.
+3. Exact source base SHA, narrowly scoped objective, allowed files/actions.
+4. Excluded work, safety boundaries, acceptance tests and objective stop criteria.
+5. Minimum necessary validation/builds, retained raw evidence and per-build report requirement.
+6. Recommended model/reasoning, qualitative workload and owner-reported available usage budget; **unknown** if unavailable. Do not turn elapsed wall time into a fabricated credit/token estimate.
+
+Large tasks at low remaining budget require owner reapproval. Do not silently trade away memory safety, audio regression checks or essential real-device validation for agent savings. Never start a next task automatically after a report. The owner controls code edits, hardware flashing, releases and sound-altering optimization. Preserve main, R4 and R11 reference source and artifacts.
+
+After completion, verify the pushed report, actual commit/diff, CI and build/test evidence, retained raw reproductions and unchanged protected refs. A streaming interruption is not evidence that execution rolled back: inspect remote output before restarting. Keep each delivered firmware image tied to a distinct build report. New chats resume from the current private KnowledgeBase, pinned source and GitHub docs, not from reconstructing an entire chat transcript. Model-specific product limits and currently selected thinking effort are not reliably observable from source control or by this assistant.
+
 ## Evidence retention and reproducibility
 
 Follow [RECORDKEEPING_STANDARD.md](RECORDKEEPING_STANDARD.md) for the task report, raw decisive failures, reproducible commands/scripts, test outputs, run manifests, expiring GitHub Actions artifacts and explicit NOT ARCHIVED gaps. Technical summaries do not replace underlying evidence; do not rerun historical tests just to regenerate redundant logs. This is a documentation policy, not authorization to alter production source or start an agent task.
@@ -30,9 +47,10 @@ Use two passes: functional/musical acceptance first; efficiency/robustness revie
 ## Minimal task preamble
 
 ```text
-Read docs/PROJECT_STATUS.md on docs/lab-project-state and its pinned evidence.
+Read docs/PROJECT_STATUS.md, docs/EVIDENCE_INDEX.md, docs/WORKFLOW.md and docs/RECORDKEEPING_STANDARD.md on docs/lab-project-state and their pinned evidence.
 Read applicable AGENTS.md at the actual source base.
 Firmware base: 64263ed25f2e9c7f5d880b493d943bfba29271a8 (verify; do not use the docs branch as source).
+Only if CHAT is insufficient: explain the execution need and identify reused evidence.
 Objective: <one bounded goal>.
 Allowed changes: <explicit scope>; exclusions: <explicit boundaries>.
 Reuse previous evidence before new tests/builds. Retain failures and substitutions.
