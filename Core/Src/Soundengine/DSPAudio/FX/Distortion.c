@@ -221,6 +221,8 @@ void Distortion_init(MasterDistortion *dist)
 	Distortion_resetClip(dist);
 	dist->clipSilentSamples = 0;
 	dist->clipFeedbackGain = 0.f;
+	dist->clipFaderFeedbackFirst = 1.f;
+	dist->clipFaderFeedbackStep = 0.f;
 	dist->distortionType = DISTORTION_TUBE;
 	dist->drive = 1.0f;
 	dist->p1 = 1.0f;
@@ -501,7 +503,8 @@ void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL
 				//dist->hp1_state[0] += 0.64116641920131193922 * ( dist->p2 * 0.125 - dist->hp1_state[0]);
 				//dist->hp1_state[1] += 0.64116641920131193922 * ( dist->p2 * 0.125 - dist->hp1_state[1]);
 
-				const float feedback = Distortion_clipFeedback(dist, fxBuffer[idx1], fxBuffer[idx2]);
+				const float feedback = Distortion_clipFeedback(dist, fxBuffer[idx1], fxBuffer[idx2])
+				                     * (dist->clipFaderFeedbackFirst + i * dist->clipFaderFeedbackStep);
 				signal1 += dist->lastOut[0] * dist->p1 * 0.125 * feedback;
 				signal2 += dist->lastOut[1] * dist->p1 * 0.125 * feedback;
 
@@ -642,7 +645,8 @@ void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL
 				const double bass1 = Distortion_clipBass(dist, 0, signal1);
 				signal1 *= CLIP_INPUT_TRIM;
 
-				const float feedback = Distortion_clipFeedback(dist, fxBuffer[idx1], 0);
+				const float feedback = Distortion_clipFeedback(dist, fxBuffer[idx1], 0)
+				                     * (dist->clipFaderFeedbackFirst + i * dist->clipFaderFeedbackStep);
 				signal1 += dist->lastOut[0] * dist->p1 * 0.125 * feedback;
 
 				dist->hp1_state[0] += 0.64116641920131193922 * (signal1 - dist->hp1_state[0]);
