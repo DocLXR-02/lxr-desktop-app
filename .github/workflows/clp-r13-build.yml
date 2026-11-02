@@ -1,0 +1,71 @@
+name: LXR R13 R7 Feedback Fader Build
+on:
+  push:
+    branches: [fx/clp-r7-feedback-fader-r13]
+permissions:
+  contents: read
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: R7-derived production DSP and regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/r13-evidence build/r13-host
+          cc --version > build/r13-evidence/HOST_COMPILER.txt
+          CC_FLAGS="-std=c11 -O2 -fno-strict-aliasing -fsanitize=undefined,bounds,float-cast-overflow -fno-sanitize-recover=all -I. -Itests/fx_clip/include -ICore/Inc"
+          cc $CC_FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip/unit.c -lm -o build/r13-host/inherited
+          ./build/r13-host/inherited | tee build/r13-evidence/inherited.log
+          cc $CC_FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r7/state.c -lm -o build/r13-host/state
+          ./build/r13-host/state | tee build/r13-evidence/state.log
+          cc $CC_FLAGS -ffunction-sections -fdata-sections tests/fx_clip/fxbus.c Core/Src/Soundengine/DSPAudio/FX/Distortion.c Core/Src/Soundengine/FxBus.c -Wl,--gc-sections -lm -o build/r13-host/bus
+          ./build/r13-host/bus | tee build/r13-evidence/bus.log
+          python3 tests/bug001/run.py 2>&1 | tee build/r13-evidence/bug001.log
+          python3 tests/kit_load/run.py 2>&1 | tee build/r13-evidence/kit-load.log
+          python3 tests/project_storage/run.py 2>&1 | tee build/r13-evidence/storage.log
+          python3 tests/euclidean/run.py 2>&1 | tee build/r13-evidence/euclidean.log
+      - name: Install matched R7 ARM toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          sha256sum "$RUNNER_TEMP/arm-toolchain.tar.xz" > build/r13-evidence/TOOLCHAIN_ARCHIVE_SHA256.txt
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+      - name: One Release ARM build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --preset release 2>&1 | tee build/r13-evidence/configure.log
+          cmake --build --preset release --parallel 2 2>&1 | tee build/r13-evidence/build.log
+      - name: Validate application and retain reproducible evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/fx_clip_r13/package.py 2>&1 | tee build/r13-evidence/image-validation.log
+          cp build/r13-validation.json build/r13-evidence/
+          cp build/release/LXR_V2_STM32F765.elf build/release/LXR_V2_STM32F765.map build/release/compile_commands.json build/r13-evidence/
+          arm-none-eabi-size -A build/release/LXR_V2_STM32F765.elf > build/r13-evidence/R13_SECTIONS.txt
+          arm-none-eabi-gcc --version > build/r13-evidence/TOOLCHAIN.txt
+          git rev-parse HEAD > build/r13-evidence/SOURCE_COMMIT.txt
+          git archive --format=zip --output=build/r13-evidence/SOURCE.zip HEAD
+          sha256sum build/r13-delivery/* build/r13-evidence/SOURCE.zip > build/r13-evidence/SHA256SUMS
+      - name: Upload R13 image
+        uses: actions/upload-artifact@v4
+        with:
+          name: lxr-r13-image
+          path: build/r13-delivery/
+          retention-days: 30
+          if-no-files-found: error
+      - name: Upload source/build evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: lxr-r13-source-build-evidence
+          path: build/r13-evidence/
+          retention-days: 30
+          if-no-files-found: error
