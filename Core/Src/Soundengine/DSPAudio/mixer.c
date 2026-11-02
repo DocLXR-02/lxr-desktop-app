@@ -545,6 +545,14 @@ IN_ITCM_RAM static inline void mixer_addDataToOutput(uint8_t dest, const float p
 }
 //#pragma GCC pop_options
 //-----------------------------------------------------------------------
+/* R13: map existing smoothed squared ADC fader to physical feedback gain. */
+static float mixer_clipFeedbackFaderGain(float q)
+{
+    if(q <= 0.f) return 0.f;
+    if(q >= .25f) return 1.f;
+    return 2.f * sqrtf(q);
+}
+
 IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 {
 
@@ -589,6 +597,27 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 	//befor output distribution
 	int16_t sampleData[OUTPUT_DMA_SIZE];
 	int16_t fxBusData[OUTPUT_DMA_SIZE*2];
+	/* R13: only one configured FX route controls shared CLP feedback. */
+	const OnePoleFilter *clpFader = NULL;
+	float clpFeedbackFirst = 1.f;
+	if(fxBus.fxType == FX_DISTORTION &&
+	   fxBus.distortion.distortionType == DISTORTION_RAT)
+	{
+		const OnePoleFilter *const faders[6] = {
+			&voiceArray[0].FaderVolumeFilter, &voiceArray[1].FaderVolumeFilter,
+			&voiceArray[2].FaderVolumeFilter, &snareVoice.FaderVolumeFilter,
+			&cymbalVoice.FaderVolumeFilter, &hatVoice.FaderVolumeFilter
+		};
+		for(uint8_t v = 0; v < 6; ++v)
+		{
+			if(mixer_audioRouting[v] != MIXER_ROUTING_FX_BUS) continue;
+			if(clpFader != NULL) { clpFader = NULL; break; }
+			clpFader = faders[v];
+		}
+		if(clpFader != NULL)
+			clpFeedbackFirst = mixer_clipFeedbackFaderGain(clpFader->b);
+	}
+
 
 	const uint8_t pos = 0;
 
@@ -709,6 +738,19 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 #endif
 
 #endif
+	/* R13: interpolate existing voice smoother without secondary filter replay. */
+	if(clpFader != NULL)
+	{
+		const float last = mixer_clipFeedbackFaderGain(clpFader->b);
+		fxBus.distortion.clipFaderFeedbackFirst = clpFeedbackFirst;
+		fxBus.distortion.clipFaderFeedbackStep =
+			(last - clpFeedbackFirst) / (OUTPUT_DMA_SIZE - 1);
+	}
+	else
+	{
+		fxBus.distortion.clipFaderFeedbackFirst = 1.f;
+		fxBus.distortion.clipFaderFeedbackStep = 0.f;
+	}
 	FxBus_process(fxBusData,  &output[pos],&output[pos+1],&output2[pos],&output2[pos+1], OUTPUT_DMA_SIZE);
 /*
 	if(activeParameters[UNUSED_PAR_GLO_SAT])
