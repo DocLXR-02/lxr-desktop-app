@@ -50,6 +50,9 @@ typedef struct DistortionStruct
 
 	/* Runtime-only CLP input-loss control; never serialized into a kit. */
 	float clipFeedbackGain;
+	/* R13: feedback attenuation ramp, independent of R5 idle gate. */
+	float clipFaderFeedbackFirst;
+	float clipFaderFeedbackStep;
 	uint16_t clipSilentSamples;
 	volatile uint8_t clipStateActive;
 
