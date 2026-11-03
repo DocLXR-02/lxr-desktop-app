@@ -545,12 +545,37 @@ IN_ITCM_RAM static inline void mixer_addDataToOutput(uint8_t dest, const float p
 }
 //#pragma GCC pop_options
 //-----------------------------------------------------------------------
-/* R13: map existing smoothed squared ADC fader to physical feedback gain. */
-static float mixer_clipFeedbackFaderGain(float q)
+/* R14: select the highest *existing* smoothed fader among FX routes.
+ * This block-rate control calculation stays in flash rather than ITCM.
+ * An unrouted CLP retains R13's unity-fader fallback; the R5 idle gate remains.
+ * For one route, the resulting R13 feedback curve is unchanged.
+ */
+static __attribute__((noinline)) float mixer_clipMaxRoutedFaderGain(void)
 {
-    if(q <= 0.f) return 0.f;
-    if(q >= .25f) return 1.f;
-    return 2.f * sqrtf(q);
+    float maxQ = -1.f;
+    if(mixer_audioRouting[0] == MIXER_ROUTING_FX_BUS &&
+       voiceArray[0].FaderVolumeFilter.b > maxQ)
+        maxQ = voiceArray[0].FaderVolumeFilter.b;
+    if(mixer_audioRouting[1] == MIXER_ROUTING_FX_BUS &&
+       voiceArray[1].FaderVolumeFilter.b > maxQ)
+        maxQ = voiceArray[1].FaderVolumeFilter.b;
+    if(mixer_audioRouting[2] == MIXER_ROUTING_FX_BUS &&
+       voiceArray[2].FaderVolumeFilter.b > maxQ)
+        maxQ = voiceArray[2].FaderVolumeFilter.b;
+    if(mixer_audioRouting[3] == MIXER_ROUTING_FX_BUS &&
+       snareVoice.FaderVolumeFilter.b > maxQ)
+        maxQ = snareVoice.FaderVolumeFilter.b;
+    if(mixer_audioRouting[4] == MIXER_ROUTING_FX_BUS &&
+       cymbalVoice.FaderVolumeFilter.b > maxQ)
+        maxQ = cymbalVoice.FaderVolumeFilter.b;
+    if(mixer_audioRouting[5] == MIXER_ROUTING_FX_BUS &&
+       hatVoice.FaderVolumeFilter.b > maxQ)
+        maxQ = hatVoice.FaderVolumeFilter.b;
+
+    if(maxQ < 0.f) return 1.f; /* No FX route: retain R13 fallback. */
+    if(maxQ <= 0.f) return 0.f;
+    if(maxQ >= .25f) return 1.f;
+    return 2.f * sqrtf(maxQ);
 }
 
 IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
@@ -597,26 +622,10 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 	//befor output distribution
 	int16_t sampleData[OUTPUT_DMA_SIZE];
 	int16_t fxBusData[OUTPUT_DMA_SIZE*2];
-	/* R13: only one configured FX route controls shared CLP feedback. */
-	const OnePoleFilter *clpFader = NULL;
-	float clpFeedbackFirst = 1.f;
-	if(fxBus.fxType == FX_DISTORTION &&
-	   fxBus.distortion.distortionType == DISTORTION_RAT)
-	{
-		const OnePoleFilter *const faders[6] = {
-			&voiceArray[0].FaderVolumeFilter, &voiceArray[1].FaderVolumeFilter,
-			&voiceArray[2].FaderVolumeFilter, &snareVoice.FaderVolumeFilter,
-			&cymbalVoice.FaderVolumeFilter, &hatVoice.FaderVolumeFilter
-		};
-		for(uint8_t v = 0; v < 6; ++v)
-		{
-			if(mixer_audioRouting[v] != MIXER_ROUTING_FX_BUS) continue;
-			if(clpFader != NULL) { clpFader = NULL; break; }
-			clpFader = faders[v];
-		}
-		if(clpFader != NULL)
-			clpFeedbackFirst = mixer_clipFeedbackFaderGain(clpFader->b);
-	}
+	/* R14: evaluate shared MAX-feedback control before voice rendering. */
+	const uint8_t clpFeedbackActive = fxBus.fxType == FX_DISTORTION &&
+		fxBus.distortion.distortionType == DISTORTION_RAT;
+	const float clpFeedbackFirst = clpFeedbackActive ? mixer_clipMaxRoutedFaderGain() : 1.f;
 
 
 	const uint8_t pos = 0;
@@ -738,17 +747,16 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 #endif
 
 #endif
-	/* R13: interpolate existing voice smoother without secondary filter replay. */
-	if(clpFader != NULL)
+	/* R14: preserve R13's 64-frame ramp; only the fader selector changes. */
+	fxBus.distortion.clipFaderFeedbackFirst = clpFeedbackFirst;
+	if(clpFeedbackActive)
 	{
-		const float last = mixer_clipFeedbackFaderGain(clpFader->b);
-		fxBus.distortion.clipFaderFeedbackFirst = clpFeedbackFirst;
+		const float last = mixer_clipMaxRoutedFaderGain();
 		fxBus.distortion.clipFaderFeedbackStep =
 			(last - clpFeedbackFirst) / (OUTPUT_DMA_SIZE - 1);
 	}
 	else
 	{
-		fxBus.distortion.clipFaderFeedbackFirst = 1.f;
 		fxBus.distortion.clipFaderFeedbackStep = 0.f;
 	}
 	FxBus_process(fxBusData,  &output[pos],&output[pos+1],&output2[pos],&output2[pos+1], OUTPUT_DMA_SIZE);
