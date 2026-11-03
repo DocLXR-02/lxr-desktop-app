@@ -1,6 +1,6 @@
 # LXR build evidence and effect cost ledger
 
-Date: 2026-11-01 (Europe/Vienna). Current synchronization: LXR-SYNC-2026-11-01-01. This ledger incorporates the completed offline audit; the original comparison used existing builds. No new production firmware, build or flash is introduced by publishing this document.
+Date: 2026-11-03 (Europe/Vienna). Current synchronization: **LXR-SYNC-2026-11-03-CLP-R18**. This ledger preserves the historical R11 offline audit and adds the independently verified R14–R18 matched-release static resource figures. Publication is **documentation only**; it creates no firmware build or device measurement.
 
 ## 1. Correction: reports are not unique to R4
 
@@ -90,7 +90,23 @@ Flash: 752 + 248 + 2808 + 72 + 136 - 56 + 1252 = 5212
 
 This is the CLP development branch's total cost, including the technical source-arithmetic prerequisite. It is not a pure byte price of creativity. Storage transaction S4b-2 alone costs more flash (+8328) and general SRAM (+3040) than this selected development path, but uses no additional ITCM. Costs depend on implementation and memory placement, not whether the task was called FIX or FEAT.
 
-## 6. Existing R11 effect modules: linked code and state
+### 5.1 R14–R18 CLP sound experiments and accepted resource baseline
+
+The earlier R4→R11 table above is **historical**, not an additive cost model for the latest branch. R18 was built **directly from R14**, and R15–R17 were alternative HP1 tuning experiments, not cumulative dependencies of R18. The following numbers were taken from existing matched ARM GNU 14.3.Rel1 Release `-O3` ELF/MAP/IMG and per-build reports; the final R18 source/image and evidence hashes were independently rechecked.
+
+| Stage | HP1 core pole | R7 parallel bass | ITCM used | DTCM static used | SRAM static used | Whole IMG including 16-byte header |
+| --- | ---: | --- | ---: | ---: | ---: | ---: |
+| R14 | 7200 Hz | Yes | 15,208 B | 107,424 B | 274,648 B | 287,576 B |
+| R15 | 110 Hz | No | 15,208 B | 107,408 B | 274,648 B | 287,360 B |
+| R16 | 1000 Hz | No | 15,208 B | 107,408 B | 274,648 B | 287,360 B |
+| R17 | 3000 Hz | No | 15,208 B | 107,408 B | 274,648 B | 287,360 B |
+| **R18 — owner-accepted CLP v2.1** | **7200 Hz** | **Replaced with VOL-coherent 200-Hz differential output filter** | **15,208 B** | **107,424 B** | **274,648 B** | **287,944 B** |
+
+**Matched R14 → R18 marginal static cost:** ITCM `0 B`, DTCM `0 B`, general SRAM `0 B`, Flash IMG `+368 B` (`.text` 151,416→151,784 B). Two new per-channel differential filter `double` histories **replace**, rather than add to, the two prior R7 parallel-bass histories (16 B total). At R18, nominal ITCM free is **1,176 B** of 16,384, and nominal DTCM gap is **23,648 B** of 131,072. The latter **shares the runtime stack and is not a measured safe stack reserve**.
+
+**Unmeasured on the STM32:** CPU cycles / worst-case execution time (notably the new soft-ceiling double arithmetic/division), audio deadlines/underruns, high-water stack usage, thermal and extended reliability. The owner's R18 listening confirmed musical sound only; the absence of debugging hardware is recorded, not filled with assumptions. Static fit does not certify a second CLP instance or a simultaneous-effects budget. For the exact source, CI and acoustic decision, see [R18 build report](https://github.com/DocLXR-02/lxr-desktop-app/blob/1eee9ed318b592cec54379bcc255927968b936a3/docs/codex-berichte/2026-11-03_r18-clp-v21-soft-build.md), [owner acceptance](CLP_R18_SONIC_ACCEPTANCE.md), [successful CI 41725066117](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/41725066117).
+
+## 6. Historical R11 effect modules: linked code and state
 
 The module-code figures below were summed from retained **input sections** in the actual R11 map after the live link map begins. Discarded sections, debug/comment sections, shared library/helper code, linker veneers and inter-section padding were excluded. This is an exact defined subtotal, **not a complete marginal removal/addition cost**.
 
@@ -150,7 +166,7 @@ These pointer-free structs use the relevant native sizes/alignments also expecte
 
 These are arithmetic state/history totals only. They exclude routing, per-instance controls outside those structs, working buffers, stack, shared dependencies and timing. Independent delay histories also require refactoring the current global-buffer access. Existing code does not become instance-safe merely by creating more structs.
 
-The current R11 implementation still processes one shared FX selection. Multiple CLP/FX instances could reuse a function body while being processed sequentially within every audio block and heard simultaneously after mixing. They are not independent CPU cores.
+The historical R11 implementation processed one shared FX selection. R18 retains one CLP core and does not establish independent multi-FX instances. Multiple CLP/FX instances could reuse a function body while being processed sequentially within every audio block and heard simultaneously after mixing. They are not independent CPU cores.
 
 The number of simultaneous active instances cannot be computed from 824 free ITCM bytes or from 176 state bytes. Nominal 64-frame duration is about 1.44991 ms at 44140.625 Hz; the audio calculation must share the relevant scheduling window with other work. No per-effect M7 cycle budget or combined worst-case timing was measured in these reports. Therefore **the maximum independent simultaneously rendered instance count remains unknown**.
 
@@ -188,9 +204,9 @@ The completed audit found no production source caller, decoded call/tail referen
 
 ## 10. Local analysis outputs and limits
 
-Current analysis files include the retrieved report snapshots, `effect-module-allocation.json`, `effect-state-layout.json`, `change-deltas.json` and the preceding release-resource/symbol-history data. The allocation parser excludes discarded map sections and uses retained object input sections; the explicit module totals were asserted against the recorded section sums. The layout-only native probe succeeded and target offset/size consistency checks passed.
+Historical R11 analysis files include the retrieved report snapshots, `effect-module-allocation.json`, `effect-state-layout.json`, `change-deltas.json` and the preceding release-resource/symbol-history data. The allocation parser excludes discarded map sections and uses retained object input sections; the explicit module totals were asserted against the recorded section sums. The layout-only native probe succeeded and target offset/size consistency checks passed.
 
-No historical test result was promoted to a current rerun. No device profiling, soak test or final numerical bound on active effect count was obtained. No new firmware image or release was produced. The separate offline Codex resource/architecture audit has completed and published its reports. No diagnostic implementation or additional development task is started by this synchronization.
+No historical test result was promoted to a current rerun. No device profiling, soak test or final numerical bound on active effect count was obtained. No new firmware image or release was produced by the historical R11 audit. Subsequent R14–R18 builds are separately identified in § 5.1; this documentation synchronization created no image, profiling data or release. No diagnostic implementation or additional development task is started by this synchronization.
 
 ## Appendix: retrieved report inventory
 
