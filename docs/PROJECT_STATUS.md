@@ -1,10 +1,10 @@
 # LXR Firmware Lab — current project state
 
-Snapshot: 2026-11-01 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-01-02**.
+Snapshot: 2026-11-03 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-03-CLP-R18**.
 
 This is the current public entry point for continuing the lab. Read this file, [hardware observations](HARDWARE_VALIDATION.md), the [resource ledger](BUILD_RESOURCE_LEDGER.md), [evidence index](EVIDENCE_INDEX.md), [workflow](WORKFLOW.md) and [recordkeeping standard](RECORDKEEPING_STANDARD.md) before proposing another task. Reports are historical evidence at their pinned commits. A report branch is not a firmware source branch.
 
-This documentation branch is based on historical lab-setup 5829398cea5d337200393757e39a37d4d8148256. **Do not build this branch to obtain R11.** Use the pinned firmware source below. This snapshot does not merge or release firmware and does not freeze CLP as final.
+This documentation branch descends from historical lab-setup `5829398cea5d337200393757e39a37d4d8148256`. **Never build the documentation branch to produce firmware.** Use the exact R18 source SHA below. R18 CLP **sound** is owner-accepted; this is not a source merge, public release, hardware timing certification, or measured stack reserve.
 
 ## Chat-first continuation and retention
 
@@ -12,9 +12,27 @@ Normal CHAT is the default place for source-level investigation, GitHub evidence
 
 The [recordkeeping standard](RECORDKEEPING_STANDARD.md) requires a reasoned task report **and** durable reproducible critical evidence. Prior R11 audit Markdown reports and hashes are published, but their listed local-only analysis scripts and JSON/log outputs were **not** all archived to GitHub. This gap remains open and should not trigger an indiscriminate rerun. CI logs/artifacts expire; preserve decisive evidence, commands, inputs and hashes with provenance. The next Codex task must explicitly link this documentation branch because the existing R11 firmware source branch does not inherit new documentation-branch instructions.
 
-Documentation-only reconciliation. No firmware changes, new images, measurements or CLP acceptance beyond those already documented.
+Documentation-only synchronization records the owner's **new R18 CLP musical acceptance**. No production source change, build, flash, hardware profiling or release was performed by this synchronization.
 
-## Current firmware identity
+## Current firmware identity — owner-accepted R18
+
+**FX-CLP SOUND CLOSED — R18 CLP v2.1 (2026-11-03).** The owner confirmed all three requested listening outcomes on the LXR-02: kick bass fully satisfactory across problematic dry/wet positions, fluid expressive high-frequency feedback, and no objectionable soft-ceiling coloration. The owner requests no more CLP sound changes. See [R18 sonic acceptance/closure](CLP_R18_SONIC_ACCEPTANCE.md) and the separately preserved [R18 technical build report](https://github.com/DocLXR-02/lxr-desktop-app/blob/1eee9ed318b592cec54379bcc255927968b936a3/docs/codex-berichte/2026-11-03_r18-clp-v21-soft-build.md).
+
+| Role | Exact identity |
+|---|---|
+| **Accepted R18 firmware source** | [`fx/clp-v21-200hz-soft-r18`](https://github.com/DocLXR-02/lxr-desktop-app/tree/fx/clp-v21-200hz-soft-r18), **`41b364067bce0d8cde624c184933d9cb88e2725b`** |
+| **R18 application IMG** | `LXR_V2_R18.img`, **287,944 B**, SHA-256 `c94e07d7c0daa40b7b17f0bb6271270f7b8b7eabc8eff69ad63f6a68c5eb50f1` |
+| **R18 delivery ZIP** | `LXR_V2_R18.zip`, **206,022 B**, SHA-256 `2f3ab9501a858e030babb499a9116fcc21fa0149fb38aa41f46a81a078205588`; one IMG |
+| **R18 ARM CI** | [Success 41725066117](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/41725066117), attempt 1, job `126227576135`, exact R18 source |
+| **Source baseline** | R14 `00ea59d38de6f006dfdbcd472c2cfe5040a440c3`; R18 was built from this source, not accumulated from R15–R17 |
+| **Other experimental refs** | R15 `03bcb4f4e21d368d7a5eda2691ad619bb595d994`; R16 `37dbf75625f10e5bc2de6529e0f601e74063cb79`; R17 `1be1951c3a5bb271d7eadd17524343a6c37de1a0` |
+| **Current static ITCM** | 15,208 / 16,384 B; **1,176 B nominal free** |
+| **Current static DTCM** | 107,424 / 131,072 B; **23,648 B nominal free before real stack high-water** |
+| **Runtime evidence** | **CPU deadlines, DMA/IRQ underruns, stack high-water, thermal/soak reliability UNMEASURED**; owner has no debugger/profiler available |
+
+R18 preserves R14's single shared **7200-Hz HP1 feedback core**, R5 idle gate and R14 MAX fader feedback. It **replaces** R7's negative parallel bass with a **200-Hz VOL-coherent output difference filter** and wet-dependent rational soft ceiling. Full R14 sound/feedback was subjectively restored while maintaining the desirable bass. Only the musical sound/UX chapter is accepted; system-level reliability remains separately unmeasured. No protected branch was merged, overwritten, or released.
+
+## Historical R11 firmware identity (snapshot 2026-11-01)
 
 | Role | Exact identity |
 |---|---|
@@ -32,7 +50,10 @@ Documentation-only reconciliation. No firmware changes, new images, measurements
 
 The final R11 report gap is now closed. Earlier R11 blocker/design reports remain valid accounts of their own earlier stage; they are not the final-build report. The latest audit changed no production source. Its proposed diagnostics are not implemented or delivered.
 
-## Accepted behavior and actual scope
+## Historical R5–R11 accepted behavior and actual scope
+
+The following bullets reproduce the earlier R11-era findings and restrictions. They must not be mistaken for a current R18 test matrix or merged R18 source behavior.
+
 
 - The owner confirmed that the original unwanted idle whistle disappeared with the R5 policy, both with a voice fader at zero and during missing steps. This intentionally changes the manual's original feedback behavior; it is not evidence of a hardware-protection feature being removed.
 - R6's bass-through-feedback experiment was not selected: bass strongly suppressed the desired scream. R7's parallel bass approach was selected and positively evaluated. R6 is not an extra stage in the selected lineage.
@@ -45,7 +66,18 @@ The final R11 report gap is now closed. Earlier R11 blocker/design reports remai
 - The eligible snare source has a local saturation policy. Ordinary/direct/other-FX/multi-route snare over-range conversion is still unresolved. R11 arithmetic also deliberately corrects waveform-row seams; exact sound identity to R10 is not claimed for those cases.
 - A 0.5–1 second idle release was discussed, but is **not implemented**. Existing short hold/fade remains. Fader-curve refinement did not add a long time release.
 
-## Validation gates
+## Current R18 validation gates
+
+| Gate | Result / boundary |
+|---|---|
+| Owner's actual instrument listening | **ACCEPTED:** Bass, fluid feedback and soft-ceiling sound all satisfactory; one device |
+| Source/ARM image/ZIP | Pinned source, verified ELF/IMG checksum and CI success with own build report |
+| R14 core and mixer host checks | 135 core-state comparisons, 75,000 differential mix calculations, 16,384 MAX-selector cases, existing FX-bus and idle-gate tests PASS |
+| ITCM/DTCM static fit | 1,176 B ITCM and 23,648 B DTCM nominal free; not physical runtime reserve measurements |
+| Actual Cortex-M7 audio CPU/deadlines and stack | **UNMEASURED — owner lacks debugging hardware** |
+| Long hardware soak/multiunit/unrelated bugs | **UNMEASURED / NOT CLOSED** |
+
+## Historical R11 validation gates
 
 | Gate | Current result / limit |
 |---|---|
@@ -61,7 +93,10 @@ The final R11 report gap is now closed. Earlier R11 blocker/design reports remai
 
 No device damage, device underrun or general absence of clicks was demonstrated by the audit. Source defects can produce incorrect audio or memory accesses without implying physical hardware damage. No unconditional hardware-safety or lifetime guarantee follows.
 
-## Open technical findings
+## Open technical findings — historical R11 audit scope
+
+The inherited audit findings below were identified on an older R11 lineage and have not been globally revalidated or fixed in R18 by the CLP musical acceptance. Do not assume absence or presence of each defect in the new branch without a pinned source comparison and bounded reproduction.
+
 
 These are audit findings, not newly assigned public completed-change IDs. Inherited source defects must not be attributed to CLP changes without evidence.
 
@@ -78,11 +113,11 @@ These are audit findings, not newly assigned public completed-change IDs. Inheri
 
 ## Next work and product direction
 
-Current authorization is documentation synchronization only. No robustness patch, diagnostic implementation, optimization build, flash or FX expansion was started here. Agree a small next task before execution; do not automatically convert this list into one broad repair campaign.
+Current authorization is **documentation and KnowledgeBase synchronization after R18 musical closure only**. No further CLP modification, hardware profiling, robustness patch, build, flash, or FX expansion was started here. The next unrelated case and changelog phase should start **in a new chat** using these updated sources; do not automatically initiate an optimization or a multi-bug repair campaign.
 
 The product goal remains a larger effect library, different effects per musical voice and multiple serial/parallel effects per voice. A one/two/four-slot pool is an alternative architecture with different capabilities, not an equivalent implementation. Current timing evidence cannot certify any added instance count. Independent hi-hat processing and global Delay-history ownership need explicit design.
 
-Use two passes: first functional/musical acceptance, then efficiency/robustness review across ITCM, DTCM, SRAM, flash, stack/heap, CPU/IRQ/DMA, numerical behavior and transitions. Audible optimization differences are allowed only after their behavior and measured gain are compared and approved by the owner. Preserve the accepted reference artifact.
+Two-pass gate: **R18 CLP functional/musical acceptance is complete**. Objective efficiency, CPU/IRQ/DMA and stack/reliability measurement remains **incomplete** until appropriate hardware instrumentation and a separate owner authorization exist. Preserve the owner's accepted R18 source and artifact; do not alter sound without comparable measurements and explicit permission.
 
 Delivery convention: LXR_V2_R<N>.zip contains only LXR_V2_R<N>.img. Keep technical evidence separately. Normal startup: only LXR LAB R<N> on line1; line2 blank. No effect suffix.
 
