@@ -1,12 +1,12 @@
 # LXR Firmware Lab — continuation and build evidence
 
-Snapshot: 2026-11-01. This is a documentation synchronization, not a new development authorization.
+Snapshot: 2026-11-03. CLP **sound accepted at R18**; synchronization is documentation-only, not a new development or runtime-profiling authorization.
 
 ## Chat-first execution and mandatory Codex efficiency gate
 
 **Default to normal ChatGPT CHAT** for discussion, source and GitHub read-only analysis, architectural decisions, task planning and independent result reviews. Work is exceptional: recommend it only when autonomous multi-application, cloud-browser or computer interaction has concrete value beyond CHAT and targeted Codex. Use Codex for explicitly authorized implementation, toolchain-dependent builds, executable tests and tightly scoped engineering work. Neither a longer question nor higher reasoning effort alone justifies Work. Projects organize context; they are not an execution mode.
 
-Before **every** Codex handoff, independently inspect the current private KnowledgeBase, this workflow, [PROJECT_STATUS.md](PROJECT_STATUS.md), [EVIDENCE_INDEX.md](EVIDENCE_INDEX.md), applicable AGENTS.md at the **actual source SHA**, and relevant immutable reports, diffs, source code, test fixtures and CI/artifact metadata. Reuse established results; do not rediscover them without a stated gap. Present an explicit efficiency gate to the owner:
+Before **every** Codex handoff, independently inspect the current private KnowledgeBase, this workflow, [PROJECT_STATUS.md](PROJECT_STATUS.md), [EVIDENCE_INDEX.md](EVIDENCE_INDEX.md), [CLP R18 accepted sound](CLP_R18_SONIC_ACCEPTANCE.md) where relevant, applicable AGENTS.md at the **actual source SHA**, and relevant immutable reports, diffs, source code, test fixtures and CI/artifact metadata. Reuse established results; do not rediscover them without a stated gap. Present an explicit efficiency gate to the owner:
 
 1. Why CHAT alone cannot finish the work, and whether Work has any incremental value.
 2. Existing evidence to reuse, including open/failed/unmeasured boundaries.
@@ -49,7 +49,7 @@ Use two passes: functional/musical acceptance first; efficiency/robustness revie
 ```text
 Read docs/PROJECT_STATUS.md, docs/EVIDENCE_INDEX.md, docs/WORKFLOW.md and docs/RECORDKEEPING_STANDARD.md on docs/lab-project-state and their pinned evidence.
 Read applicable AGENTS.md at the actual source base.
-Firmware base: 64263ed25f2e9c7f5d880b493d943bfba29271a8 (verify; do not use the docs branch as source).
+Choose and verify a source base for the particular next issue. Accepted CLP sound reference: 41b364067bce0d8cde624c184933d9cb88e2725b (R18); protected historical R11: 64263ed25f2e9c7f5d880b493d943bfba29271a8. Do NOT assume all branches can be blindly merged or that the documentation branch contains firmware.
 Only if CHAT is insufficient: explain the execution need and identify reused evidence.
 Objective: <one bounded goal>.
 Allowed changes: <explicit scope>; exclusions: <explicit boundaries>.
@@ -58,6 +58,6 @@ No main/R4 changes, force-push, merge, release, flash or bootloader operation.
 Report actual results, unmeasured gates, resource deltas and next decision.
 ```
 
-This preamble is a template, not an issued task. Future source branches do not automatically inherit instructions from this separate documentation branch; include the current-state reference in their explicit task context.
+This preamble is a template, not an issued task. R18 is **musically closed** by the owner; absent hardware instrumentation, CPU/stack/deadline metrics remain UNMEASURED. Do not silently turn the missing measurements into an unapproved sound change. Start the next unrelated issue and changelog phase in a **new chat** and select source ancestry intentionally. Future source branches do not automatically inherit instructions from this documentation branch; include the current-state reference in explicit task context.
 
 Firmware delivery: LXR_V2_R<N>.zip contains only LXR_V2_R<N>.img; evidence is separate. Startup line1: LXR LAB R<N>; line2 blank. Do not issue a new image merely to synchronize documents.
