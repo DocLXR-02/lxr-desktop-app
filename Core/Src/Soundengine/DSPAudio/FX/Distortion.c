@@ -199,12 +199,12 @@ static inline float Distortion_clipFeedback(MasterDistortion *dist, int16_t left
 }
 
 /* R15 HP1 audition: the original 7.2-Hz comment used a 7200-Hz coefficient.
- * Set HP1 to a matched-pole 1000 Hz without changing its place in the
+ * Set HP1 to a matched-pole 3000 Hz without changing its place in the
  * shared input/feedback path. Keep the original R7 core excitation trim.
- * alpha = 1 - exp(-2*pi*1000/44140) = 0.13267953435832913.
+ * alpha = 1 - exp(-2*pi*3000/44140) = 0.34756269835583342.
  * The R7 parallel bass low-pass and its state are intentionally removed.
  */
-#define CLIP_HP1_ALPHA 0.13267953435832913
+#define CLIP_HP1_ALPHA 0.34756269835583342
 #define CLIP_INPUT_TRIM 0.22
 
 void Distortion_init(MasterDistortion *dist)
