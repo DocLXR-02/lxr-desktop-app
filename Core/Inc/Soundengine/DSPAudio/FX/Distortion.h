@@ -45,8 +45,6 @@ typedef struct DistortionStruct
 	double slewState[2];
 
 	double lastOut[2];
-	/* R7 runtime-only parallel LP history, outside the CLP return. */
-	double clipBassLp_state[2];
 
 	/* Runtime-only CLP input-loss control; never serialized into a kit. */
 	float clipFeedbackGain;
