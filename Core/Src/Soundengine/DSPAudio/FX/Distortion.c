@@ -172,7 +172,7 @@ static void Distortion_beginClip(MasterDistortion *dist)
         dist->lp3_state[channel] = 0.;
         dist->slewState[channel] = 0.;
         dist->lastOut[channel] = 0.;
-        dist->clipBassLp_state[channel] = 0.;
+        dist->clipV2DifferenceLow[channel] = 0.;
     }
     dist->clipSilentSamples = 0;
     dist->clipFeedbackGain = 0.f;
@@ -199,21 +199,41 @@ static inline float Distortion_clipFeedback(MasterDistortion *dist, int16_t left
     return dist->clipFeedbackGain;
 }
 
-/* R7 experimental parallel bass: original untrimmed input, 150 Hz LP pole.
- * Keep this output outside lastOut/feedback. With controls in [0,1], core
- * peak <= .647479 and bass peak <= .25, so the wet sum has > .10 headroom.
- * Negative bass polarity reduced cancellation in the synthetic comparisons.
- * The double sum precedes the existing int16 conversion; no new limiter.
+/* R18: preserve the exact R14 nonlinear feedback kernel (HP1 7200-Hz pole),
+ * but replace R7's parallel bass addition with a VOL-coherent output crossover.
+ * The restored low band never enters lastOut or the regenerative return path.
  */
 #define CLIP_INPUT_TRIM 0.22
-#define CLIP_BASS_LP_ALPHA 0.021125671293435455134
-#define CLIP_BASS_WEIGHT -0.25
+#define CLP_V2_DIFF_ALPHA 0.028067915544701783 /* 200 Hz at 44140 Hz */
 
-static inline double Distortion_clipBass(MasterDistortion *dist, uint8_t channel, double input)
+static inline int16_t Distortion_clipV2Mix(MasterDistortion *dist, uint8_t channel,
+                                           int16_t dry, int16_t wet, float amount)
 {
-    dist->clipBassLp_state[channel] += CLIP_BASS_LP_ALPHA *
-                                     (input - dist->clipBassLp_state[channel]);
-    return dist->clipBassLp_state[channel] * CLIP_BASS_WEIGHT * dist->p3;
+    /* q=W-v*D; L=LP200(q); y=(1-m)*D+m*(W-L).
+     * The state updates even for m=0 to avoid switching from stale history.
+     * The recurrence itself defines the time-varying VOL behavior.
+     */
+    const double d = (double)dry / 32768.;
+    const double w = (double)wet / 32768.;
+    const double q = w - (double)dist->p3 * d;
+    dist->clipV2DifferenceLow[channel] += CLP_V2_DIFF_ALPHA *
+                      (q - dist->clipV2DifferenceLow[channel]);
+    const double result = (1. - amount) * d +
+                          amount * (w - dist->clipV2DifferenceLow[channel]);
+    /* Wet-dependent C1 rational soft ceiling, full wet threshold = 0.92 FS.
+     * This bounds CLP's output for positive wet but cannot prevent a later
+     * mixer stage from saturating when signals from other routes are added.
+     */
+    const double threshold = 1. - 0.08 * (double)amount;
+    const double ab = fabs(result);
+    double limited = result;
+    if(amount > 0.f && ab > threshold) {
+        const double excess = ab - threshold;
+        const double span = 1. - threshold;
+        const double magnitude = threshold + span * excess / (excess + span);
+        limited = result < 0. ? -magnitude : magnitude;
+    }
+    return (int16_t)__SSAT((int32_t)(limited * 32768.), 16);
 }
 
 void Distortion_init(MasterDistortion *dist)
@@ -231,8 +251,8 @@ void Distortion_init(MasterDistortion *dist)
 
 	dist->lastOut[0] = 0;
 	dist->lastOut[1] = 0;
-	dist->clipBassLp_state[0] = 0.;
-	dist->clipBassLp_state[1] = 0.;
+	dist->clipV2DifferenceLow[0] = 0.;
+	dist->clipV2DifferenceLow[1] = 0.;
 
 	dist->hp1_state[0] = 0.0;
 	dist->hp1_state[1] = 0.0;
@@ -494,8 +514,6 @@ void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL
 
 				double signal1 = ( (fxBuffer[idx1])  ) / 32768.;
 				double signal2 = ( (fxBuffer[idx2])  ) / 32768.;  //[-1:1]
-				const double bass1 = Distortion_clipBass(dist, 0, signal1);
-				const double bass2 = Distortion_clipBass(dist, 1, signal2);
 				signal1 *= CLIP_INPUT_TRIM;
 				signal2 *= CLIP_INPUT_TRIM;
 
@@ -513,23 +531,8 @@ void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL
 				//signal1 *= 0.3;
 				//signal2 *= 0.3;
 
-				//--- Clipper Amplifier
-				//input HP 7.2Hz
-
-				/*
-				Coefficient calculation:
-				x = exp(-2.0*pi*freq/samplerate);
-				a0 = 1.0-x;
-				b1 = -x;
-
-				for 7.2Hz
-				x = 0,35883358079868806078
-				a0 = 0,64116641920131193922
-				b1 = -0,35883358079868806078
-				 */
-
-				//const double a0 = 0.64116641920131193922;
-				//const double b1 = -0.35883358079868806078;
+				//--- Clipper Amplifier (R14 original HP1: 7200 Hz pole at 44140 Hz)
+				// Keep input and regenerative return summed before the same HP stage.
 				dist->hp1_state[0] += 0.64116641920131193922 * (signal1 - dist->hp1_state[0]);
 				dist->hp1_state[1] += 0.64116641920131193922 * (signal2 - dist->hp1_state[1]);
 
@@ -624,12 +627,12 @@ void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL
 				dist->lastOut[1] = dist->lp3_state[1] * dist->p3;
 
 
-				int16_t wet = __SSAT((int32_t)((dist->lastOut[0] + bass1) * 32768.0f), 16);
+				int16_t wet = __SSAT((int32_t)(dist->lastOut[0] * 32768.0f), 16);
 				//simd.word[0] = fxBuffer[idx1] + __SSAT((wet - fxBuffer[idx1]) * dryWet,16);
-				int16_t wet2 = __SSAT((int32_t)((dist->lastOut[1] + bass2) * 32768.0f), 16);
+				int16_t wet2 = __SSAT((int32_t)(dist->lastOut[1] * 32768.0f), 16);
 				//simd.word[1] = fxBuffer[idx2] + __SSAT((wet2 - fxBuffer[idx2]) * dryWet,16);
 
-				x = __PKHBT(fxBuffer[idx1] + __SSAT((wet - fxBuffer[idx1]) * dryWet,16), fxBuffer[idx2] + __SSAT((wet2 - fxBuffer[idx2]) * dryWet,16), 16);
+				x = __PKHBT(Distortion_clipV2Mix(dist, 0, fxBuffer[idx1], wet, dryWet), Distortion_clipV2Mix(dist, 1, fxBuffer[idx2], wet2, dryWet), 16);
 				//add stereo samples using SIMD
 				*stereoOut = __QADD16(*stereoOut, x);
 				stereoOut++;
@@ -642,7 +645,6 @@ void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL
 
 				const uint8_t idx1 = i*2;
 				double signal1 = ( (fxBuffer[idx1])  ) / 32768.f;
-				const double bass1 = Distortion_clipBass(dist, 0, signal1);
 				signal1 *= CLIP_INPUT_TRIM;
 
 				const float feedback = Distortion_clipFeedback(dist, fxBuffer[idx1], 0)
@@ -687,8 +689,8 @@ void Distortion_process(MasterDistortion *dist, int16_t *fxBuffer, int16_t* outL
 				dist->lastOut[0] = dist->lp3_state[0] * dist->p3;
 
 
-				int16_t wet = __SSAT((int32_t)((dist->lastOut[0] + bass1) * 32768.0f), 16);
-				int16_t dw = fxBuffer[idx1] + __SSAT((wet - fxBuffer[idx1]) * dryWet,16);
+				int16_t wet = __SSAT((int32_t)(dist->lastOut[0] * 32768.0f), 16);
+				int16_t dw = Distortion_clipV2Mix(dist, 0, fxBuffer[idx1], wet, dryWet);
 				*outL = __QADD16(*outL, dw);
 				outL += 2;
 			}
