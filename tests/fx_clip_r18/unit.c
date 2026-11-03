@@ -22,8 +22,8 @@ int main(void){
   for(unsigned n=0;n<221;n++)step(&a,1,-1,ch,.4f);
   assert(a.clipFeedbackGain==0);
   /* Feedback is closed; allow the existing filters to finish their tail. */
-  /* R18 110-Hz HP1 deliberately has a longer quiet-input tail than 7.2-kHz R14.
-     * Allow up to 250 ms before asserting quantized-output silence. */
+  /* R18 retains R14's 7200-Hz HP1; the 200-Hz output crossover may
+     * produce a short residual tail. Allow up to 250 ms for settling. */
   for(unsigned n=0;n<11000;n++)step(&a,0,0,ch,.4f);
   for(unsigned n=0;n<4000;n++)assert(step(&a,0,0,ch,.4f)==0);
   step(&a,-32768,32767,ch,.4f);assert(a.clipFeedbackGain==1);
