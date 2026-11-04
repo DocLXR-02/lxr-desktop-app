@@ -1,0 +1,59 @@
+name: R18 Delay USB-MIDI Compressor source reproductions
+on:
+  push:
+    branches: [test/r18-delay-usb-compressor-repro-2026-11-04]
+permissions:
+  contents: read
+jobs:
+  host-only-source-repros:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify unchanged pinned R18 firmware source
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=41b364067bce0d8cde624c184933d9cb88e2725b
+          git merge-base --is-ancestor "$BASE" HEAD
+          git diff --quiet "$BASE" HEAD -- Core Middlewares Drivers USB_DEVICE_MIDI CMakeLists.txt CMakePresets.json
+          diff -u <(printf '%s\n' '.github/workflows/r18-known-failures-host.yml' 'tests/r18_known_failures/run.py') <(git diff --name-only "$BASE" HEAD)
+          mkdir -p build/r18-known-failures-evidence
+          git rev-parse HEAD > build/r18-known-failures-evidence/TEST_COMMIT.txt
+          git rev-parse "$BASE" > build/r18-known-failures-evidence/R18_BASE.txt
+          git diff --name-status "$BASE" HEAD > build/r18-known-failures-evidence/DIFF.txt
+          cc --version > build/r18-known-failures-evidence/HOST_COMPILER.txt
+          echo "PASS: exact R18 firmware code unchanged; only isolated tests and workflow added"
+      - name: Exercise exact R18 function bodies with expected sanitizer failures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r18_known_failures/run.py build/r18-known-failures-evidence | tee build/r18-known-failures-evidence/TEST_SUMMARY.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('build/r18-known-failures-evidence/result.json').read_text())
+          assert j['source_commit']=='41b364067bce0d8cde624c184933d9cb88e2725b'
+          assert j['all_expected_outcomes'] and len(j['cases'])==8
+          assert [x['case'] for x in j['cases'] if x['expect']=='fail']==['delay-right','usb-wrap','compressor-overflow']
+          assert all(x['matches'] for x in j['cases'])
+          print('PASS: 8 classified source-extracted fixtures, including 3 intentional sanitizer failures and 2 USB logical-loss reproductions')
+          PY
+      - name: Preserve test logs including expected failures
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/r18-known-failures-evidence
+          printf 'Read-only firmware test. No ARM image, no hardware, no source modifications. The failing input executions intentionally exit nonzero and must remain in the preserved logs.\n' > build/r18-known-failures-evidence/SCOPE.txt
+          ( cd build/r18-known-failures-evidence && sha256sum *.log *.txt result.json 2>/dev/null > LOG_SHA256SUMS.txt ) || true
+      - name: Upload source-extracted reproductions and raw failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r18-delay-usb-compressor-repro-evidence
+          path: build/r18-known-failures-evidence/
+          retention-days: 30
+          if-no-files-found: error
