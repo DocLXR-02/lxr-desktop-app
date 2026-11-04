@@ -1,0 +1,92 @@
+name: R18 baseline host-only validation
+on:
+  push:
+    branches:
+      - test/r18-baseline-2026-11-04
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact test branch and R18 ancestry
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check immutable R18 application sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/r18-baseline-evidence build/r18-baseline-host
+          BASE=41b364067bce0d8cde624c184933d9cb88e2725b
+          git merge-base --is-ancestor "$BASE" HEAD
+          test "$(git diff --name-only "$BASE" HEAD)" = ".github/workflows/r18-baseline-host-only.yml"
+          git diff --quiet "$BASE" HEAD -- Core Middlewares Drivers USB_DEVICE_MIDI tests CMakeLists.txt CMakePresets.json
+          git rev-parse "$BASE^{commit}" > build/r18-baseline-evidence/PINNED_R18_SOURCE.txt
+          git rev-parse HEAD > build/r18-baseline-evidence/TEST_BRANCH_COMMIT.txt
+          git diff --name-status "$BASE" HEAD > build/r18-baseline-evidence/CHANGED_PATHS.txt
+          cc --version > build/r18-baseline-evidence/HOST_COMPILER.txt
+          git show "$BASE:Core/Src/Soundengine/DSPAudio/FX/Distortion.c" | cmp - Core/Src/Soundengine/DSPAudio/FX/Distortion.c
+          git show "$BASE:Core/Src/Soundengine/DSPAudio/mixer.c" | cmp - Core/Src/Soundengine/DSPAudio/mixer.c
+          echo "PASS: Production/test sources are byte-identical to pinned R18; only this workflow is new"
+
+      - name: R18 production DSP and existing project host regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVID=build/r18-baseline-evidence
+          BIN=build/r18-baseline-host
+          CFLAGS="-std=c11 -O2 -fno-strict-aliasing -fsanitize=undefined,bounds,float-cast-overflow -fno-sanitize-recover=all -I. -Itests/fx_clip/include -ICore/Inc"
+          cc $CFLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/unit.c -lm -o "$BIN/inherited"
+          "$BIN/inherited" 2>&1 | tee "$EVID/inherited.log"
+          cc $CFLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/state.c -lm -o "$BIN/state"
+          "$BIN/state" 2>&1 | tee "$EVID/state.log"
+          cc $CFLAGS -ffunction-sections -fdata-sections tests/fx_clip/fxbus.c Core/Src/Soundengine/DSPAudio/FX/Distortion.c Core/Src/Soundengine/FxBus.c -Wl,--gc-sections -lm -o "$BIN/fxbus"
+          "$BIN/fxbus" 2>&1 | tee "$EVID/fxbus.log"
+          cc $CFLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/mix_bounds.c -lm -o "$BIN/mix-bounds"
+          "$BIN/mix-bounds" 2>&1 | tee "$EVID/mix-bounds.log"
+          python3 tests/fx_clip_r18/compare.py 2>&1 | tee "$EVID/core-isolation.log"
+          python3 tests/fx_clip_r14/max_control.py 2>&1 | tee "$EVID/max-control.log"
+          python3 tests/bug001/run.py 2>&1 | tee "$EVID/bug001.log"
+          python3 tests/kit_load/run.py 2>&1 | tee "$EVID/kit-load.log"
+          python3 tests/project_storage/run.py 2>&1 | tee "$EVID/storage.log"
+          python3 tests/euclidean/run.py 2>&1 | tee "$EVID/euclidean.log"
+          printf '%s\n' "PASS: all inherited R18/R14 and general host checks completed" > "$EVID/HOST_SUITE_RESULT.txt"
+
+      - name: Supplementary AddressSanitizer on the existing R18 DSP fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVID=build/r18-baseline-evidence
+          BIN=build/r18-baseline-host
+          CFLAGS="-std=c11 -O1 -g -fno-omit-frame-pointer -fno-strict-aliasing -fsanitize=address,undefined,bounds,float-cast-overflow -fno-sanitize-recover=all -I. -Itests/fx_clip/include -ICore/Inc"
+          for TEST in unit state mix_bounds; do
+            cc $CFLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' "tests/fx_clip_r18/$TEST.c" -lm -o "$BIN/asan-$TEST"
+            ASAN_OPTIONS=detect_leaks=0 "$BIN/asan-$TEST" 2>&1 | tee "$EVID/asan-$TEST.log"
+          done
+          printf '%s\n' "PASS: supplementary AddressSanitizer + UBSan R18 fixture matrix" > "$EVID/SANITIZER_RESULT.txt"
+
+      - name: Record evidence and upload host-only logs
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVID=build/r18-baseline-evidence
+          mkdir -p "$EVID"
+          printf 'Test-only workflow; no ARM firmware build, no production code edits, no device test.\n' > "$EVID/SCOPE.txt"
+          printf 'Historical R11 failure fixtures not run in this baseline; R18-specific reproductions remain a separate task.\n' >> "$EVID/SCOPE.txt"
+          git rev-parse HEAD > "$EVID/RECORDED_HEAD.txt"
+          ( cd "$EVID" && sha256sum *.log *.txt 2>/dev/null > SHA256SUMS.txt ) || true
+
+      - name: Archive host baseline evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r18-baseline-host-only-evidence
+          path: build/r18-baseline-evidence/
+          if-no-files-found: error
+          retention-days: 30
