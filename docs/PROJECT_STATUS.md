@@ -1,6 +1,6 @@
 # LXR Firmware Lab — current project state
 
-Snapshot: 2026-11-03 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-03-CLP-R18**.
+Snapshot: 2026-11-04 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-03-CLP-R18**.
 
 This is the current public entry point for continuing the lab. Read this file, [hardware observations](HARDWARE_VALIDATION.md), the [resource ledger](BUILD_RESOURCE_LEDGER.md), [evidence index](EVIDENCE_INDEX.md), [workflow](WORKFLOW.md) and [recordkeeping standard](RECORDKEEPING_STANDARD.md) before proposing another task. Reports are historical evidence at their pinned commits. A report branch is not a firmware source branch.
 
@@ -13,6 +13,10 @@ Normal CHAT is the default place for source-level investigation, GitHub evidence
 The [recordkeeping standard](RECORDKEEPING_STANDARD.md) requires a reasoned task report **and** durable reproducible critical evidence. Prior R11 audit Markdown reports and hashes are published, but their listed local-only analysis scripts and JSON/log outputs were **not** all archived to GitHub. This gap remains open and should not trigger an indiscriminate rerun. CI logs/artifacts expire; preserve decisive evidence, commands, inputs and hashes with provenance. The next Codex task must explicitly link this documentation branch because the existing R11 firmware source branch does not inherit new documentation-branch instructions.
 
 Documentation-only synchronization records the owner's **new R18 CLP musical acceptance**. No production source change, build, flash, hardware profiling or release was performed by this synchronization.
+
+## DATA encoder — owner support handoff (2026-11-04)
+
+**BUG 006:** Intermittent missed DATA encoder push confirmations across menus, kit operations, renaming, and firmware-update confirmation (owner's rough estimate ~5%). Increased pressure can trigger an otherwise missed confirmation; off-center downward pressing clicks audibly/tactilely without confirmation. These observations prioritize a mechanical/electrical contact hypothesis, without proving hardware failure or excluding firmware debounce. **Seller return authorization received; owner intends technical-support examination without modifying hardware.** Return shipment, support findings and repair are pending/unverified. No further firmware diagnostic/build task is authorized. **BUG 007:** Skipped rotary states remain a separate open issue. Full observations and evidence boundaries: [DATA input status](INPUT_CONTROL_STATUS.md). R18 source and accepted CLP sound remain unchanged.
 
 ## Current firmware identity — owner-accepted R18
 
