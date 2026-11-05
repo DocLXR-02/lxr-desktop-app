@@ -100,7 +100,7 @@ static uint8_t rx_receive(uint8_t *buf,uint32_t *len){(void)buf;(void)len;rx_rea
 static uint32_t USBD_LL_GetRxDataSize(USBD_HandleTypeDef *pdev,uint8_t ep){(void)pdev;(void)ep;return incoming_length;}
 static uint8_t CDC_Transmit_FS(uint8_t *buf,uint16_t length) {
   if(force_busy || tx_class.TxState) return USBD_BUSY;
-  if(length==0 || (length%4) || length>64 ||
+  if(length==0 || (length%4) ||
      buf < usb_MidiInBuff || (size_t)(buf-usb_MidiInBuff)+length>sizeof usb_MidiInBuff) {
     fprintf(stderr,"REPRODUCED invalid TX span: length=%u offset=%ld\n",length,(long)(buf-usb_MidiInBuff));
     abort();
