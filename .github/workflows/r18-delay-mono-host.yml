@@ -31,7 +31,7 @@ jobs:
           git rev-parse HEAD > build/r18-delay-mono-evidence/TEST_HEAD.txt
           git rev-parse "$BASE" > build/r18-delay-mono-evidence/ACCEPTED_R18_SOURCE.txt
           cc --version > build/r18-delay-mono-evidence/HOST_COMPILER.txt
-          git diff --check "$BASE" HEAD
+          git -c core.whitespace=cr-at-eol diff --check "$BASE" HEAD
           echo "PASS: changed production file is Delay.c only, R18 ancestry pinned"
       - name: Reproduce original mono-right fault and validate both corrected Delay modes
         shell: bash
