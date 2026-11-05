@@ -208,6 +208,19 @@ int main(int argc,char **argv){
    hUsbDeviceFS.dev_state=USBD_STATE_CONFIGURED;
    drain();check_events(1);
    puts("PASS aborted disconnection retains pending event for retry");
+ } else if(!strcmp(scenario,"rx-normal")){
+   send_rx_packet(3,4);MidiMsg m={0};
+   for(unsigned i=0;i<4;i++){
+     assert(usb_getMidi(&m)==1 && m.status==0x90 &&
+            m.data1==i+3 && m.bits.source==midiSourceUSB && m.bits.length==2);
+     printf("RX %u %u\n",m.status,m.data1);
+   }
+   assert(!usb_getMidi(&m) && rx_rearmed==1);
+ } else if(!strcmp(scenario,"rx-alias")){
+   for(unsigned k=0;k<4;k++)send_rx_packet(16*k,16);
+   assert(usb_MidiMessagesRead==usb_MidiMessagesWrite);
+   MidiMsg m={0};assert(!usb_getMidi(&m));
+   puts("REPRODUCED original 64-event RX-full queue aliases empty");
  } else if(!strcmp(scenario,"rx-full")){
    for(unsigned k=0;k<5;k++)send_rx_packet(16*k,16);
    assert(usb_MidiRxDropped==17);
@@ -261,14 +274,17 @@ def main():
         build=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         (out/(label+"-compile.log")).write_text(build.stdout+build.stderr)
         assert build.returncode==0,(label,build.stderr[-2500:])
-    normal={}
+    normal={};rx_normal={}
     cases=[]
     for label,case,expected in [
         ("original","normal",True),
+        ("original","rx-normal",True),
+        ("original","rx-alias",True),
         ("original","busy",False),
         ("original","wrap",False),
         ("original","rx-full",False),
         ("candidate","normal",True),
+        ("candidate","rx-normal",True),
         ("candidate","busy",True),
         ("candidate","external-busy",True),
         ("candidate","inflight",True),
@@ -288,17 +304,20 @@ def main():
         print(("PASS" if expected else "REPRODUCED") if correct else "FAIL",label,case,
               "exit",p.returncode,flush=True)
         if case=="normal" and p.returncode==0:normal[label]=p.stdout
+        if case=="rx-normal" and p.returncode==0:rx_normal[label]=p.stdout
         cases.append({"revision":label,"case":case,"expected_pass":expected,
             "exit":p.returncode,"matched":correct,"output":(p.stdout+p.stderr)[-900:]})
     assert normal.get("original")==normal.get("candidate"),"Normal USB wire bytes differ"
+    assert rx_normal.get("original")==rx_normal.get("candidate"),"Normal RX MIDI events differ"
     assert all(x["matched"] for x in cases),"At least one validation failed"
     result={"accepted_source":BASE,"original_blobs":ORIGINAL,"candidate_blobs":CANDIDATE,
-        "normal_usb_wire_bitidentical":True,"checks":cases,
+        "normal_usb_wire_bitidentical":True,"normal_rx_events_bitidentical":True,
+        "checks":cases,
         "limits":"Source-extracted USB functions with emulated CDC TxState/DataOut; no actual USB device, IRQ preemption, D-cache, DMA, ARM build or physical MIDI host."}
     (out/"result.json").write_text(json.dumps(result,indent=2)+"\n")
     (out/"SHA256SUMS.txt").write_text("".join(
         hashlib.sha256(p.read_bytes()).hexdigest()+"  "+p.name+"\n"
         for p in sorted(out.glob("*.log"))))
-    print("PASS: original three USB faults, normal byte identity, candidate TX/RX lifetime/overflow/wrap/short-packet cases")
+    print("PASS: original three USB faults, normal TX/RX byte identity, candidate TX/RX lifetime/overflow/wrap/short-packet cases")
 if __name__=="__main__":
     main()
