@@ -94,7 +94,9 @@ void Delay_processPingPong(Delay *d, int16_t *fxBuffer,int16_t* outL, int16_t* o
 {
 
 	int32_t x;
-	int32_t* stereoOut = (int32_t*)outL;
+	int32_t* stereoOut = channels == 2 ? (int32_t*)outL : NULL;
+	/* Mono destinations may be the unaligned right halfword of a stereo frame. */
+	int16_t* monoOut = outL;
 
 	for(uint8_t i=0;i<size;i++)
 	{
@@ -175,8 +177,8 @@ void Delay_processPingPong(Delay *d, int16_t *fxBuffer,int16_t* outL, int16_t* o
       }
       else
       {
-        *(uint16_t*)stereoOut = __QADD16(*stereoOut, x);
-        stereoOut++;
+        *monoOut = (int16_t)__QADD16(*monoOut, x);
+        monoOut += 2;
       }
 
 			//*input1 = dryWet*out + (1-dryWet)* (*input1);
@@ -189,7 +191,9 @@ void Delay_process(Delay *d, int16_t *fxBuffer,int16_t* outL, int16_t* outR, uin
 	//FX_BUFFER[0] = 0;
 
 	int32_t x;
-	int32_t* stereoOut = (int32_t*)outL;
+	int32_t* stereoOut = channels == 2 ? (int32_t*)outL : NULL;
+	/* Mono destinations may be the unaligned right halfword of a stereo frame. */
+	int16_t* monoOut = outL;
 
 	for(uint8_t i=0;i<size;i++)
 	{
@@ -261,8 +265,8 @@ void Delay_process(Delay *d, int16_t *fxBuffer,int16_t* outL, int16_t* outR, uin
     }
     else
     {
-      *(uint16_t*)stereoOut = __QADD16(*stereoOut, x);
-      stereoOut++;
+      *monoOut = (int16_t)__QADD16(*monoOut, x);
+      monoOut += 2;
     }
 
     //*input1 = dryWet*out + (1-dryWet)* (*input1);
