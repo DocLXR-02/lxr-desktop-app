@@ -67,7 +67,7 @@ static uint32_t qadd16(uint32_t a,uint32_t b) {
 MAIN = r"""
 int main(int argc, char **argv) {
     if(argc!=2)return 10;
-    if(argv[1][0]=='n') {
+    if(argv[1][0]=='n' && argv[1][1]=='o') {
         for(int ch=1;ch<=2;ch++)
         for(int ratio=0;ratio<6;ratio++)
         for(int gain=0;gain<3;gain++)
