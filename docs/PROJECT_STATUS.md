@@ -1,6 +1,6 @@
 # LXR Firmware Lab — current project state
 
-Snapshot: 2026-11-04 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-03-CLP-R18**.
+Snapshot: 2026-11-05 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-05-R18-TECHNICAL-CONSOLIDATION**. This record supersedes the 2026-11-04 status snapshot; historical reports remain unchanged.
 
 This is the current public entry point for continuing the lab. Read this file, [hardware observations](HARDWARE_VALIDATION.md), the [resource ledger](BUILD_RESOURCE_LEDGER.md), [evidence index](EVIDENCE_INDEX.md), [workflow](WORKFLOW.md) and [recordkeeping standard](RECORDKEEPING_STANDARD.md) before proposing another task. Reports are historical evidence at their pinned commits. A report branch is not a firmware source branch.
 
@@ -35,6 +35,36 @@ Documentation-only synchronization records the owner's **new R18 CLP musical acc
 | **Runtime evidence** | **CPU deadlines, DMA/IRQ underruns, stack high-water, thermal/soak reliability UNMEASURED**; owner has no debugger/profiler available |
 
 R18 preserves R14's single shared **7200-Hz HP1 feedback core**, R5 idle gate and R14 MAX fader feedback. It **replaces** R7's negative parallel bass with a **200-Hz VOL-coherent output difference filter** and wet-dependent rational soft ceiling. Full R14 sound/feedback was subjectively restored while maintaining the desirable bass. Only the musical sound/UX chapter is accepted; system-level reliability remains separately unmeasured. No protected branch was merged, overwritten, or released.
+
+## R18 technical consolidation — November 4–5, 2026
+
+**Scope and evidence class:** A read-only R18-versus-R11 source audit, one test-only R18 reproduction suite, and two **independent** correction candidates were created after the November 3 CLP sonic closure. This is source/host/CI evidence, **not** owner hardware testing, a combined firmware image, a merged release, or authorization to install a candidate. The canonical accepted CLP R18 reference is still \`41b364067bce0d8cde624c184933d9cb88e2725b\`; no branch below changes it. The documentation sync makes no production-source change.
+
+| Area | Exact candidate / evidence | Verified result and boundary |
+|---|---|---|
+| **Read-only R18 consolidation audit** | Owner-supplied \`LXR_R18_Technical_Consolidation_ReadOnly_Audit_2026-11-04.md\` (local conversation ZIP; **not published on GitHub**) | Compared R11 arithmetic fixes and inherited R18 risks; source-only, no new execution/build. R11 FM/PWM/wavetable/interpolation/transient fixes and its limited SoloMix/snare treatment were **not** silently inherited by R18. |
+| **R18 failure reproduction** | Test branch \`test/r18-delay-usb-compressor-repro-2026-11-04\` at \`1da25aafeaa8de8c53313a402dfe58324ed2d74f\`; [host CI 41925616784](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/41925616784) | **8/8** classified fixture outcomes, including expected original Delay mono-right alignment failure, USB TX BUSY loss and wrap over-read, USB RX full-as-empty, and Compressor mono over-range float-to-int16 conversion. Production code unchanged. Evidence ZIP SHA-256 \`ef21bd3c3c2a738e8027fa985608c545070e0498d2c714f97690671e6ecafee4\`; report/evidence held in owner-supplied ZIP, not a canonical GitHub report. |
+| **Delay mono-safe access** | Independent \`fix/r18-delay-mono-safe-access\` at **\`08bc165500e21153eeb28ddbf2fe2d84626a82ca\`**; production fix \`c0ade6400479ced32260a799a4974eef4ae48b93\` | Only production file \`Core/Src/Soundengine/DSPAudio/FX/Delay.c\` changed: aligned 16-bit access for normal and ping-pong mono output. **Host PASS** [41965755184](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/41965755184); **ARM Release validation PASS** [41972428668](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/41972428668) (source-extracted tests, 144 output comparisons, CLP regressions and IMG/ELF checks). [Host report](https://github.com/DocLXR-02/lxr-desktop-app/blob/2c8d7138951e0c7c46b88de602ccc385d8e8ec6b/docs/codex-berichte/2026-11-05_r18-delay-mono-safe-access.md); [per-build report](https://github.com/DocLXR-02/lxr-desktop-app/blob/bdbe8857e16eda7cecf0bfdeee048cede6ff6297/docs/codex-berichte/2026-11-05_r18-delay-mono-arm-validation.md). No hardware flash/listening. |
+| **USB-MIDI FIFO/CDC ownership** | Independent \`fix/r18-usb-midi-ring-ownership\` at **\`b800669caf209067c47447fb6376abfbe7eaa7b3\`**; production fix \`220a9d82b9e819b38e1bdb7232751bb1439f1fa3\` | Fixes bounded 4-byte TX wrap submission, BUSY/in-flight ownership, RX capacity and full-as-empty handling; drops newest event under sustained overload and counts drops. **15/15 classified host cases PASS**, including expected original failures and R18 CLP regressions; [CI 42003303720](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/42003303720); [report](https://github.com/DocLXR-02/lxr-desktop-app/blob/e776e0d3b7c244c3cc0493a89ec3c37cd93e1e28/docs/codex-berichte/2026-11-05_r18-usb-midi-transport-ownership-host.md). **ARM build, MCU USB traffic, timing and device test NOT RUN.** |
+| **Compressor mono** | Original R18 \`FX/Compressor.c\`; reproduction suite above | For the selected mono input 32,767, makeup 3, ratio 1, unsaturated conversion attempts 98,301 before int16; **known numerical error reproduced**. **No production correction, candidate, ARM build or sound-acceptance test yet.** |
+
+### Delay ARM resource delta and non-release identity
+
+Matched against the accepted R18 using the same Arm GNU 14.3.Rel1/GCC 14.3.1 Release toolchain, the **Delay-only** candidate changed ordinary-flash \`.text\` by **+16 B** (151,784 to 151,800 B). ITCM **15,208 B**, DTCM section sum **107,420 B**, and general-SRAM section sum **274,644 B** were unchanged. The accepted status table above uses a historical region aggregate that includes four more bytes in the RAM aggregates; **both calculation conventions agree on zero added static RAM**. ITCM nominal free remains **1,176 B**. Candidate validation-only \`IMG\`: **287,960 B**, SHA-256 **\`3ab7f99a893df91474f862ac4f6158c5d11bed896499937a21c50f563cf39abc\`**; no firmware delivery package or installation authorization was issued. A parallel legacy host workflow [41972428701](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/41972428701) failed **preflight allowlist only**, before tests; the authorized ARM workflow passed. A source-code-size delta is **not** a CPU/WCET measurement.
+
+### USB-MIDI behavior and evidence limits
+
+TX holds accepted asynchronous transfers until CDC completion; BUSY keeps events queued. The existing 128-byte TX ring holds up to **31 complete four-byte events** by leaving one slot unused; the RX ring holds **63 messages** by the same rule. New events are dropped deterministically at capacity and counted, so lossless MIDI, guaranteed Note-Off delivery under indefinite overload, and exactly-once transmission around disconnect are **not established**. Host mocks and compiler sanitizers do not certify target ISR/DMA/cache concurrency. The [USB-MIDI report](https://github.com/DocLXR-02/lxr-desktop-app/blob/e776e0d3b7c244c3cc0493a89ec3c37cd93e1e28/docs/codex-berichte/2026-11-05_r18-usb-midi-transport-ownership-host.md) explicitly requests a **separately authorized ARM build** next.
+
+### Integration boundary and next decision
+
+1. Preserve the original accepted **R18 sonic firmware**, all protected references and their hashes; neither candidate is automatically a new accepted version.
+2. **USB-MIDI:** Owner approval is required for an ARM validation build from exact candidate SHA \`b800669caf209067c47447fb6376abfbe7eaa7b3\`, plus compiler/ELF/IMG/resource checks and a separate English build report.
+3. **Compressor:** A source correction requires distinct approval. Select an explicit mono saturation/headroom policy, reproduce over-range and normal-range behavior, and separately evaluate any possible sound differences.
+4. **Integration:** Only after authorization, combine the independently verified Delay/USB/Compressor changes on a new branch from pinned R18, rerun focused regressions and matched ARM build/resource checks. Avoid redundant device flashes; **hardware testing/installation requires additional explicit approval** and backup/recovery planning.
+5. **Unmeasured:** Actual Cortex-M7 CPU/WCET, IRQ/DMA timing margin, stack high-water, long-duration/audio stability and physical MIDI/Compressor/Delay performance remain **UNMEASURED**. GitHub Actions artifact ZIPs have **30-day retention**; uploaded local ZIP copies are owner-provided evidence, not permanently published GitHub binaries.
+
+This is a documentation synchronization only. No post-R18 completed public \`LXR-014\` change or R19 release is claimed. The two candidates are **separate and unmerged**; the protected CLP sound is unchanged.
 
 ## Historical R11 firmware identity (snapshot 2026-11-01)
 
@@ -99,7 +129,7 @@ No device damage, device underrun or general absence of clicks was demonstrated 
 
 ## Open technical findings — historical R11 audit scope
 
-The inherited audit findings below were identified on an older R11 lineage and have not been globally revalidated or fixed in R18 by the CLP musical acceptance. Do not assume absence or presence of each defect in the new branch without a pinned source comparison and bounded reproduction.
+The inherited findings originated in the R11 audit. The November 4–5 work reproduced selected faults on the pinned **original R18** in host fixtures, and separately produced isolated Delay and USB-MIDI candidates. This does **not** constitute a global R18 repair or hardware validation. Consult the technical consolidation section above for the current per-branch status.
 
 
 These are audit findings, not newly assigned public completed-change IDs. Inherited source defects must not be attributed to CLP changes without evidence.
@@ -117,7 +147,7 @@ These are audit findings, not newly assigned public completed-change IDs. Inheri
 
 ## Next work and product direction
 
-Current authorization is **documentation and KnowledgeBase synchronization after R18 musical closure only**. No further CLP modification, hardware profiling, robustness patch, build, flash, or FX expansion was started here. The next unrelated case and changelog phase should start **in a new chat** using these updated sources; do not automatically initiate an optimization or a multi-bug repair campaign.
+After the R18 musical closure, separately owner-authorized, isolated R18 test/correction tasks **did** produce a Delay validation candidate and USB-MIDI host-tested candidate on November 4–5, as recorded above. **This synchronization only** updates documentation: no additional tests, source changes, builds, merges, firmware delivery, device flashing, hardware profiling or release are authorized by it. The next executable step needs its own explicit approval. Do not start an integration or further correction campaign automatically.
 
 The product goal remains a larger effect library, different effects per musical voice and multiple serial/parallel effects per voice. A one/two/four-slot pool is an alternative architecture with different capabilities, not an equivalent implementation. Current timing evidence cannot certify any added instance count. Independent hi-hat processing and global Delay-history ownership need explicit design.
 
