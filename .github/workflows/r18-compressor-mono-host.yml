@@ -1,0 +1,94 @@
+name: R18 Compressor mono saturation host comparison
+on:
+  push:
+    branches:
+      - fix/r18-compressor-mono-saturation
+permissions:
+  contents: read
+jobs:
+  compressor-host:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check exact R18 ancestry and narrow production change
+        shell: bash
+        run: |
+          set -euo pipefail
+          R18=41b364067bce0d8cde624c184933d9cb88e2725b
+          OUT=build/r18-compressor-mono-host
+          mkdir -p "$OUT"
+          git merge-base --is-ancestor "$R18" HEAD
+          git diff --name-only "$R18" HEAD > "$OUT/CHANGED_PATHS.txt"
+          diff -u <(printf '%s\n' \
+            '.github/workflows/r18-compressor-mono-host.yml' \
+            'Core/Src/Soundengine/DSPAudio/FX/Compressor.c' \
+            'tests/r18_compressor_mono/run.py') "$OUT/CHANGED_PATHS.txt"
+          git -c core.whitespace=cr-at-eol diff --check "$R18" HEAD
+          for p in \
+            Core/Src/Soundengine/DSPAudio/FX/Distortion.c \
+            Core/Src/Soundengine/DSPAudio/FX/Delay.c \
+            Core/Src/Soundengine/DSPAudio/mixer.c \
+            Core/Src/Soundengine/FxBus.c \
+            Core/Src/Soundengine/USB/usb_manager.c \
+            Middlewares/JS/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
+            Middlewares/JS/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h \
+            Core/Src/main.c; do
+            git show "$R18:$p" | cmp - "$p"
+          done
+          git rev-parse HEAD > "$OUT/SOURCE_COMMIT.txt"
+          git rev-parse "$R18" > "$OUT/BASE_R18_COMMIT.txt"
+          cc --version > "$OUT/HOST_COMPILER.txt"
+          echo 'PASS: only compressor mono production conversion changed; original R18 CLP/Delay/USB unchanged'
+      - name: Reproduce R18 invalid mono cast and compare corrected samples
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/r18-compressor-mono-host
+          python3 tests/r18_compressor_mono/run.py "$OUT" 2>&1 | tee "$OUT/RUN_SUMMARY.log"
+          (cd "$OUT" && sha256sum --check SHA256SUMS.txt)
+      - name: Retain existing R18 CLP and general regression evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/r18-compressor-mono-host
+          mkdir -p "$OUT/clp-build"
+          FLAGS="-std=c11 -O2 -fno-strict-aliasing -fsanitize=undefined,bounds,float-cast-overflow -fno-sanitize-recover=all -I. -Itests/fx_clip/include -ICore/Inc"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/unit.c -lm -o "$OUT/clp-build/unit"
+          "$OUT/clp-build/unit" 2>&1 | tee "$OUT/clp-unit.log"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/state.c -lm -o "$OUT/clp-build/state"
+          "$OUT/clp-build/state" 2>&1 | tee "$OUT/clp-state.log"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/mix_bounds.c -lm -o "$OUT/clp-build/mix"
+          "$OUT/clp-build/mix" 2>&1 | tee "$OUT/clp-mix.log"
+          cc $FLAGS -ffunction-sections -fdata-sections tests/fx_clip/fxbus.c Core/Src/Soundengine/DSPAudio/FX/Distortion.c Core/Src/Soundengine/FxBus.c -Wl,--gc-sections -lm -o "$OUT/clp-build/bus"
+          "$OUT/clp-build/bus" 2>&1 | tee "$OUT/clp-bus.log"
+          python3 tests/fx_clip_r18/compare.py 2>&1 | tee "$OUT/clp-core.log"
+          python3 tests/fx_clip_r14/max_control.py 2>&1 | tee "$OUT/clp-max.log"
+          python3 tests/bug001/run.py 2>&1 | tee "$OUT/bug001.log"
+          python3 tests/kit_load/run.py 2>&1 | tee "$OUT/kit-load.log"
+          python3 tests/project_storage/run.py 2>&1 | tee "$OUT/storage.log"
+          python3 tests/euclidean/run.py 2>&1 | tee "$OUT/euclidean.log"
+      - name: Record reproducible CI evidence and exclusions
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/r18-compressor-mono-host
+          mkdir -p "$OUT"
+          cat > "$OUT/SCOPE.txt" <<'EOF'
+          Host-only source-extracted comparison of original R18 and compressor mono saturation candidate.
+          The normal-range parity fixtures do not prove whole-input sonic transparency.
+          The overflow behavior is deliberately different and awaits owner sound-policy acceptance.
+          No ARM firmware build, installation, hardware test, merge or release was authorized.
+          EOF
+          (cd "$OUT" && find . -maxdepth 1 -type f ! -name 'CI_RECORD_HASHES.txt' -printf '%f\n' | LC_ALL=C sort | while IFS= read -r f; do sha256sum "$f"; done > CI_RECORD_HASHES.txt)
+      - name: Archive host evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r18-compressor-mono-host-evidence
+          path: build/r18-compressor-mono-host/
+          retention-days: 30
+          if-no-files-found: error
