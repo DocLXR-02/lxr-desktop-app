@@ -1,0 +1,75 @@
+name: R18 Delay mono safe-access host regression
+on:
+  push:
+    branches: [fix/r18-delay-mono-safe-access]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify exact R18 ancestry and one-file production scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/r18-delay-mono-evidence
+          BASE=41b364067bce0d8cde624c184933d9cb88e2725b
+          git merge-base --is-ancestor "$BASE" HEAD
+          git diff --name-only "$BASE" HEAD > build/r18-delay-mono-evidence/CHANGED_PATHS.txt
+          diff -u <(printf '%s\n' \
+            '.github/workflows/r18-delay-mono-host.yml' \
+            'Core/Src/Soundengine/DSPAudio/FX/Delay.c' \
+            'tests/r18_delay_mono/run.py') build/r18-delay-mono-evidence/CHANGED_PATHS.txt
+          git diff --quiet "$BASE" HEAD -- Core/Src/Soundengine/DSPAudio/FX/Distortion.c \
+            Core/Src/Soundengine/DSPAudio/mixer.c Core/Src/Soundengine/FxBus.c \
+            Core/Src/Soundengine/DSPAudio/FX/Compressor.c \
+            Core/Src/Soundengine/USB/usb_manager.c
+          git rev-parse HEAD > build/r18-delay-mono-evidence/TEST_HEAD.txt
+          git rev-parse "$BASE" > build/r18-delay-mono-evidence/ACCEPTED_R18_SOURCE.txt
+          cc --version > build/r18-delay-mono-evidence/HOST_COMPILER.txt
+          git diff --check "$BASE" HEAD
+          echo "PASS: changed production file is Delay.c only, R18 ancestry pinned"
+      - name: Reproduce original mono-right fault and validate both corrected Delay modes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r18_delay_mono/run.py build/r18-delay-mono-evidence 2>&1 | tee build/r18-delay-mono-evidence/DELAY_RESULT.log
+      - name: R18 CLP DSP compatibility regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/r18-delay-mono-evidence
+          mkdir -p build/r18-delay-mono-host
+          FLAGS="-std=c11 -O2 -fno-strict-aliasing -fsanitize=undefined,bounds,float-cast-overflow -fno-sanitize-recover=all -I. -Itests/fx_clip/include -ICore/Inc"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/unit.c -lm -o build/r18-delay-mono-host/unit
+          build/r18-delay-mono-host/unit 2>&1 | tee "$OUT/clp-unit.log"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/state.c -lm -o build/r18-delay-mono-host/state
+          build/r18-delay-mono-host/state 2>&1 | tee "$OUT/clp-state.log"
+          cc $FLAGS -ffunction-sections -fdata-sections tests/fx_clip/fxbus.c Core/Src/Soundengine/DSPAudio/FX/Distortion.c Core/Src/Soundengine/FxBus.c -Wl,--gc-sections -lm -o build/r18-delay-mono-host/fxbus
+          build/r18-delay-mono-host/fxbus 2>&1 | tee "$OUT/clp-bus.log"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/mix_bounds.c -lm -o build/r18-delay-mono-host/mix
+          build/r18-delay-mono-host/mix 2>&1 | tee "$OUT/clp-mix.log"
+          python3 tests/fx_clip_r18/compare.py 2>&1 | tee "$OUT/clp-core.log"
+          python3 tests/fx_clip_r14/max_control.py 2>&1 | tee "$OUT/clp-max-control.log"
+          printf 'PASS: existing R18 CLP regressions\n' > "$OUT/CLP_RESULTS.txt"
+      - name: Preserve decisive evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/r18-delay-mono-evidence
+          mkdir -p "$OUT"
+          printf 'Host-only candidate test. No ARM build, no hardware, no firmware delivery, no protected-branch modification. Baseline sanitizer failure is intentional and recorded.\n' > "$OUT/SCOPE.txt"
+          ( cd "$OUT" && sha256sum *.log *.txt result.json > SHA256SUMS.txt ) || true
+      - name: Upload host validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r18-delay-mono-host-evidence
+          path: build/r18-delay-mono-evidence/
+          retention-days: 30
+          if-no-files-found: error
