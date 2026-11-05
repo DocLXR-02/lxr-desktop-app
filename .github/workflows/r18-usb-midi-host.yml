@@ -1,0 +1,85 @@
+name: R18 USB-MIDI FIFO and transfer ownership host validation
+on:
+  push:
+    branches:
+      - fix/r18-usb-midi-ring-ownership
+permissions:
+  contents: read
+jobs:
+  usb-midi-host:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pin R18 and protect firmware/audio scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=41b364067bce0d8cde624c184933d9cb88e2725b
+          mkdir -p build/r18-usb-midi-ci
+          git merge-base --is-ancestor "$BASE" HEAD
+          git diff --name-only "$BASE" HEAD > build/r18-usb-midi-ci/CHANGED_PATHS.txt
+          diff -u <(printf '%s\n' \
+            '.github/workflows/r18-usb-midi-host.yml' \
+            'Core/Src/Soundengine/USB/usb_manager.c' \
+            'Middlewares/JS/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h' \
+            'Middlewares/JS/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c' \
+            'tests/r18_usb_midi/run.py') build/r18-usb-midi-ci/CHANGED_PATHS.txt
+          git -c core.whitespace=cr-at-eol diff --check "$BASE" HEAD
+          for p in Core/Src/Soundengine/DSPAudio/FX/Distortion.c \
+                   Core/Src/Soundengine/DSPAudio/FX/Delay.c \
+                   Core/Src/Soundengine/DSPAudio/FX/Compressor.c \
+                   Core/Src/Soundengine/DSPAudio/mixer.c \
+                   Core/Src/Soundengine/FxBus.c \
+                   Core/Src/main.c; do
+            git show "$BASE:$p" | cmp - "$p"
+          done
+          git rev-parse HEAD > build/r18-usb-midi-ci/SOURCE_SHA.txt
+          git rev-parse "$BASE" > build/r18-usb-midi-ci/R18_BASE.txt
+          cc --version > build/r18-usb-midi-ci/HOST_COMPILER.txt
+          echo "PASS R18 origin, only three USB production paths changed, CLP/Delay/Compressor untouched"
+      - name: Reproduce original USB faults and validate corrected FIFO and CDC ownership
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r18_usb_midi/run.py build/r18-usb-midi-ci 2>&1 | tee build/r18-usb-midi-ci/USB_MIDI_RESULTS.log
+      - name: Existing R18 CLP and general regression suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/r18-usb-midi-ci
+          mkdir -p build/r18-usb-midi-host
+          FLAGS="-std=c11 -O2 -fno-strict-aliasing -fsanitize=undefined,bounds,float-cast-overflow -fno-sanitize-recover=all -I. -Itests/fx_clip/include -ICore/Inc"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/unit.c -lm -o build/r18-usb-midi-host/unit
+          build/r18-usb-midi-host/unit 2>&1 | tee "$OUT/clp-unit.log"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/state.c -lm -o build/r18-usb-midi-host/state
+          build/r18-usb-midi-host/state 2>&1 | tee "$OUT/clp-state.log"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/mix_bounds.c -lm -o build/r18-usb-midi-host/mix
+          build/r18-usb-midi-host/mix 2>&1 | tee "$OUT/clp-mix.log"
+          cc $FLAGS -ffunction-sections -fdata-sections tests/fx_clip/fxbus.c Core/Src/Soundengine/DSPAudio/FX/Distortion.c Core/Src/Soundengine/FxBus.c -Wl,--gc-sections -lm -o build/r18-usb-midi-host/bus
+          build/r18-usb-midi-host/bus 2>&1 | tee "$OUT/clp-bus.log"
+          python3 tests/fx_clip_r18/compare.py 2>&1 | tee "$OUT/clp-core.log"
+          python3 tests/fx_clip_r14/max_control.py 2>&1 | tee "$OUT/clp-max.log"
+          python3 tests/bug001/run.py 2>&1 | tee "$OUT/bug001.log"
+          python3 tests/kit_load/run.py 2>&1 | tee "$OUT/kit-load.log"
+          python3 tests/project_storage/run.py 2>&1 | tee "$OUT/storage.log"
+          python3 tests/euclidean/run.py 2>&1 | tee "$OUT/euclidean.log"
+      - name: Preserve reproducible logs and explicit limits
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/r18-usb-midi-ci
+          mkdir -p "$OUT"
+          printf 'Host-only source-extracted tests; CDC completion modeled. No ARM firmware build, device tests, hardware USB trace or source merge.\n' > "$OUT/SCOPE.txt"
+          (cd "$OUT" && sha256sum *.log *.txt *.json > SHA256SUMS.txt) || true
+      - name: Archive host evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r18-usb-midi-host-source-evidence
+          path: build/r18-usb-midi-ci/
+          retention-days: 30
+          if-no-files-found: error
