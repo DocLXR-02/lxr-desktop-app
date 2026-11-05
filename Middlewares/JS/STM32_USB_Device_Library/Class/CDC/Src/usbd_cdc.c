@@ -87,8 +87,9 @@
 
 //buffer for parsed midi messages
 MidiMsg usb_MidiMessages[USB_MIDI_INPUT_BUFFER_SIZE];
-uint8_t usb_MidiMessagesRead = 0;
-uint8_t usb_MidiMessagesWrite = 0;
+volatile uint8_t usb_MidiMessagesRead = 0;
+volatile uint8_t usb_MidiMessagesWrite = 0;
+volatile uint32_t usb_MidiRxDropped = 0;
 
 uint8_t  usb_MidiInBuff [TOTAL_MIDI_BUF_SIZE * NUM_SUB_BUFFERS];
 uint8_t* usb_MidiInWrPtr = usb_MidiInBuff;
@@ -925,7 +926,9 @@ static uint8_t  USBD_CDC_DataOut (USBD_HandleTypeDef *pdev, uint8_t epnum)
     //process buffer
     MidiDataUsb usbData;
     usbData.cin = 1;
-	for(uint8_t i=0;i< hcdc->RxLength && usbData.cin!=0x00;i+=4)
+    const uint32_t rxLimit = hcdc->RxLength < CDC_DATA_FS_MAX_PACKET_SIZE
+        ? hcdc->RxLength : CDC_DATA_FS_MAX_PACKET_SIZE;
+	for(uint32_t i=0; i + 3u < rxLimit && usbData.cin!=0x00; i+=4)
 	{
 		usbData.cin = hcdc->RxBuffer[i];
 		usbData.status = hcdc->RxBuffer[i+1];
@@ -998,6 +1001,14 @@ static uint8_t  USBD_CDC_DataOut (USBD_HandleTypeDef *pdev, uint8_t epnum)
 
 		if(length != 0)
 		{
+            const uint8_t nextWrite = (uint8_t)((usb_MidiMessagesWrite + 1u) & USB_MIDI_INPUT_BUFFER_MASK);
+            if (nextWrite == usb_MidiMessagesRead)
+            {
+                /* Bounded queue: discard the new event, never overwrite
+                 * a packet that the main loop has not yet consumed. */
+                usb_MidiRxDropped++;
+                continue;
+            }
 			usb_MidiMessages[usb_MidiMessagesWrite].status	= usbData.status;
 			usb_MidiMessages[usb_MidiMessagesWrite].data1 	= usbData.data1;
 			usb_MidiMessages[usb_MidiMessagesWrite].data2 	= usbData.data2;
@@ -1008,9 +1019,9 @@ static uint8_t  USBD_CDC_DataOut (USBD_HandleTypeDef *pdev, uint8_t epnum)
 			usb_MidiMessages[usb_MidiMessagesWrite].bits.sysxbyte = 0;
 			usb_MidiMessages[usb_MidiMessagesWrite].bits.source = midiSourceUSB;
 
-			//increment and wrap write pointer
-			usb_MidiMessagesWrite++;
-			usb_MidiMessagesWrite &= USB_MIDI_INPUT_BUFFER_MASK;
+            /* Copy all fields before the USB IRQ publishes the new index. */
+            __DMB();
+            usb_MidiMessagesWrite = nextWrite;
 		}
 	}
 
