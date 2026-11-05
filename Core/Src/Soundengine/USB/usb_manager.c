@@ -16,6 +16,13 @@
 #include <string.h>
 #include "usbd_cdc_if.h"
 
+/* USB transfers finish asynchronously; keep accepted packets in the ring
+ * until the CDC IN endpoint has completed (including a possible ZLP). */
+extern USBD_HandleTypeDef hUsbDeviceFS;
+static uint8_t usb_MidiTxPending = 0;
+static uint8_t usb_MidiTxPendingBytes = 0;
+volatile uint32_t usb_MidiTxDropped = 0;
+
 
 
 
@@ -91,60 +98,73 @@ void usb_start()
  * writes a byte to the Usb Tx buffer
  * Will be send out by the usb_flushMidi() call
  */
-void usb_sendByte(uint8_t byte)
-{
-
-	*usb_MidiInWrPtr++ = byte;
-	if(usb_MidiInWrPtr >= (usb_MidiInBuff+(TOTAL_MIDI_BUF_SIZE * NUM_SUB_BUFFERS)))
-	{
-		usb_MidiInWrPtr = usb_MidiInBuff;
-	}
-
-}
-//------------------------------------------------------------------------------
-/*
- * flush FIFO and send out next block of messages stored in the usb_MidiInBuff
- * called periodically by usb_tick()
- * TODO:  maybe there is a better way to call this automatically by the USB driver when it is ready to TX some more data?
- * probably using the USBD_CDC_TransmitPacket() callback
- */
-void usb_flushMidi()
-{
-
-	//TODO: is this right???
-	const uint8_t len = usb_MidiInWrPtr - usb_MidiInRdPtr;
-	if(len!=0)
-	//if((len != 0) && (USB_OTG_dev.dev.device_status != USB_OTG_SUSPENDED))
-	{
-
-	    /* Flush a Tx FIFO */
-	//    USB_FlushTxFifo (USB_OTG_FS, 15 ); //TODO is this needed? guess not
-	    // transmit next package
-	    // TODO clean up the USB-MIDI transmit buffer handling
-	    CDC_Transmit_FS(usb_MidiInRdPtr, len);
-
-		usb_MidiInRdPtr += len;
-		if(usb_MidiInRdPtr >= (usb_MidiInBuff+(TOTAL_MIDI_BUF_SIZE * NUM_SUB_BUFFERS)))
-		{
-			usb_MidiInRdPtr = usb_MidiInBuff;
-		}
-		//usb_MidiInWrPtr=usb_MidiInRdPtr;
-	}
-
-}
-//------------------------------------------------------------------------------
+/* The 128-byte TX ring contains complete 4-byte USB-MIDI events only.
+ * Leave one 4-byte slot empty to distinguish full from empty. All TX
+ * producers and usb_flushMidi run on the existing foreground audio loop. */
 void usb_sendMidi(MidiMsg msg)
 {
-	//MIDI byte[0] = 4 bits cable number + 4 bits event type code
-	usb_sendByte(msg.status>>4);
+    const uint16_t capacity = TOTAL_MIDI_BUF_SIZE * NUM_SUB_BUFFERS;
+    const uint16_t rd = (uint16_t)(usb_MidiInRdPtr - usb_MidiInBuff);
+    const uint16_t wr = (uint16_t)(usb_MidiInWrPtr - usb_MidiInBuff);
+    const uint16_t freeBytes = (uint16_t)((rd + capacity - wr - 1u) % capacity);
+    if (freeBytes < 4u)
+    {
+        usb_MidiTxDropped++;
+        return; /* Drop newest complete event; never overwrite in-flight data. */
+    }
 
-	//then the 3 midi message bytes
-	//USB MIDI msg has to be ALWAYS 4 bytes long
-	//even if it is just a single clock byte
-	usb_sendByte(msg.status);
-	usb_sendByte(msg.data1);
-	usb_sendByte(msg.data2);
+    const uint8_t packet[4] = { msg.status >> 4, msg.status, msg.data1, msg.data2 };
+    uint16_t next = wr;
+    for (uint8_t i = 0; i < 4u; ++i)
+    {
+        usb_MidiInBuff[next] = packet[i];
+        next = (uint16_t)((next + 1u) % capacity);
+    }
+    usb_MidiInWrPtr = usb_MidiInBuff + next;
 }
+//------------------------------------------------------------------------------
+void usb_flushMidi(void)
+{
+    const uint16_t capacity = TOTAL_MIDI_BUF_SIZE * NUM_SUB_BUFFERS;
+    USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+    if (hcdc == NULL || hUsbDeviceFS.dev_state != USBD_STATE_CONFIGURED)
+    {
+        /* A disconnected transfer has no completion to wait for. Preserve
+         * queued events so that a subsequent connection can retry them. */
+        usb_MidiTxPending = 0;
+        return;
+    }
+
+    if (usb_MidiTxPending != 0u)
+    {
+        if (hcdc->TxState != 0u) return; /* CDC still owns this memory. */
+        const uint16_t rd = (uint16_t)(usb_MidiInRdPtr - usb_MidiInBuff);
+        usb_MidiInRdPtr = usb_MidiInBuff + ((rd + usb_MidiTxPendingBytes) % capacity);
+        usb_MidiTxPending = 0u;
+    }
+    if (hcdc->TxState != 0u) return;
+
+    const uint16_t rd = (uint16_t)(usb_MidiInRdPtr - usb_MidiInBuff);
+    const uint16_t wr = (uint16_t)(usb_MidiInWrPtr - usb_MidiInBuff);
+    const uint16_t queued = (uint16_t)((wr + capacity - rd) % capacity);
+    if (queued == 0u) return;
+
+    /* The USB class retains the pointer until DataIn clears TxState. Only
+     * submit a contiguous, 4-byte-aligned event sequence (at most 64 bytes). */
+    uint16_t len = queued;
+    if (len > TOTAL_MIDI_BUF_SIZE) len = TOTAL_MIDI_BUF_SIZE;
+    if (len > capacity - rd) len = capacity - rd;
+    len &= (uint16_t)~3u;
+    if (len == 0u) return;
+
+    if (CDC_Transmit_FS(usb_MidiInRdPtr, len) == USBD_OK)
+    {
+        usb_MidiTxPendingBytes = (uint8_t)len;
+        usb_MidiTxPending = 1u;
+    }
+    /* BUSY/FAIL: the queued bytes and the read pointer remain untouched. */
+}
+//------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------
 uint8_t usb_getMidi(MidiMsg* msg)
 {
@@ -153,8 +173,9 @@ uint8_t usb_getMidi(MidiMsg* msg)
 		//we have unprocessed messages in the queue
 		*msg = usb_MidiMessages[usb_MidiMessagesRead];
 
-		usb_MidiMessagesRead++;
-		usb_MidiMessagesRead &= USB_MIDI_INPUT_BUFFER_MASK;
+        /* Publish freed RX slot after copying its complete message. */
+        __DMB();
+        usb_MidiMessagesRead = (uint8_t)((usb_MidiMessagesRead + 1u) & USB_MIDI_INPUT_BUFFER_MASK);
 
 		return 1; //return OK
 	}

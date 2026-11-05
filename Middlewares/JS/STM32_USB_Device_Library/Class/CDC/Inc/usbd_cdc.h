@@ -152,8 +152,10 @@
 
  //buffer for parsed midi messages
  extern MidiMsg usb_MidiMessages[USB_MIDI_INPUT_BUFFER_SIZE];
- extern uint8_t usb_MidiMessagesRead;
- extern uint8_t usb_MidiMessagesWrite;
+ extern volatile uint8_t usb_MidiMessagesRead;
+ extern volatile uint8_t usb_MidiMessagesWrite;
+ extern volatile uint32_t usb_MidiRxDropped;
+ extern volatile uint32_t usb_MidiTxDropped;
 
  extern uint8_t  usb_MidiInBuff [TOTAL_MIDI_BUF_SIZE * NUM_SUB_BUFFERS];
  extern uint8_t* usb_MidiInWrPtr;
