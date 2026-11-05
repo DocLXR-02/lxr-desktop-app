@@ -169,7 +169,7 @@ def main():
                            "stereo and CLP production source unchanged; actual device sound not heard"],
             "tests":results}
     (out/"RESULTS.json").write_text(json.dumps(result,indent=2)+"\n",encoding="utf-8")
-    files=sorted(p for p in out.iterdir() if p.is_file() and p.name!="SHA256SUMS.txt")
+    files=sorted(p for p in out.iterdir() if p.is_file() and p.name not in ("SHA256SUMS.txt","RUN_SUMMARY.log"))
     (out/"SHA256SUMS.txt").write_text("".join(hashlib.sha256(p.read_bytes()).hexdigest()+
                                             "  "+p.name+"\n" for p in files),encoding="utf-8")
     assert result["all_expected_outcomes"],"Host test failure"
