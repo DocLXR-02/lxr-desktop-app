@@ -317,7 +317,7 @@ def main():
     (out/"result.json").write_text(json.dumps(result,indent=2)+"\n")
     (out/"SHA256SUMS.txt").write_text("".join(
         hashlib.sha256(p.read_bytes()).hexdigest()+"  "+p.name+"\n"
-        for p in sorted(out.glob("*.log"))))
+        for p in sorted(out.glob("*.log")) if p.name != "USB_MIDI_RESULTS.log"))
     print("PASS: original three USB faults, normal TX/RX byte identity, candidate TX/RX lifetime/overflow/wrap/short-packet cases")
 if __name__=="__main__":
     main()
