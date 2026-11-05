@@ -74,7 +74,9 @@ jobs:
           OUT=build/r18-usb-midi-ci
           mkdir -p "$OUT"
           printf 'Host-only source-extracted tests; CDC completion modeled. No ARM firmware build, device tests, hardware USB trace or source merge.\n' > "$OUT/SCOPE.txt"
-          (cd "$OUT" && sha256sum *.log *.txt *.json > SHA256SUMS.txt) || true
+          (cd "$OUT" && sha256sum --check SHA256SUMS.txt)
+          (cd "$OUT" && sha256sum *.log *.json CHANGED_PATHS.txt HOST_COMPILER.txt \
+            R18_BASE.txt SOURCE_SHA.txt SCOPE.txt SHA256SUMS.txt > CI_RECORD_HASHES.txt)
       - name: Archive host evidence
         if: always()
         uses: actions/upload-artifact@v4
