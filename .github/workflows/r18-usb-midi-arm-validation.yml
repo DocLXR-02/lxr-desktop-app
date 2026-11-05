@@ -1,0 +1,137 @@
+name: R18 USB-MIDI ARM validation only
+on:
+  push:
+    branches:
+      - validation/r18-usb-midi-arm-2026-11-05
+permissions:
+  contents: read
+jobs:
+  arm-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pin exact host-verified USB source and protect R18 sound
+        shell: bash
+        run: |
+          set -euo pipefail
+          USB=b800669caf209067c47447fb6376abfbe7eaa7b3
+          R18=41b364067bce0d8cde624c184933d9cb88e2725b
+          EVID=build/r18-usb-arm-evidence
+          mkdir -p "$EVID"
+          test "$(git rev-parse HEAD^)" = "$USB"
+          git merge-base --is-ancestor "$R18" "$USB"
+          git diff --name-only "$USB" HEAD > "$EVID/BUILD_ONLY_CHANGED_PATHS.txt"
+          diff -u <(printf '%s\n' \
+            '.github/workflows/r18-usb-midi-arm-validation.yml' \
+            'tests/r18_usb_midi/validate_arm.py') "$EVID/BUILD_ONLY_CHANGED_PATHS.txt"
+          git diff --name-only "$R18" "$USB" > "$EVID/USB_CANDIDATE_CHANGED_PATHS.txt"
+          diff -u <(printf '%s\n' \
+            '.github/workflows/r18-usb-midi-host.yml' \
+            'Core/Src/Soundengine/USB/usb_manager.c' \
+            'Middlewares/JS/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h' \
+            'Middlewares/JS/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c' \
+            'tests/r18_usb_midi/run.py') "$EVID/USB_CANDIDATE_CHANGED_PATHS.txt"
+          git -c core.whitespace=cr-at-eol diff --check "$R18" HEAD
+          test "$(git hash-object Core/Src/Soundengine/USB/usb_manager.c)" = 7f30ed0fcdb433f280b98bb238879cb28834b585
+          test "$(git hash-object Middlewares/JS/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c)" = ef33e3e2941db2a8a72705d66d419c29966f4d47
+          test "$(git hash-object Middlewares/JS/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h)" = 56bb9165ae5d2bf0134a55a4a95652bc706aef77
+          for f in \
+            Core/Src/Soundengine/DSPAudio/FX/Distortion.c \
+            Core/Src/Soundengine/DSPAudio/FX/Delay.c \
+            Core/Src/Soundengine/DSPAudio/FX/Compressor.c \
+            Core/Src/Soundengine/DSPAudio/mixer.c \
+            Core/Src/Soundengine/FxBus.c \
+            Core/Src/main.c; do
+            git show "$R18:$f" | cmp - "$f"
+          done
+          git rev-parse HEAD > "$EVID/BUILD_COMMIT.txt"
+          git rev-parse "$USB" > "$EVID/USB_CANDIDATE_COMMIT.txt"
+          git rev-parse "$R18" > "$EVID/ACCEPTED_R18_COMMIT.txt"
+          cc --version > "$EVID/HOST_COMPILER.txt"
+          echo 'PASS: exactly two non-production build/test files beyond host-tested USB candidate; CLP/Delay/Compressor unchanged'
+      - name: USB source-extracted host regression under ARM build branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/r18-usb-arm-host
+          python3 tests/r18_usb_midi/run.py build/r18-usb-arm-host 2>&1 | tee build/r18-usb-arm-evidence/usb-host.log
+          (cd build/r18-usb-arm-host && sha256sum --check SHA256SUMS.txt)
+      - name: R18 CLP and existing general regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVID=build/r18-usb-arm-evidence
+          OUT=build/r18-usb-arm-host
+          FLAGS="-std=c11 -O2 -fno-strict-aliasing -fsanitize=undefined,bounds,float-cast-overflow -fno-sanitize-recover=all -I. -Itests/fx_clip/include -ICore/Inc"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/unit.c -lm -o "$OUT/clp-unit"
+          "$OUT/clp-unit" 2>&1 | tee "$EVID/clp-unit.log"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/state.c -lm -o "$OUT/clp-state"
+          "$OUT/clp-state" 2>&1 | tee "$EVID/clp-state.log"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/mix_bounds.c -lm -o "$OUT/clp-mix"
+          "$OUT/clp-mix" 2>&1 | tee "$EVID/clp-mix.log"
+          cc $FLAGS -ffunction-sections -fdata-sections tests/fx_clip/fxbus.c Core/Src/Soundengine/DSPAudio/FX/Distortion.c Core/Src/Soundengine/FxBus.c -Wl,--gc-sections -lm -o "$OUT/clp-bus"
+          "$OUT/clp-bus" 2>&1 | tee "$EVID/clp-bus.log"
+          python3 tests/fx_clip_r18/compare.py 2>&1 | tee "$EVID/clp-core.log"
+          python3 tests/fx_clip_r14/max_control.py 2>&1 | tee "$EVID/clp-max.log"
+          python3 tests/bug001/run.py 2>&1 | tee "$EVID/bug001.log"
+          python3 tests/kit_load/run.py 2>&1 | tee "$EVID/kit-load.log"
+          python3 tests/project_storage/run.py 2>&1 | tee "$EVID/storage.log"
+          python3 tests/euclidean/run.py 2>&1 | tee "$EVID/euclidean.log"
+      - name: Install matched R18 ARM GNU toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz
+          curl -fL --retry 3 "$URL" -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          echo "8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd  $RUNNER_TEMP/arm-toolchain.tar.xz" | sha256sum --check
+          sha256sum "$RUNNER_TEMP/arm-toolchain.tar.xz" > build/r18-usb-arm-evidence/TOOLCHAIN_ARCHIVE_SHA256.txt
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+      - name: One Release ARM validation build (not delivery)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --preset release 2>&1 | tee build/r18-usb-arm-evidence/configure.log
+          cmake --build --preset release --parallel 2 2>&1 | tee build/r18-usb-arm-evidence/build.log
+      - name: Validate ELF, IMG, resource delta and source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVID=build/r18-usb-arm-evidence
+          python3 tests/r18_usb_midi/validate_arm.py 2>&1 | tee "$EVID/validation.log"
+          cp build/release/LXR_V2_STM32F765.elf "$EVID/"
+          cp build/release/LXR_V2_STM32F765.map "$EVID/"
+          cp build/release/compile_commands.json "$EVID/"
+          cp build/release/LXR_V2_V1.7.img "$EVID/LXR_R18_USB_MIDI_ARM_VALIDATION_ONLY.img"
+          arm-none-eabi-gcc --version > "$EVID/ARM_COMPILER.txt"
+          git archive --format=zip --output="$EVID/SOURCE.zip" HEAD
+          cat > "$EVID/NOT_FOR_FLASHING.txt" <<'EOF'
+          This is a USB-MIDI ARM validation artifact, not an approved firmware release or installation image.
+          It derives from the R18 musical reference and retains the R18 startup identifier.
+          No flashing, integration, merge, hardware testing or release was authorized.
+          CPU timing, IRQ/DMA deadlines, stack high-water, USB traffic on the MCU and device audio remain unmeasured.
+          EOF
+          (cd "$EVID" && sha256sum \
+            LXR_R18_USB_MIDI_ARM_VALIDATION_ONLY.img \
+            LXR_V2_STM32F765.elf LXR_V2_STM32F765.map \
+            SOURCE.zip ARM_VALIDATION.json > VERIFIED_HASHES.txt)
+      - name: Preserve logs and hashes even on failure
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVID=build/r18-usb-arm-evidence
+          mkdir -p "$EVID"
+          git rev-parse HEAD > "$EVID/CI_HEAD.txt"
+          (cd "$EVID" && find . -maxdepth 1 -type f ! -name 'RECORD_HASHES.txt' -printf '%f\n' | LC_ALL=C sort | while IFS= read -r f; do sha256sum "$f"; done > RECORD_HASHES.txt)
+      - name: Upload non-release ARM evidence (30-day retention)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r18-usb-midi-arm-validation-evidence
+          path: build/r18-usb-arm-evidence/
+          retention-days: 30
+          if-no-files-found: error
