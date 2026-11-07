@@ -1,6 +1,14 @@
 # LXR-02 Shared FX Routing — Owner's Revised Listening Evidence
 
 
+## Latest device result — original project also works after reloading
+
+**Owner follow-up, 2026-11-07:** After first loading a different project and observing that the clicks vanished, the owner **reloaded the originally affected project**. The clicking **also disappeared in that same original project** after reloading. The owner did not report an edit to, repair of, or file replacement for that project before the successful reload.
+
+**Current evidence-based conclusion:** The clicking was **transient/reload-sensitive**, not a confirmed persistent defect in the original project's stored file contents. Reloading a project may reinitialize runtime state, but the specific mechanism — effects' internal history, sequencer event state, routing state, unsaved temporary settings, or some other interaction — has **not** been measured or proven. The previous suspicion that the original project was permanently misconfigured or corrupted is **not supported by this latest observation**. Both the new project and the reloaded original project are currently owner-reported free of clicking.
+
+**Status:** SYMPTOM NOT REPRODUCIBLE after project reload; CAUSE UNKNOWN. All four effects function without this clicking according to the owner. Preserve the chronology and exact earlier test observations, which remain real reports of the transient condition, not confirmed Compressor-specific regressions. No new source changes, flashing, builds, fault repair, or audio measurements were made. USB-MIDI hardware validation remains NOT RUN/BLOCKED; CPU/WCET, IRQ/DMA deadlines, stack high-water and long-term reliability remain UNMEASURED; R19 release not approved.
+
 ## Latest device result — clicking disappears after project change
 
 **Owner report, 2026-11-07:** The owner loaded a **different project** and reported that the clicking disappeared entirely, that **none of the four effects** exhibited clicking, and that **the Compressor works normally** with the firmware they described as the current R18 version. The owner could not establish what had happened to the previous project. No audio captures, original-versus-new project parameter diff, or exact installed-image hash were supplied.
