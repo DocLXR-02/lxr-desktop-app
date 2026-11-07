@@ -5,6 +5,8 @@
 **Evidence type:** Owner's firsthand listening observations on the LXR-02, **not** oscilloscope/recorded audio, a device memory readback or assistant-performed test.  
 **Disposition:** **FAIL / OPEN — all six FX/OUT modes are owner-reported faulty, grouped by output pair rather than stereo versus mono: St1/L1/R1 exhibit intermittent dropouts approximately every four bars, while St2/L2/R2 are nearly silent with occasional very attenuated muffled tones. GAI 0–127 was reported for St1/L1/R1; a separate gain-range confirmation was not supplied for St2/L2/R2.** Stop high-gain Compressor stress pending diagnosis.
 
+> **LATEST EVIDENCE / RECLASSIFICATION (2026-11-07):** The owner subsequently reported the same general clicks/interruptions for all four effect types and across previous firmware releases, including the original vendor firmware, with `MIX/OUT = FX` but not direct `MIX/OUT = St1` in the new 16-step long-decay setup. This materially weakens any Compressor-only or TEST-regression interpretation. **Treat the Compressor-specific causal framing below as superseded, and preserve the table only as the owner's earlier listening chronology.** See the [current cross-effect/cross-version owner observation](2026-11-07_shared-fx-routing-owner-observation-reclassification.md). A controlled single-voice diagnostic is pending. No proof of hardware damage or firmware regression is established.
+
 ## Correction history and superseded description
 
 **Original owner message (superseded):** “stereo funktioniert. mono L1, L2 hat aussetzer.” This was formerly recorded as St1 PASS, L1 FAIL and L2 FAIL.
