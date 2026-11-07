@@ -1,8 +1,18 @@
 # LXR-02 Shared FX Routing — Owner's Revised Listening Evidence
 
+
+## Latest device result — clicking disappears after project change
+
+**Owner report, 2026-11-07:** The owner loaded a **different project** and reported that the clicking disappeared entirely, that **none of the four effects** exhibited clicking, and that **the Compressor works normally** with the firmware they described as the current R18 version. The owner could not establish what had happened to the previous project. No audio captures, original-versus-new project parameter diff, or exact installed-image hash were supplied.
+
+**Current classification:** The earlier shared-FX clicking and Compressor failure reports are **historical symptoms observed with the previous project**, not an active confirmed defect in the currently used setup. The change in project is a strong discriminator for project-/kit-/pattern-dependent behavior, but **does not prove project-file corruption, an accidental parameter change, a specific step-automation issue, or a repaired hardware problem**. Do not claim that the earlier observations were false; record that they ceased in a different test state.
+
+**Limits of the new pass:** The owner confirmed the disappearance of clicks across four FX types and stated the Compressor is healthy, but did not supply a controlled repeat of the previously failing St1/L1/R1 and St2/L2/R2 combinations with all other settings identical. The current source image is described by the owner as the current R18; earlier TEST image shares the boot label `LXR LAB R18`, so exact device image identity is not reconfirmed by that label alone. Do not infer a firmware swap occurred at the time of the project change.
+
+**Practical disposition:** Suspend speculative Compressor/FX-bus code edits, CPU-overrun claims and further risky repeat testing. Keep the original accepted R18 sonic reference frozen and retain the test images, backup and historical failure notes. USB-MIDI device operation remains NOT RUN (equipment unavailable), and CPU/WCET, IRQ/DMA deadlines, stack high-water and long-run reliability remain UNMEASURED. No R19 release authorization follows solely from this recovery observation.
 **Recorded date:** 2026-11-07 (Europe/Vienna; exact device test time not supplied).  
 **Evidence class:** Owner-reported, approximate listening observations; no captured audio, measured step timing, or independent hardware verification.  
-**Status:** Investigate shared FX routing/test setup. **Prior Compressor-specific attribution is superseded and not established.** No new code changes or builds are authorized by this report.
+**Status:** **Owner-reported symptom RESOLVED after loading a different project.** Clicking is absent with all four effects in the newly loaded project; no active Compressor failure is reported. The previous project's triggering configuration and underlying mechanism are **UNKNOWN**. No firmware or hardware fault has been established. No code changes or builds are authorized by this report.
 
 ## Revised stimulus and owner observations
 
