@@ -1,45 +1,56 @@
-# R18 Three-Fix TEST Firmware — Compressor Mono Output Dropouts
+# R18 Three-Fix TEST Firmware — Compressor Output Failure (Corrected Owner Observation)
 
-**Recorded:** 2026-11-07 (Europe/Vienna). Actual device test time was not supplied.  
-**Evidence type:** Owner's direct listening observation on the physical LXR-02; not an assistant-performed test or measured waveform.  
-**Disposition:** **FAIL / OPEN — audible dropouts reported on both tested Compressor mono output modes. STOP further high-gain Compressor stress pending controlled diagnosis.**
+**Recorded:** 2026-11-07 (Europe/Vienna); exact device-test time not supplied.  
+**Last revision:** 2026-11-07, prompted by an explicit owner correction.  
+**Evidence type:** Owner's firsthand listening observations on the LXR-02, **not** oscilloscope/recorded audio, a device memory readback or assistant-performed test.  
+**Disposition:** **FAIL / OPEN — the Compressor does not function in the owner's tested St1, L1 and R1 FX output settings across GAI 0–127. This is NOT a mono-only fault classification.** Stop high-gain Compressor stress until the failure is characterized.
 
-## Firmware and known prior test evidence
+## Correction history and superseded description
 
-- Owner confirmed successful installation of `LXR_V2_TEST.img`, the three-fix validation candidate based on source SHA **`cdc294cbb89d92d6b7d2dc466f2b65f1677e16d6`**.
-- Previously verified distributed test IMG: 288,184 bytes, SHA-256 `50b2638aa8928e1bcaea79d1101a46bb0e71c7e5a203f0ebdde9a4fd1ba56dc7`. There was **no independent readback hash from the actual MCU**.
-- Owner previously reported CLP sound/routing with all voices and filter ON functioning, and Delay `Del`/`Pp` functioning with six simultaneous voices in `St1`, `L1`, `L2` output modes.
-- The Compressor one-line saturation correction passed focused source-extracted host tests and isolated ARM build; all three integrated fixes passed host regression tests and combined ARM compilation. **These are not physical mono-audio validation**.
-- Original accepted R18 sound source SHA `41b364067bce0d8cde624c184933d9cb88e2725b` remains protected.
+**Original owner message (superseded):** “stereo funktioniert. mono L1, L2 hat aussetzer.” This was formerly recorded as St1 PASS, L1 FAIL and L2 FAIL.
 
-## New owner-reported Compressor behavior
+**Explicit later owner correction (authoritative for current status):** “revidiere die beobachtung. St1, L1, R1 funktionieren alle nicht bei Gain 0-127.”
 
-The owner stated, in German: “stereo funktioniert. mono L1, L2 hat aussetzer.”
+The earlier **St1 PASS is withdrawn**. The earlier L1 description as mere “dropouts” is not carried forward as a proven symptom; the corrected wording is simply **“does not function”**, whose precise acoustic meaning (silence, intermittent dropouts, distorted sound or other) has **not** yet been specified. The earlier L2 dropout report is retained as a **superseded, unconfirmed historical statement**, not as a new owner-confirmed result of the corrected test. The later message does **not** say L2 passed, failed or was retested.
 
-| FX output routing | Reported behavior | Classification |
-|---|---|---|
-| `St1` stereo | Works | **PASS** for the heard test |
-| `L1` mono | Dropouts | **FAIL / OPEN** |
-| `L2` mono | Dropouts | **FAIL / OPEN** |
+Retaining the prior quotation here documents why the earlier Git revision and conversation differ; the current table below is the authoritative classification.
 
-**Not supplied:** Exact Compressor `rat`, `gai`, threshold, attack/release, dry/wet values; voice count or voice configuration in this specific Compressor test; whether dropouts occur at low gain or only with larger makeup; occurrence frequency/duration, relation to sequencer step timing, actual signal recording, comparison to original R18 Compressor mono, and whether physical channel cables or the same monitoring chain were controlled. Therefore neither a narrow numerical overflow cause nor regression introduced by the single-line fix is established.
+## Candidate identity and other established results
 
-## Read-only source review; hypotheses, NOT root-cause evidence
+- Test firmware successfully flashed by the owner: `LXR_V2_TEST.img`.
+- Combined Delay/USB-MIDI/Compressor source commit: `cdc294cbb89d92d6b7d2dc466f2b65f1677e16d6`.
+- Verified distributed IMG: 288,184 bytes; SHA-256 `50b2638aa8928e1bcaea79d1101a46bb0e71c7e5a203f0ebdde9a4fd1ba56dc7`. An independently validated post-flash MCU image readback has not been reported.
+- CLP musical character, multi-voice FX routing and filter ON were reported satisfactory after the installation.
+- Delay `Del`/`Pp` were reported normal with six simultaneous voices in `St1`, `L1`, `L2` output modes. **These successes concern Delay/CLP, not the Compressor.**
+- Compressor saturation correction passed source-extracted host reproduction/comparison suites and the isolated and integrated ARM builds, but **no complete physical-device Compressor PASS** has been established.
+- USB-MIDI actual device test remains NOT RUN/BLOCKED for lack of suitable equipment.
+- Original musical R18 source `41b364067bce0d8cde624c184933d9cb88e2725b` remains untouched.
 
-At exact source SHA `cdc294cbb89d92d6b7d2dc466f2b65f1677e16d6`:
+## Corrected Compressor hardware observation
 
-1. `Core/Src/Soundengine/FxBus.c` chooses `channels=1` for the mono FX routing enums, selects an output halfword pointer for each physical left/right destination, and dispatches to `Compressor_process` when Compressor is selected.
-2. `Core/Src/Soundengine/DSPAudio/FX/Compressor.c` has separate stereo and mono paths. In mono it reads even interleaved input samples (`fxBuffer[i*2]`), converts the gain-adjusted sample with the owner-approved `__SSAT(...,16)`, applies dry/wet, accumulates to the destination halfword, then increments the destination pointer by two halfwords. The preceding R18 source had an unchecked float-to-int16 conversion instead. The code is read-only reviewed here, not modified.
-3. These source features establish a real branch/routing distinction; **they do not identify the defect**. The owner has not yet provided settings sufficient to distinguish compressor envelope/gain behavior from routing, buffer, DSP deadlines or a pre-existing issue.
+| FX/OUT setting | Owner-reported `GAI` test interval | Latest result | Classification |
+|---|---|---|---|
+| `St1` stereo | 0–127 | Does not function | **FAIL / OPEN** |
+| `L1` mono | 0–127 | Does not function | **FAIL / OPEN** |
+| `R1` mono | 0–127 | Does not function | **FAIL / OPEN** |
+| `L2` mono | **Not re-confirmed in correction** | Earlier dropout statement superseded; latest status unclear | **UNCONFIRMED** |
 
-No production code changes, rebuilds, hardware actions or reflashes were authorized or executed in connection with this finding.
+**Evidence limits:** The precise nature of “does not function,” frequency/duration of any dropouts, attack/release, ratio, threshold, dry/wet, voice count/routing, cables, monitoring configuration, other FX parameter settings and physical comparison with original R18 Compressor remain unspecified. The entire GAI 0–127 range is **owner-reported** for the three named output settings; no instrumentation-based gain sweep is claimed.
 
-## Safety, diagnostic next step, and release gate
+## Read-only source implications — no root cause yet
 
-**Stop further high-gain Compressor stress** while audible gaps remain unexplained; reduce monitoring gain and mute on unexpected loud or persistent output. Preserve a copy of the current kit/project and owner observations; do not write over the accepted R18 reference or replace the test image. No automatic rollback, bootloader action, source merge or R19 release is justified by this observation alone.
+At integrated source SHA `cdc294cbb89d92d6b7d2dc466f2b65f1677e16d6`, `Core/Src/Soundengine/FxBus.c` selects the Compressor from the FX bus and dispatches either stereo or mono based on FX/OUT. `Core/Src/Soundengine/DSPAudio/FX/Compressor.c` has separate stereo and mono loops; the isolated correction replaced **only the mono gain-to-int16 conversion** with `__SSAT(...,16)`, leaving stereo Compressor production code unchanged.
 
-**Single first follow-up question:** Did the gaps already appear with low/moderate Compressor makeup gain (`gai`) and ordinary dry/wet, or only after `gai` was increased? Record actual tested settings if readily available; avoid escalating gain merely to reproduce an unsafe output. This discriminates whether to investigate only the over-range saturation case or the ordinary mono processing/routing path.
+The new reported **St1 failure means the observed problem cannot reasonably be attributed solely to the corrected mono conversion instruction**. It may involve shared effect enablement, parameters, input signal, common DSP/FX routing or another pre-existing or newly exposed interaction; **no cause is demonstrated**. The fact that delay and CLP work does not prove the Compressor path is correct.
 
-**Release status:** Three-fix TEST candidate is **NOT ACCEPTED** for R19. CLP and Delay are owner-reported positive; USB-MIDI hardware testing is **NOT RUN / BLOCKED** for lack of equipment; Compressor mono is **FAIL / OPEN**. CPU/WCET, IRQ/DMA deadlines, actual stack high-water and long-term reliability remain **UNMEASURED**.
+The original host fixtures specifically exercised bounded source-extracted functions and have not covered the reported actual full-device failure. The ARM image validated file/section/segment integrity; it did not prove hardware audio correctness, DSP CPU/WCET or DMA timing.
 
-**Record placement:** Separate owner hardware observation on the existing test-plan documentation branch, not the firmware source branch or the canonical status branch. Do not overwrite the accepted R18 sonic closure.
+## Safety, next diagnostic question and release hold
+
+**Stop high-gain Compressor tests.** Mute or reduce monitoring if the output becomes unexpectedly loud or erratic. Preserve the current test kit and the SD backup; do not flash a speculative fix or overwrite accepted R18. No code changes, builds, reflashes, main merges or firmware releases have been authorized by this observation correction.
+
+**One minimal clarification before further debugging:** By “does not function” in St1/L1/R1, does the owner mean complete silence, intermittent audio dropouts, or an unchanged dry signal with no audible compression? Do not increase GAI simply to reproduce an unsafe condition. This distinction is decisive before treating the report as a buffer/timing fault.
+
+**Release status:** R19 is **BLOCKED**, because the integrated test firmware's Compressor hardware behavior is unresolved; no final sonic approval has been given. CLP and Delay remain owner-observed successes; USB-MIDI remains hardware-untested; CPU/WCET, IRQ/DMA deadlines, stack high-water and long-term reliability remain **UNMEASURED**.
+
+**Recordkeeping:** This file replaces the prior interpretation as the **current authoritative owner-observation report** at the same path. Git commit history retains the earlier wording and this explicit correction. The accepted R18 branch, integrated firmware code and canonical documentation branch are unchanged.
