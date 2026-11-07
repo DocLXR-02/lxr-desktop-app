@@ -1,0 +1,143 @@
+name: R19 integrated three-fix version-only candidate ARM validation
+on:
+  push:
+    branches:
+      - candidate/r19-integrated-three-fix-2026-11-07
+permissions:
+  contents: read
+jobs:
+  integrated-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify exact integration ancestry, version-only production change and unchanged CLP/FX blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=cdc294cbb89d92d6b7d2dc466f2b65f1677e16d6
+          EVID=build/r19-candidate-arm-evidence
+          mkdir -p "$EVID"
+          test "$(git merge-base HEAD "$BASE")" = "$BASE"
+          git diff --name-only "$BASE" HEAD > "$EVID/CHANGED_PATHS.txt"
+          cat > "$EVID/EXPECTED_PATHS.txt" <<'EOF'
+          .github/workflows/r19-candidate-arm-validation.yml
+          Core/Src/main.c
+          tests/r19_candidate/validate_arm.py
+          EOF
+          diff -u "$EVID/EXPECTED_PATHS.txt" "$EVID/CHANGED_PATHS.txt"
+          git -c core.whitespace=cr-at-eol diff --check "$BASE" HEAD
+          git show "$BASE:Core/Src/main.c" | sed 's/lcd_string("LXR LAB R18");/lcd_string("LXR LAB R19");/' | cmp - Core/Src/main.c
+          grep -q '^#define UPDATE_BOOTLOADER 0' Core/Src/main.c
+          test "$(git hash-object Core/Src/Soundengine/DSPAudio/FX/Compressor.c)" = 7bb84666575c0a35e93e10563aa5b5c559432030
+          test "$(git hash-object Core/Src/Soundengine/DSPAudio/FX/Delay.c)" = 1a4bbac4021efe9e0c0d9cfa9bee317e5a51e6e6
+          test "$(git hash-object Core/Src/Soundengine/USB/usb_manager.c)" = 7f30ed0fcdb433f280b98bb238879cb28834b585
+          test "$(git hash-object Middlewares/JS/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h)" = 56bb9165ae5d2bf0134a55a4a95652bc706aef77
+          test "$(git hash-object Middlewares/JS/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c)" = ef33e3e2941db2a8a72705d66d419c29966f4d47
+          git rev-parse HEAD > "$EVID/BUILD_COMMIT.txt"
+          git rev-parse "$BASE" > "$EVID/INTEGRATION_BASE_COMMIT.txt"
+          git diff --numstat "$BASE" HEAD > "$EVID/CHANGED_LINES.txt"
+          cc --version > "$EVID/HOST_COMPILER.txt"
+          echo 'PASS: exact integrated candidate inherited with only startup label, test and workflow changes'
+      - name: Delay original fault and corrected output tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVID=build/r19-candidate-arm-evidence
+          python3 tests/r18_delay_mono/run.py build/r19-candidate-host/delay 2>&1 | tee "$EVID/delay-host.log"
+      - name: USB-MIDI original fault and corrected transport tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVID=build/r19-candidate-arm-evidence
+          python3 tests/r18_usb_midi/run.py build/r19-candidate-host/usb 2>&1 | tee "$EVID/usb-host.log"
+          (cd build/r19-candidate-host/usb && sha256sum --check SHA256SUMS.txt)
+      - name: Compressor original fault and saturation parity tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVID=build/r19-candidate-arm-evidence
+          python3 tests/r18_compressor_mono/run.py build/r19-candidate-host/compressor 2>&1 | tee "$EVID/compressor-host.log"
+          (cd build/r19-candidate-host/compressor && sha256sum --check SHA256SUMS.txt)
+      - name: Existing R18 CLP and general regression suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVID=build/r19-candidate-arm-evidence
+          OUT=build/r19-candidate-host/other
+          mkdir -p "$OUT"
+          FLAGS="-std=c11 -O2 -fno-strict-aliasing -fsanitize=undefined,bounds,float-cast-overflow -fno-sanitize-recover=all -I. -Itests/fx_clip/include -ICore/Inc"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/unit.c -lm -o "$OUT/clp-unit"
+          "$OUT/clp-unit" 2>&1 | tee "$EVID/clp-unit.log"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/state.c -lm -o "$OUT/clp-state"
+          "$OUT/clp-state" 2>&1 | tee "$EVID/clp-state.log"
+          cc $FLAGS -DDISTORTION_SOURCE='"Core/Src/Soundengine/DSPAudio/FX/Distortion.c"' tests/fx_clip_r18/mix_bounds.c -lm -o "$OUT/clp-mix"
+          "$OUT/clp-mix" 2>&1 | tee "$EVID/clp-mix.log"
+          cc $FLAGS -ffunction-sections -fdata-sections tests/fx_clip/fxbus.c Core/Src/Soundengine/DSPAudio/FX/Distortion.c Core/Src/Soundengine/FxBus.c -Wl,--gc-sections -lm -o "$OUT/clp-bus"
+          "$OUT/clp-bus" 2>&1 | tee "$EVID/clp-bus.log"
+          python3 tests/fx_clip_r18/compare.py 2>&1 | tee "$EVID/clp-core.log"
+          python3 tests/fx_clip_r14/max_control.py 2>&1 | tee "$EVID/clp-max.log"
+          python3 tests/bug001/run.py 2>&1 | tee "$EVID/bug001.log"
+          python3 tests/kit_load/run.py 2>&1 | tee "$EVID/kit-load.log"
+          python3 tests/project_storage/run.py 2>&1 | tee "$EVID/storage.log"
+          python3 tests/euclidean/run.py 2>&1 | tee "$EVID/euclidean.log"
+      - name: Install exact R18-matched ARM GNU toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz
+          curl -fL --retry 3 "$URL" -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          echo "8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd  $RUNNER_TEMP/arm-toolchain.tar.xz" | sha256sum --check
+          sha256sum "$RUNNER_TEMP/arm-toolchain.tar.xz" > build/r19-candidate-arm-evidence/TOOLCHAIN_ARCHIVE_SHA256.txt
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+      - name: One full Release ARM build of version-string-only R19 candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVID=build/r19-candidate-arm-evidence
+          cmake --preset release 2>&1 | tee "$EVID/configure.log"
+          cmake --build --preset release --parallel 2 2>&1 | tee "$EVID/build.log"
+      - name: Verify ARM ELF, image bytes and matched resource deltas
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVID=build/r19-candidate-arm-evidence
+          python3 tests/r19_candidate/validate_arm.py 2>&1 | tee "$EVID/validation.log"
+          cp build/release/LXR_V2_STM32F765.elf "$EVID/"
+          cp build/release/LXR_V2_STM32F765.map "$EVID/"
+          cp build/release/compile_commands.json "$EVID/"
+          cp build/release/LXR_V2_V1.7.img "$EVID/LXR_V2_R19_CANDIDATE.img"
+          arm-none-eabi-gcc --version > "$EVID/ARM_COMPILER.txt"
+          git archive --format=zip --output="$EVID/SOURCE.zip" HEAD
+          cat > "$EVID/NOT_FOR_FLASHING.txt" <<'EOF'
+          This is an R19 candidate ARM validation artifact built from exact R18 three-fix integration.
+          The only approved firmware production source modification is startup string LXR LAB R18 -> LXR LAB R19.
+          The original R18 musical reference and the integrated source commit remain unchanged.
+          Owner accepted lack of physical USB-MIDI testing as a release-planning risk, NOT as a passing device test.
+          This is not an approved final release, merge or installed/flash-tested R19; do not flash without separate approval.
+          CPU/WCET, IRQ/DMA deadlines, stack high-water and long-term stability remain UNMEASURED.
+          EOF
+          (cd "$EVID" && sha256sum \
+            LXR_V2_R19_CANDIDATE.img \
+            LXR_V2_STM32F765.elf LXR_V2_STM32F765.map \
+            SOURCE.zip ARM_VALIDATION.json > VERIFIED_HASHES.txt)
+      - name: Preserve evidence identities on success or failure
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVID=build/r19-candidate-arm-evidence
+          mkdir -p "$EVID"
+          git rev-parse HEAD > "$EVID/CI_HEAD.txt"
+          (cd "$EVID" && find . -maxdepth 1 -type f ! -name 'RECORD_HASHES.txt' -printf '%f\n' | LC_ALL=C sort | while IFS= read -r f; do sha256sum "$f"; done > RECORD_HASHES.txt)
+      - name: Upload technical validation evidence (30-day retention)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r19-version-only-arm-candidate-evidence
+          path: build/r19-candidate-arm-evidence/
+          retention-days: 30
+          if-no-files-found: error
