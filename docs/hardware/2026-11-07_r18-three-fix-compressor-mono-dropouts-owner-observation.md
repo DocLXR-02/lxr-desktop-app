@@ -1,9 +1,9 @@
 # R18 Three-Fix TEST Firmware — Compressor Output Failure (Corrected Owner Observation)
 
 **Recorded:** 2026-11-07 (Europe/Vienna); exact device-test time not supplied.  
-**Last revision:** 2026-11-07, incorporating the owner's subsequent L2 and R2 failure report.  
+**Last revision:** 2026-11-07, incorporating the owner's detailed symptom differentiation between L1/R1 and L2/R2.  
 **Evidence type:** Owner's firsthand listening observations on the LXR-02, **not** oscilloscope/recorded audio, a device memory readback or assistant-performed test.  
-**Disposition:** **FAIL / OPEN — the Compressor does not function in the owner's tested St1, L1, R1, L2 and R2 FX output modes. GAI 0–127 is confirmed for St1/L1/R1 only; the gain range for L2/R2 is not specified. This is NOT a mono-only fault.** Stop high-gain Compressor stress until the failure is characterized.
+**Disposition:** **FAIL / OPEN — the Compressor does not function in the owner's tested St1, L1, R1, L2 and R2 FX output modes. L1/R1 exhibit intermittent dropouts approximately every four bars; L2/R2 are almost completely silent, with occasional very attenuated muffled tones. St1's exact acoustic symptom remains unspecified. GAI 0–127 is confirmed for St1/L1/R1 only; the gain range for L2/R2 is not specified. This is NOT a mono-only fault.** Stop high-gain Compressor stress until the failure is characterized.
 
 ## Correction history and superseded description
 
@@ -11,7 +11,7 @@
 
 **Explicit later owner correction (authoritative for current status):** “revidiere die beobachtung. St1, L1, R1 funktionieren alle nicht bei Gain 0-127.”
 
-The earlier **St1 PASS is withdrawn**. The earlier L1 description as mere “dropouts” is not carried forward as a proven symptom; the corrected wording is simply **“does not function”**, whose precise acoustic meaning (silence, intermittent dropouts, distorted sound or other) has **not** yet been specified. The earlier L2 'dropout' description was superseded as an exact symptom description. The owner subsequently added: **“L2, R2 funktioniert auch nicht.”** Thus both L2 and R2 are now directly reported as nonfunctional, but their specific GAI range and the exact acoustic symptom were not supplied. Neither the most recent message nor the preceding correction reports testing **St2 stereo**.
+The earlier **St1 PASS is withdrawn**. The owner's later correction established a malfunction in St1, L1 and R1 throughout the tested GAI 0–127 range, but did not yet describe the sound. The owner next added: **“L2, R2 funktioniert auch nicht.”** The latest owner message, **“R1, L1 haben aussetzer ca jeden 4 takt. bei L2, R2 fast komplette stille. ab und zu nur sehr unterdrückte dumpfe töne.”**, supplies different symptoms for the first and second pairs: L1/R1 have dropouts approximately every four bars, while L2/R2 are almost silent and occasionally produce very subdued dull/muffled tones. The precise acoustic failure of St1 is still unknown. Neither the most recent message nor the preceding corrections reports testing **St2 stereo**.
 
 Retaining the prior quotation here documents why earlier Git revisions and the conversation differ; the table below is the current authoritative classification.
 
@@ -30,14 +30,14 @@ Retaining the prior quotation here documents why earlier Git revisions and the c
 
 | FX/OUT setting | Owner-reported `GAI` test interval | Latest result | Classification |
 |---|---|---|---|
-| `St1` stereo | 0–127 | Does not function | **FAIL / OPEN** |
-| `L1` mono | 0–127 | Does not function | **FAIL / OPEN** |
-| `R1` mono | 0–127 | Does not function | **FAIL / OPEN** |
-| `L2` mono | **Not specified** | Does not function (latest owner report) | **FAIL / OPEN** |
-| `R2` mono | **Not specified** | Does not function (latest owner report) | **FAIL / OPEN** |
+| `St1` stereo | 0–127 | Does not function; exact audible symptom not yet described | **FAIL / OPEN** |
+| `L1` mono | 0–127 | Intermittent dropouts, approximately every four bars (owner estimate) | **FAIL / OPEN** |
+| `R1` mono | 0–127 | Intermittent dropouts, approximately every four bars (owner estimate) | **FAIL / OPEN** |
+| `L2` mono | **Not specified** | Near-complete silence; occasional severely attenuated, dull/muffled tones | **FAIL / OPEN** |
+| `R2` mono | **Not specified** | Near-complete silence; occasional severely attenuated, dull/muffled tones | **FAIL / OPEN** |
 | `St2` stereo | **Not reported** | No observation supplied | **NOT TESTED / UNKNOWN** |
 
-**Evidence limits:** The precise nature of “does not function,” frequency/duration of any dropouts, attack/release, ratio, threshold, dry/wet, voice count/routing, cables, monitoring configuration, other FX parameter settings and physical comparison with original R18 Compressor remain unspecified. The entire GAI 0–127 range is **owner-reported** only for St1, L1 and R1; L2 and R2 fail by owner report but have no separately reported GAI interval. St2 has not been reported. No instrumentation-based gain sweep is claimed.
+**Evidence limits:** The L1/R1 dropout timing is an approximate owner estimate of roughly four bars, **not a recorded or independently timed periodicity**; the duration, exact onset/offset and dependence on BPM/sequencer state remain unknown. St1's precise symptom, attack/release, ratio, threshold, dry/wet, voice count/routing, cables, monitoring configuration, other FX parameter settings and physical comparison with original R18 Compressor remain unspecified. The entire GAI 0–127 range is **owner-reported** only for St1, L1 and R1; L2 and R2 fail by owner report but have no separately reported GAI interval. St2 has not been reported. No instrumentation-based gain sweep is claimed.
 
 ## Read-only source implications — no root cause yet
 
@@ -51,7 +51,7 @@ The original host fixtures specifically exercised bounded source-extracted funct
 
 **Stop high-gain Compressor tests.** Mute or reduce monitoring if the output becomes unexpectedly loud or erratic. Preserve the current test kit and the SD backup; do not flash a speculative fix or overwrite accepted R18. No code changes, builds, reflashes, main merges or firmware releases have been authorized by this observation correction.
 
-**One minimal clarification before further debugging:** By “does not function” in the affected output modes, does the owner mean complete silence, intermittent audio dropouts, or an unchanged dry signal with no audible compression? Do not increase GAI simply to reproduce an unsafe condition. This distinction is decisive before treating the report as a buffer/timing fault.
+**Next minimal clarification before further debugging:** For the already tested **St1** stereo mode, was the output silent, intermittent/dropout-prone, or present without audible compression? Do not increase GAI or stress the device merely to reproduce an unsafe condition. St1's specific behavior will help distinguish a shared effect-path problem from mono-specific routing symptoms. The approximately four-bar dropout report is not yet evidence of a particular buffer, timer or CPU fault.
 
 **Release status:** R19 is **BLOCKED**, because the integrated test firmware's Compressor hardware behavior is unresolved; no final sonic approval has been given. CLP and Delay remain owner-observed successes; USB-MIDI remains hardware-untested; CPU/WCET, IRQ/DMA deadlines, stack high-water and long-term reliability remain **UNMEASURED**.
 
