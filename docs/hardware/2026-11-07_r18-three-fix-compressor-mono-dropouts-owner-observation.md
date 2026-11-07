@@ -1,6 +1,8 @@
 # R18 Three-Fix TEST Firmware — Compressor Output Failure (Corrected Owner Observation)
 
 
+> **LATEST FOLLOW-UP / SUPERSEDING RESULT (2026-11-07):** The owner reloaded the **originally affected project** after trying another project; the clicking **also disappeared upon reloading the original project**. Earlier Compressor-specific FAIL/OPEN classifications are **historical transient symptoms**, not a currently reproducible Compressor defect. This makes a persistent corrupted project file or fixed saved-project parameter an even weaker explanation. A project-load-related internal or temporary state remains a hypothesis, **not a proven root cause**. See the [current shared-FX chronology](2026-11-07_shared-fx-routing-owner-observation-reclassification.md). No code change or release is authorized; USB-MIDI hardware remains untested.
+
 > **LATEST OWNER RESOLUTION (2026-11-07):** After loading a different project, the owner reported no clicking with any of the four effects and specifically said that the Compressor now works normally. This **supersedes the earlier active FAIL/OPEN release-blocking interpretation in this report**; the preceding detailed observations remain retained for diagnostic history. Whether the prior project held unexpected parameter/step data, was otherwise altered, or exposed a latent FX routing issue is not known. This observation does not establish a new software fix or guarantee all output/makeup combinations; see the [authoritative recovery observation](2026-11-07_shared-fx-routing-owner-observation-reclassification.md). **USB-MIDI actual device validation remains blocked; no R19 release has been approved.**
 
 **Recorded:** 2026-11-07 (Europe/Vienna); exact device-test time not supplied.  
