@@ -14,6 +14,12 @@ The final release ZIP and English release-record ZIP are archived in the owner's
 
 Physical USB-MIDI remains NOT TESTED and the owner **accepted this residual risk** for final R19 release; host tests PASS. CPU/WCET, IRQ/DMA/audio deadlines, actual stack high-water and long-term reliability remain UNMEASURED. The transient FX clicking resolved after reloading the original project; root cause UNKNOWN. The original R18 remains the protected musical reference, and protected `main` and the three-fix integration source remain untouched. No further code edit, source merge or bootloader action is authorized.
 
+## Prepared next phase: R19 performance and reliability baseline (2026-11-08)
+
+**PREPARED, NOT EXECUTED.** Owner wishes to retain R19 as the stable functional baseline for subsequent improvements. Exact source SHA: `638b6eaae5b1624637d20cbc11a4a3e0175edca2`. R18 CLP remains a separate protected sonic reference. No build, flash, firmware edit, or hardware measurement is approved by this preparatory documentation.
+
+The [read-only investigation plan](https://github.com/DocLXR-02/lxr-desktop-app/blob/ee9bdfb80fec5d1625b997fcb4b59cc11744e387/docs/plans/2026-11-08_r19_performance_reliability_readonly_baseline_plan.md) fixes scope, evidence, source paths, stop conditions and expected deliverables. Use current private KnowledgeBase v1.5.4 in the next chat. `LXR_RUNTIME_DIAGNOSTICS` is OFF by default; CPU/WCET, IRQ/DMA deadline margins, actual stack high-water and sustained reliability remain UNMEASURED. No Codex, source changes, builds, device tests, stable-branch creation or native GitHub Release were started by this preparation.
+
 ## Historical R19 candidate hardware addendum (2026-11-08, before final approval)
 
 **Historical state before the later final R19 authorization: R19 CANDIDATE owner-installed and owner-reported functionally PASS; FINAL RELEASE WAS NOT YET AUTHORIZED.** This 2026-11-08 addendum supersedes only the *status* of subsequent firmware work relative to the historical 2026-11-05 R18 consolidation snapshot below; earlier build reports, evidence and accepted R18 musical reference remain unchanged.
