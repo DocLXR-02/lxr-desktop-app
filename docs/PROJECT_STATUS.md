@@ -4,7 +4,7 @@ Snapshot: 2026-11-08 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-08-
 
 This is the current public entry point for continuing the lab. Read this file, [hardware observations](HARDWARE_VALIDATION.md), the [resource ledger](BUILD_RESOURCE_LEDGER.md), [evidence index](EVIDENCE_INDEX.md), [workflow](WORKFLOW.md) and [recordkeeping standard](RECORDKEEPING_STANDARD.md) before proposing another task. Reports are historical evidence at their pinned commits. A report branch is not a firmware source branch.
 
-This documentation branch descends from historical lab-setup `5829398cea5d337200393757e39a37d4d8148256`. **Never build the documentation branch to produce firmware.** Use the exact R18 source SHA below. R18 CLP **sound** is owner-accepted; this is not a source merge, public release, hardware timing certification, or measured stack reserve.
+This documentation branch descends from historical lab-setup `5829398cea5d337200393757e39a37d4d8148256`. **Never build the documentation branch to produce firmware.** For new R19 investigations use the pinned source SHA `638b6eaae5b1624637d20cbc11a4a3e0175edca2`; R18 remains the sonic comparison reference. R18 CLP **sound** is owner-accepted; this is not a source merge, public release, hardware timing certification, or measured stack reserve.
 
 ## Current final-owner-approved distribution — R19 (2026-11-08)
 
