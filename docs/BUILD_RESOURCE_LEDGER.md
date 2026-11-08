@@ -2,6 +2,21 @@
 
 Date: 2026-11-03 (Europe/Vienna). Current synchronization: **LXR-SYNC-2026-11-03-CLP-R18**. This ledger preserves the historical R11 offline audit and adds the independently verified R14–R18 matched-release static resource figures. Publication is **documentation only**; it creates no firmware build or device measurement.
 
+## Current R19 final distribution — matched static resources (2026-11-08)
+
+**Owner-approved R19 firmware** source `638b6eaae5b1624637d20cbc11a4a3e0175edca2` is the **same owner-tested R19 candidate**, not a new build. Its binary differs from the three-fix R18 integration image by exactly one startup-marker byte and the related checksum byte. The Release ARM build is [CI 42407160858](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/42407160858), with [verified per-build report](https://github.com/DocLXR-02/lxr-desktop-app/blob/ce2d87d499a5708881f38b0fe0ffa6b0e50c28f0/docs/codex-berichte/2026-11-07_r19-version-only-candidate-arm-build.md) and [final release record](releases/2026-11-08_r19_final_owner_approved_distribution.md).
+
+| Static resource (bytes) | Accepted original R18 | Integrated three-fix TEST | Final R19 | R19 vs TEST |
+|---|---:|---:|---:|---:|
+| FLASH `.text` | 151,784 | 152,024 | 152,024 | **0** |
+| ITCM `.itcm_text` | 15,208 | 15,208 | 15,208 | **0** |
+| DTCM `.dtcm + .dtcmz` | 107,420 | 107,420 | 107,420 | **0** |
+| SRAM `.data + .bss + ._user_heap` | 274,644 | 274,660 | 274,660 | **0** |
+| Complete FLASH load payload | 287,928 | 288,168 | 288,168 | **0** |
+| Application IMG with updater header | 287,944 | 288,184 | 288,184 | **0** |
+
+Current nominal headroom: ITCM **1,176 B**, DTCM **23,652 B** and SRAM **118,556 B**, inferred from static section fit. These figures **do not measure CPU/WCET, IRQ/DMA deadlines, stack high-water, thermal or long-run reliability**. The exact final firmware SHA-256 is `a1d53435ce922c4ef57ce595bf8c180b5225340780b6ad3241b6340af652e57b`. Physical USB-MIDI device test remains NOT RUN, consciously accepted by the owner for final release. The original accepted R18 sound reference remains frozen.
+
 ## 1. Correction: reports are not unique to R4
 
 The preceding response singled out the R4 report as additional provenance for the R4 number. It should not have suggested that later builds lack reports.
