@@ -1,0 +1,180 @@
+name: Device test image - isolated Morph transport fix
+
+on:
+  push:
+    branches:
+      - test/morph-transport-device-image-2026-11-08
+
+permissions:
+  contents: read
+
+jobs:
+  candidate-test-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout packaging-only CI branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify immutable source identity and limited CI-only diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC=c433f0ecc68ba66dc885784ad03905c8be18cf39
+          BASE=a43cd4fcda23ec3d577dc425261c3eb28bd5abff
+          test "$(git rev-parse HEAD^)" = "$SRC"
+          test "$(git rev-parse "$SRC^{commit}")" = "$SRC"
+          git -c core.whitespace=cr-at-eol diff --check "$SRC" HEAD
+          diff -u <(printf '%s\n' '.github/workflows/morph-device-test-image.yml') \
+            <(git diff --name-only "$SRC" HEAD)
+          test "$(git diff --name-only "$BASE" "$SRC" -- Core/)" = \
+            "Core/Src/Preset/presetManager.c"
+
+      - name: Install pinned Arm GNU Toolchain 14.3.rel1
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz"
+          curl -fL --retry 3 "$URL" -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+
+      - name: Native regression and clean ARM Release build of exact candidate source
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC=c433f0ecc68ba66dc885784ad03905c8be18cf39
+          mkdir -p evidence package
+          git worktree add --detach "$RUNNER_TEMP/lxr-test-source" "$SRC"
+          (
+            cd "$RUNNER_TEMP/lxr-test-source"
+            git rev-parse HEAD
+            python3 tests/morph_transport/run.py
+          ) 2>&1 | tee evidence/host-regression.log
+          arm-none-eabi-gcc --version | tee evidence/toolchain.txt
+          (
+            cd "$RUNNER_TEMP/lxr-test-source"
+            cmake --preset release
+          ) 2>&1 | tee evidence/configure.log
+          (
+            cd "$RUNNER_TEMP/lxr-test-source"
+            cmake --build --preset release --clean-first --parallel 2
+          ) 2>&1 | tee evidence/build.log
+          cp "$RUNNER_TEMP/lxr-test-source/build/release/LXR_V2_V1.7.img" package/LXR_V2_V1.7.img
+          cp "$RUNNER_TEMP/lxr-test-source/build/release/LXR_V2_STM32F765.map" evidence/linker.map
+          arm-none-eabi-size -A "$RUNNER_TEMP/lxr-test-source/build/release/LXR_V2_STM32F765.elf" > evidence/sections.txt
+          arm-none-eabi-size -B "$RUNNER_TEMP/lxr-test-source/build/release/LXR_V2_STM32F765.elf" > evidence/gnu-size.txt
+          sha256sum package/LXR_V2_V1.7.img | tee evidence/SHA256SUMS
+          sha256sum "$RUNNER_TEMP/lxr-test-source/build/release/LXR_V2_STM32F765.elf" > evidence/ELF_SHA256SUMS
+
+      - name: Validate full IMG and compare to previous matched-build binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import struct
+          src = 'c433f0ecc68ba66dc885784ad03905c8be18cf39'
+          expected = 'b503f43a22201cc0eac1fdb3a6cb98f75d15e66a849615ab154f3692152a3143'
+          image = Path('package/LXR_V2_V1.7.img').read_bytes()
+          bin_path = Path(os.environ['RUNNER_TEMP']) / 'lxr-test-source/build/release/LXR_V2_STM32F765.bin'
+          actual = hashlib.sha256(image).hexdigest()
+          assert actual == expected, f'Different binary than matched build! {actual}'
+          assert image[:8] == b'LXRV2IMG'
+          payload = image[16:]
+          assert len(payload) == struct.unpack_from('<I', image, 8)[0] and len(image) == 274736
+          assert image[13:16] == b'\0\0\0'
+          assert image[12] == (0xff - (sum(payload) & 255))
+          assert payload == bin_path.read_bytes()
+          sp, reset = struct.unpack_from('<II', payload)
+          assert sp == 0x20080000 and reset & 1 and 0x08008000 <= (reset & ~1) < 0x08100000
+          log = Path('evidence/build.log').read_text()
+          actual_regions = {a:int(b) for a,b in re.findall(r'(?m)^\s*(ITCM_RAM|DTCM|RAM|FLASH):\s+(\d+) B\b', log)}
+          expected_regions = {'ITCM_RAM':15008,'DTCM':107392,'RAM':271036,'FLASH':222716}
+          assert actual_regions == expected_regions, (actual_regions, expected_regions)
+          report = f'''# Isolated Morph command guard — physical-device TEST image build report
+
+          Date: 2026-11-08, Europe/Vienna.
+
+          ## Identity and authorization
+          - Repository: DocLXR-02/lxr-desktop-app
+          - Exact production source commit: {src}
+          - Comparison baseline: a43cd4fcda23ec3d577dc425261c3eb28bd5abff
+          - CI workflow commit: {os.environ.get("GITHUB_SHA", "UNKNOWN")}
+          - CI run: https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/{os.environ.get("GITHUB_RUN_ID", "UNKNOWN")}
+          - Arm GNU 14.3.Rel1, CMake Release -O3, Ubuntu 24.04
+          - Built source at exact pinned SHA by detached Git worktree; no code edits.
+          - No bootloader, debug-probe flash, release, public PR, merge or hardware test.
+          - The owner requested preparation of an original v1.71 vs isolated-correction device experiment.
+
+          ## Actual execution
+          - Production-code native Morph regression against untouched upstream: PASS.
+          - Native regression of isolated correction: PASS.
+          - Clean ARM Release configure/build/link: PASS.
+          - Header, declared size, padding, checksum, payload/bin identity and reset vector: PASS.
+          - This image SHA-256 matches the prior matched-build image **byte for byte**: PASS.
+          - Full image file: LXR_V2_V1.7.img
+          - Complete image bytes: {len(image)}
+          - Payload bytes: {len(payload)}
+          - Image SHA-256: {actual}
+          - Initial MSP: 0x{sp:08x}; reset vector: 0x{reset:08x}
+          - Header checksum: 0x{image[12]:02x}
+          - Linker region bytes: {actual_regions}
+          - Same-toolchain baseline-to-candidate changes: ITCM +8, DTCM 0, RAM 0, FLASH +24, image +32 bytes.
+          - ELF SHA-256, linker MAP, sections and complete logs are retained in a separate evidence artifact.
+
+          ## Important restrictions
+          - **EXPERIMENTAL TEST FIRMWARE; NOT AN OFFICIAL ERICA SYNTHS RELEASE.**
+          - Not verified as binary/source equivalent to manufacturer's official production v1.71 firmware.
+          - No physical-device boot, listening, USB-MIDI, or audio safety clearance yet.
+          - CPU/WCET, IRQ/DMA deadlines, real stack high-water and long-run reliability: UNMEASURED.
+          - Does NOT include the broader MidiParser bounds hardening from the laboratory fix.
+          - Do not install without verified SD backups, a recoverable official v1.71 image,
+            a test SD card and low-volume monitoring.
+          - The user independently performs any requested device flash; CI did not flash hardware.
+          - Substantial OpenAI ChatGPT assistance was used for source isolation,
+            test/CI automation and report preparation.
+
+          ## Evidence
+          - CI run and complete raw workflow log (link above).
+          - Image archive must contain only LXR_V2_V1.7.img.
+          - Separate evidence artifact: source SHA, full build/configure/regression logs,
+            map, section sizes, image and ELF checksums, this report.
+          '''
+          Path('evidence/device-test-image-build-report.md').write_text(
+              '\n'.join(line.lstrip() for line in report.splitlines())+'\n', encoding='utf8')
+          manifest = {
+            'source_sha':src,'ci_sha':os.environ.get('GITHUB_SHA'),
+            'ci_run':os.environ.get('GITHUB_RUN_ID'),
+            'image_filename':'LXR_V2_V1.7.img','image_size':len(image),'image_sha256':actual,
+            'prior_matched_image_sha256':expected,'header_checksum':image[12],
+            'linker_regions':actual_regions,'validation':'PASS',
+            'hardware':'NOT TESTED','runtime':'UNMEASURED',
+            'official_v1.71_binary_identity':'NOT ESTABLISHED'
+          }
+          Path('evidence/device-test-image-manifest.json').write_text(
+              json.dumps(manifest,indent=2)+'\n')
+          print('PASS: device-test image reproducible byte-for-byte, IMG validated')
+          PY
+
+      - name: Upload isolated test image only
+        uses: actions/upload-artifact@v4
+        with:
+          name: isolated-morph-test-image
+          path: package/LXR_V2_V1.7.img
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload separate verified build report and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: isolated-morph-test-build-evidence
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 7
