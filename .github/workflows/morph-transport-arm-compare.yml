@@ -1,0 +1,84 @@
+name: Matched ARM build - kit morph command guard
+
+on:
+  push:
+    branches:
+      - ci/morph-transport-arm-compare-2026-11-08
+
+permissions:
+  contents: read
+
+jobs:
+  matched-arm-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout evidence-only CI branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify pinned source and CI-only scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=a43cd4fcda23ec3d577dc425261c3eb28bd5abff
+          CANDIDATE=c433f0ecc68ba66dc885784ad03905c8be18cf39
+          test "$(git rev-parse HEAD^)" = "$CANDIDATE"
+          test "$(git rev-parse "$BASE^{commit}")" = "$BASE"
+          test "$(git rev-parse "$CANDIDATE^{commit}")" = "$CANDIDATE"
+          git -c core.whitespace=cr-at-eol diff --check "$CANDIDATE" HEAD
+          diff -u <(printf '%s\n' \
+            '.github/workflows/morph-transport-arm-compare.yml' \
+            'ci/morph_arm_compare.py') <(git diff --name-only "$CANDIDATE" HEAD)
+          test "$(git diff --name-only "$BASE" "$CANDIDATE" -- Core/)" = \
+            "Core/Src/Preset/presetManager.c"
+
+      - name: Install pinned Arm GNU Toolchain 14.3.rel1
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz"
+          curl -fL --retry 3 "$URL" -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+
+      - name: Build matched upstream and isolated candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          arm-none-eabi-gcc --version
+          cmake --version
+          ninja --version
+          mkdir -p evidence/upstream evidence/candidate "$RUNNER_TEMP/lxr-morph-compare"
+          BASE=a43cd4fcda23ec3d577dc425261c3eb28bd5abff
+          CANDIDATE=c433f0ecc68ba66dc885784ad03905c8be18cf39
+          git worktree add --detach "$RUNNER_TEMP/lxr-morph-compare/upstream" "$BASE"
+          git worktree add --detach "$RUNNER_TEMP/lxr-morph-compare/candidate" "$CANDIDATE"
+          for label in upstream candidate; do
+            directory="$RUNNER_TEMP/lxr-morph-compare/$label"
+            printf '%s\n' "$BASE" "$CANDIDATE" > "evidence/$label/compared-shas.txt"
+            (cd "$directory" && cmake --preset release) 2>&1 | tee "evidence/$label/configure.log"
+            (cd "$directory" && cmake --build --preset release --parallel 2) 2>&1 | tee "evidence/$label/build.log"
+          done
+
+      - name: Verify firmware formats and generate matched build reports
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 ci/morph_arm_compare.py \
+            "$RUNNER_TEMP/lxr-morph-compare/upstream" \
+            "$RUNNER_TEMP/lxr-morph-compare/candidate" \
+            evidence
+          test -s evidence/upstream-arm-build-report.md
+          test -s evidence/candidate-arm-build-report.md
+          test -s evidence/matched-arm-build-comparison.md
+          test -s evidence/comparison.json
+
+      - name: Archive non-firmware evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: morph-transport-matched-arm-evidence
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 7
