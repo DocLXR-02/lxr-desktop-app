@@ -17,7 +17,7 @@ jobs:
         run: |
           mkdir -p build/bug008-evidence
           git rev-parse HEAD | tee build/bug008-evidence/SOURCE_SHA.txt
-          git diff --check HEAD^ HEAD
+          git -c core.whitespace=cr-at-eol diff --check HEAD^ HEAD
       - name: Compile and exercise standalone capture state machine
         shell: bash
         run: |
