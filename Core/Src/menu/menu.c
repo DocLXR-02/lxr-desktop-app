@@ -249,6 +249,7 @@ const Name valueNames[NUM_NAMES] =
 		{SHORT_P3, CAT_FX, LONG_P3},/*TEXT_FX_P3*/
 		{SHORT_P4, CAT_FX, LONG_P4},/*TEXT_FX_P4*/
 		{SHORT_KCM, CAT_GLOBAL, LONG_PATTERN_MODE},/*TEXT_AUTO_SWITCH_KIT*/
+		{SHORT_MODE, CAT_SEQUENCER, LONG_MODE}, /* TEXT_REC_MODE */
 
 
 };
@@ -565,6 +566,7 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	    /*PAR_MIDI_NOTE6*/		DTYPE_NOTE_NAME,
 	    /*PAR_MIDI_NOTE7*/		DTYPE_NOTE_NAME,
 		/*PAR_PATTERN_MODE*/ DTYPE_MENU | (MENU_PAT_MODE<<8),
+	    /*PAR_REC_MODE*/ DTYPE_MENU | (MENU_REC_MODE<<8),
 };
 
 
@@ -2635,6 +2637,8 @@ static uint8_t getMaxEntriesForMenu(uint8_t menuId)
 	case MENU_REVERB:
 		return reverbNames[0][0];
 
+	case MENU_REC_MODE:
+		return recModeNames[0][0];
 	case MENU_PAT_MODE:
 		return patModeNames[0][0];
 
@@ -2740,6 +2744,9 @@ static void getMenuItemNameForValue(const uint8_t menuId, const uint8_t curParmV
 		p=reverbNames[curParmVal+1];
 		break;
 
+	case MENU_REC_MODE:
+		p=recModeNames[curParmVal+1];
+		break;
 	case MENU_PAT_MODE:
 		p=patModeNames[curParmVal+1];
 		break;
@@ -3515,6 +3522,10 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 
 	case PAR_AUTOM_TRACK:
 		frontPanel_sendData(SEQ_CC,SEQ_SET_AUTOM_TRACK,value);
+		break;
+
+	case PAR_REC_MODE:
+		frontPanel_sendData(SEQ_CC,SEQ_SET_REC_MODE,value);
 		break;
 
 	case PAR_P1_DEST:

@@ -1,0 +1,64 @@
+name: BUG008 continuous parameter recording host and ARM validation
+on:
+  push:
+    branches:
+      - fix/bug008-continuous-automation-r19-2026-11-10
+permissions:
+  contents: read
+jobs:
+  bug008-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record source identity
+        run: |
+          mkdir -p build/bug008-evidence
+          git rev-parse HEAD | tee build/bug008-evidence/SOURCE_SHA.txt
+          git diff --check HEAD^ HEAD
+      - name: Compile and exercise standalone capture state machine
+        shell: bash
+        run: |
+          set -euo pipefail
+          cc -std=c11 -O2 -Wall -Wextra -Werror -fsanitize=undefined,bounds -fno-sanitize-recover=all \
+            -ICore/Inc Core/Src/Soundengine/Sequencer/automationCapture.c tests/bug008/host.c \
+            -o build/bug008-evidence/bug008-host
+          build/bug008-evidence/bug008-host 2>&1 | tee build/bug008-evidence/bug008-host.log
+      - name: Reuse R19 regressions for USB-MIDI, Delay and Compressor
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r18_delay_mono/run.py build/bug008-delay 2>&1 | tee build/bug008-evidence/delay.log
+          python3 tests/r18_usb_midi/run.py build/bug008-usb 2>&1 | tee build/bug008-evidence/usb.log
+          python3 tests/r18_compressor_mono/run.py build/bug008-compressor 2>&1 | tee build/bug008-evidence/compressor.log
+          python3 tests/fx_clip_r18/compare.py 2>&1 | tee build/bug008-evidence/clp-compare.log
+      - name: Install R19-matched ARM GNU Toolchain 14.3.rel1
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz
+          curl -fL --retry 3 "$URL" -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          echo "8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd  $RUNNER_TEMP/arm-toolchain.tar.xz" | sha256sum --check
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+      - name: Build candidate firmware (validation only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --preset release 2>&1 | tee build/bug008-evidence/configure.log
+          cmake --build --preset release --parallel 2 2>&1 | tee build/bug008-evidence/build.log
+          arm-none-eabi-size -A build/release/LXR_V2_STM32F765.elf 2>&1 | tee build/bug008-evidence/sections.log
+          arm-none-eabi-gcc --version > build/bug008-evidence/COMPILER.txt
+          cp build/release/LXR_V2_STM32F765.map build/bug008-evidence/
+          cp build/release/LXR_V2_STM32F765.elf build/bug008-evidence/
+          cp build/release/LXR_V2_V1.7.img build/bug008-evidence/BUG008_TEST_NOT_FOR_FLASH.img
+          (cd build/bug008-evidence && sha256sum BUG008_TEST_NOT_FOR_FLASH.img LXR_V2_STM32F765.elf LXR_V2_STM32F765.map > OUTPUT_SHA256SUMS.txt)
+          echo "VALIDATION CANDIDATE ONLY. DO NOT FLASH WITHOUT SEPARATE OWNER AUTHORIZATION." > build/bug008-evidence/NOT_FOR_FLASHING.txt
+      - name: Preserve evidence also on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bug008-automation-candidate-evidence
+          path: build/bug008-evidence/
+          retention-days: 30
+          if-no-files-found: error

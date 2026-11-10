@@ -448,26 +448,25 @@ static void frontParser_handleMidiMessage()
 		cortex_midiMsg.data1 &= 0x7f;
 
 		//only perform the parameter change if it is not a param lock
+		/* In parameter mode, capture the original value before CC processing. */
+		if(seq_isAutomationRecordMode())
+			seq_recordAutomation(frontParser_activeTrack, cortex_midiMsg.data1, cortex_midiMsg.data2);
 		if(!seq_isAutomationStepArmed())
-		{
 			midiParser_ccHandler(cortex_midiMsg,1, 0, 0.f);
-		}
-
-		//record automation if record is turned on
-		seq_recordAutomation(frontParser_activeTrack, cortex_midiMsg.data1, cortex_midiMsg.data2);
+		if(!seq_isAutomationRecordMode())
+			seq_recordAutomation(frontParser_activeTrack, cortex_midiMsg.data1, cortex_midiMsg.data2);
 		break;
 
 	//CC2 above 127
 	case FRONT_CC_2: // cortex_midiMsg.status
 		{
 			//only perform the parameter change if it is not a param lock
+			if(seq_isAutomationRecordMode())
+				seq_recordAutomation(frontParser_activeTrack, cortex_midiMsg.data1+128, cortex_midiMsg.data2);
 			if(!seq_isAutomationStepArmed())
-			{
 				midiParser_ccHandler(cortex_midiMsg,1, 0, 0.f);
-			}
-
-			//record automation if record is turned on
-			seq_recordAutomation(frontParser_activeTrack, cortex_midiMsg.data1+128, cortex_midiMsg.data2);
+			if(!seq_isAutomationRecordMode())
+				seq_recordAutomation(frontParser_activeTrack, cortex_midiMsg.data1+128, cortex_midiMsg.data2);
 		}
 		break;
 
@@ -505,7 +504,8 @@ static void frontParser_handleMidiMessage()
 			uint8_t val = (hi<<7)|lo;
 			if(val && val < 128 )
 				val++;
-
+			if(!seq_canAssignAutomationDestination(frontParser_shownPattern, frontParser_activeTrack, 0, val))
+				break;
 
 #if USE_PATTERN_EDIT_BUFFER
 			patternBackupBuffer.seq_subStepPattern[frontParser_activeTrack][seq_selectedStep].param1Nr = val;
@@ -525,6 +525,8 @@ static void frontParser_handleMidiMessage()
 			uint8_t val = (hi<<7)|lo;
 			if(val && val < 128 )
 				val++;
+			if(!seq_canAssignAutomationDestination(frontParser_shownPattern, frontParser_activeTrack, 1, val))
+				break;
 
 #if USE_PATTERN_EDIT_BUFFER
 			if( (currentPattern == seq_activePattern) )
@@ -737,6 +739,10 @@ static void frontParser_handleSeqCC()
 */
 	case FRONT_SEQ_REC_ON_OFF:
 		seq_setRecordingMode(cortex_midiMsg.data2);
+		break;
+
+	case FRONT_SEQ_SET_REC_MODE:
+		seq_setAutomationRecordMode(cortex_midiMsg.data2);
 		break;
 
 	case FRONT_SEQ_ERASE_ON_OFF:

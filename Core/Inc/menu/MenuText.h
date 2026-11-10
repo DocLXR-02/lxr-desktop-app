@@ -43,6 +43,7 @@
 #define MENU_STEP_FLAM	 	24
 #define MENU_STEP_SHIFT	 	25
 #define MENU_AUDIO_OUT_FX	26
+#define MENU_REC_MODE		27
 
 //-----------------------------------------------------------------
 // Shared texts. Reduce mem usage by pooling common text
@@ -90,6 +91,13 @@ const char stepShiftNames[][4] =
 	{"+7"},
 	//{"+8"},
 
+};
+//-----------------------------------------------------------------
+const char recModeNames[][4] =
+{
+	{2},
+	{"org"}, /* Original REC behavior */
+	{"par"}, /* Continuous one-parameter recording */
 };
 //-----------------------------------------------------------------
 const char patModeNames[][4] =

@@ -267,6 +267,9 @@ void seq_setRollRate(uint8_t rate);
 void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note);
 //------------------------------------------------------------------------------
 void seq_setRecordingMode(uint8_t active);
+void seq_setAutomationRecordMode(uint8_t enabled);
+uint8_t seq_isAutomationRecordMode(void);
+uint8_t seq_canAssignAutomationDestination(uint8_t pattern, uint8_t track, uint8_t lane, uint8_t dest);
 //------------------------------------------------------------------------------
 void seq_setErasingMode(uint8_t active);
 //------------------------------------------------------------------------------

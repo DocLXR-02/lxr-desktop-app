@@ -425,6 +425,7 @@ enum ParamEnums
 		PAR_MIDI_NOTE7,
 
 		PAR_PATTERN_MODE,
+		PAR_REC_MODE, /* Menu-only; original versus continuous parameter recording */
 
 	NUM_PARAMS	
 };

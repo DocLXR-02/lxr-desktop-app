@@ -124,6 +124,7 @@ add_library(lxr_midi OBJECT
 # Step sequencer, Euclidean generator, external clock sync.
 add_library(lxr_sequencer OBJECT
     Src/Soundengine/Sequencer/clockSync.c
+    Src/Soundengine/Sequencer/automationCapture.c
     Src/Soundengine/Sequencer/EuklidGenerator.c
     Src/Soundengine/Sequencer/sequencer.c
 )
