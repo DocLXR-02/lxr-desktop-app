@@ -62,6 +62,21 @@ Based on owner-tested capture candidate `2e3a60e251dffbceefc0ee4af258463f5d87126
 
 Remaining nominal capacity gaps: ITCM **1,080 B**, DTCM **23,648 B** before runtime stack, SRAM **118,348 B**. Live CPU/WCET and audio/IRQ/DMA timing, stack high-water and long-duration reliability are **UNMEASURED**. Per-parameter CC processing may dominate interpolation CPU cost; high-density two-lane/seven-voice stress and actual hardware hearing remain OPEN. The original R19/R18 references are unchanged.
 
+### Live automation fixed 8× finalization (2026-11-10)
+
+The owner-heard A/B source `3ca1256ba62ee5cf4411a68cc0df6c6769ec98b9` is preserved. The owner-selected fixed-8-only source `e82fd4f3c239bfcb21400c3f94756f6fced02586` passed [CI 42894478378](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/42894478378) including exhaustive numerical equivalence (16,384 start/end value pairs). [Dedicated per-build report](codex-berichte/2026-11-10_live-automation-fixed8-final-build.md). **No new owner firmware device test has been reported for this exact binary.**
+
+| Static section/firmware | Accepted R19 | A/B candidate | FIX8-only | FIX8 minus A/B |
+|---|---:|---:|---:|---:|
+| FLASH `.text` | 152,024 B | 154,744 B | **154,448 B** | **−296 B** |
+| ITCM | 15,208 B | 15,304 B | **15,304 B** | **0 B** |
+| DTCM | 107,420 B | 107,424 B | **107,424 B** | **0 B** |
+| General SRAM region | 274,660 B | 274,868 B | **274,860 B** | **−8 B** |
+| Complete FLASH load payload | 288,168 B | 291,080 B | **290,712 B** | **−368 B** |
+| Updater IMG | 288,184 B | 291,096 B | **290,728 B** | **−368 B** |
+
+Nominal headroom after FIX8-only: ITCM **1,080 B**, DTCM **23,648 B**, SRAM **118,356 B**. This **does not establish** CPU/WCET, IRQ/DMA, stack high-water, real hardware SD migration or long-duration reliability. Source fixes preserve R19 global-file writer length and accept the prior one-byte-expanded experimental globals. The adaptive technique is now **documentation-only** in [archived design](design/2026-11-10_adaptive-automation-retained-design.md).
+
 ## 1. Correction: reports are not unique to R4
 
 The preceding response singled out the R4 report as additional provenance for the R4 number. It should not have suggested that later builds lack reports.
