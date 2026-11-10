@@ -13,7 +13,7 @@ int main(void)
     autoCapture_arm(&c, 16, AUTO_CAPTURE_NO_TARGET);
     for(unsigned i=0;i<16;i++) advance(&c, i);
     assert(autoCapture_step(&c, 0) == 0); /* no input, no commit */
-    assert(autoCapture_event(&c, 10, 40, 40) == 1);
+    assert(autoCapture_event(&c, 10, 40, 40) == 0); /* Identical value is not a new take. */
     for(unsigned i=1;i<=4;i++) advance(&c, i);
     assert(autoCapture_event(&c, 10, 40, 70) == 1);
     assert(autoCapture_event(&c, 11, 20, 90) == 0);

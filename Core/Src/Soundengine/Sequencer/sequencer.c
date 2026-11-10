@@ -2326,7 +2326,7 @@ void seq_recordAutomation(uint8_t voice, uint8_t dest, uint8_t value)
 	   seq_autoCapture.active && seq_autoCapture.started &&
 	   seq_armedArmedAutomationStep == -1 && voice == seq_autoTrack &&
 	   seq_activePattern == seq_autoPattern) {
-		if(dest != NO_AUTOMATION && dest < END_OF_SOUND_PARAMETERS &&
+		if(dest > 0 && dest != NO_AUTOMATION && dest < END_OF_SOUND_PARAMETERS &&
 		   (seq_autoCapture.changed ||
 		    seq_canAssignAutomationDestination(seq_autoPattern, seq_autoTrack, seq_autoLane, dest)))
 			autoCapture_event(&seq_autoCapture, dest, midiParser_originalCcValues[dest], value);
@@ -2544,7 +2544,7 @@ uint8_t seq_isAutomationRecordMode(void)
 
 uint8_t seq_canAssignAutomationDestination(uint8_t pattern, uint8_t track, uint8_t lane, uint8_t dest)
 {
-	if(dest == NO_AUTOMATION) return 1;
+	if(dest == NO_AUTOMATION || dest == 0) return 1; /* OFF is not an assigned target. */
 	if(pattern >= NUM_PATTERN || track >= NUM_TRACKS || lane > 1) return 0;
 	for(uint8_t step=0; step<NUM_STEPS; step++) {
 		const Step *data = &seq_patternSet.seq_subStepPattern[pattern][track][step];
@@ -2561,7 +2561,7 @@ static uint8_t seq_autoExistingTarget(uint8_t pattern, uint8_t track, uint8_t la
 	for(uint8_t step=0; step<NUM_STEPS; step++) {
 		const Step *data = &seq_patternSet.seq_subStepPattern[pattern][track][step];
 		const uint8_t current = lane == 0 ? data->param1Nr : data->param2Nr;
-		if(current == NO_AUTOMATION) continue;
+		if(current == NO_AUTOMATION || current == 0) continue;
 		if(target != NO_AUTOMATION && current != target) {
 			seq_autoBlocked = 1;
 			return NO_AUTOMATION;

@@ -39,7 +39,8 @@ uint8_t autoCapture_step(AutomationCapture *capture, uint8_t new_step)
 uint8_t autoCapture_event(AutomationCapture *capture, uint8_t target,
                           uint8_t previous_value, uint8_t new_value)
 {
-    if(!capture->active || !capture->started || target == AUTO_CAPTURE_NO_TARGET)
+    if(!capture->active || !capture->started || target == AUTO_CAPTURE_NO_TARGET ||
+       previous_value == new_value)
         return 0;
     if(capture->target != AUTO_CAPTURE_NO_TARGET && capture->target != target)
         return 0;
