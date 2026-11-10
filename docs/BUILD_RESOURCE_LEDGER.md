@@ -32,6 +32,21 @@ The **non-released, unflashed** BUG008 candidate at source `2e3a60e251dffbceefc0
 
 Nominal candidate gaps: ITCM **1,112 B**, DTCM **23,648 B** before stack, SRAM **118,468 B**. CPU/WCET, IRQ/DMA deadlines, stack high-water, and long-running reliability remain **UNMEASURED**; physical device input/audio tests were **NOT RUN**.
 
+### Automation playback A/B — experimental evaluation build (2026-11-10)
+
+Source `3ca1256ba62ee5cf4411a68cc0df6c6769ec98b9` passed [CI 42877760459](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/42877760459) with Arm GNU 14.3.rel1, host validation and the R19 inherited tests. The [separate build report](codex-berichte/2026-11-10_automation-playback-ab-fixed-adaptive-arm-build.md) contains hashes, raw-artifact identities, test boundaries and remaining risks. This is **not** a stable R19 replacement or a validated MCU timing measurement.
+
+| Static metric (bytes) | Accepted R19 | Multi-take candidate | Playback A/B | A/B vs multi-take |
+|---|---:|---:|---:|---:|
+| FLASH `.text` | 152024 | 153984 | 154744 | +760 |
+| ITCM | 15208 | 15272 | 15304 | +32 |
+| DTCM | 107420 | 107424 | 107424 | 0 |
+| General SRAM | 274660 | 274748 | 274868 | +120 |
+| Complete FLASH payload | 288168 | 290216 | 291080 | +864 |
+| Application IMG | 288184 | 290232 | 291096 | +864 |
+
+Nominal remaining headroom: ITCM **1080 B**, DTCM **23648 B** before runtime stack and SRAM **118348 B**. CPU/WCET, IRQ/DMA deadlines, stack high-water and long-run reliability are **UNMEASURED**, and actual hardware listening is **PENDING**.
+
 ## 1. Correction: reports are not unique to R4
 
 The preceding response singled out the R4 report as additional provenance for the R4 number. It should not have suggested that later builds lack reports.
