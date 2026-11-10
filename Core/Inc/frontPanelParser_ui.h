@@ -142,8 +142,6 @@ extern uint8_t frontPanel_sysexMode;
 #define SEQ_BAR_RESET_MODE  0x32
 #define SEQ_ERASE_ON_OFF    0x33 // **RECORD data2=1: erase on data2=0: erase off
 #define SEQ_SET_REC_MODE    0x3A // 0=MIDI notes only, 1=parameter recording
-#define SEQ_SET_AUTO_RES    0x3B // 0..3 -> 1/2/4/8 updates per step
-#define SEQ_SET_AUTO_ALG    0x3C // 0=fixed, 1=adaptive
 //#define SEQ_TRACK_ROTATION	0x34 // **PATROT rotate a track's start position 0 to 15
 //#define SEQ_EUKLID_ROTATION	0x35
 

@@ -44,8 +44,6 @@
 #define MENU_STEP_SHIFT	 	25
 #define MENU_AUDIO_OUT_FX	26
 #define MENU_REC_MODE		27
-#define MENU_AUTO_RES		28
-#define MENU_AUTO_ALG		29
 
 //-----------------------------------------------------------------
 // Shared texts. Reduce mem usage by pooling common text
@@ -100,22 +98,6 @@ const char recModeNames[][4] =
 	{2},
 	{"mid"}, /* MIDI note recording only */
 	{"par"}, /* Continuous one-parameter recording */
-};
-//-----------------------------------------------------------------
-const char autoResNames[][4] =
-{
-    {4},
-    {"1x"},
-    {"2x"},
-    {"4x"},
-    {"8x"},
-};
-//-----------------------------------------------------------------
-const char autoAlgNames[][4] =
-{
-    {2},
-    {"fix"},
-    {"aut"},
 };
 //-----------------------------------------------------------------
 const char patModeNames[][4] =
@@ -506,7 +488,6 @@ const char shortNames[][4]  =
 	{"kcm"},
 	{"flm"},
 	{"shf"},
-	{"alg"},
 
 };
 //-----------------------------------------------------------------
@@ -637,8 +618,6 @@ const char longNames[][16] =
 	{"KitChMde"},
 	{"Flam"},
 	{"Shift"},
-	{"AutRes"},
-	{"AutAlgo"},
 };
 
 

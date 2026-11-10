@@ -104,8 +104,6 @@ static AutomationCapture seq_autoCapture;
 static __attribute__((noinline)) void seq_autoRecordStepTick(uint8_t step);
 
 /* Runtime-only playback quality; no change to project/kit/pattern storage. */
-static uint8_t seq_playbackResolution;
-static uint8_t seq_playbackAdaptive;
 static uint8_t seq_playbackLastPhase = 255u;
 static AutomationPlaybackLane seq_playback[NUM_TRACKS][2];
 static __attribute__((noinline)) void seq_autoPlaybackStartStep(uint8_t track, uint8_t step);
@@ -542,8 +540,7 @@ static __attribute__((noinline)) void seq_autoPlaybackStartStep(uint8_t track, u
         /* Never interpolate across a destination or OFF boundary. */
         const uint8_t target = nextDest == destination ? last : first;
         uint8_t value;
-        if(automationPlayback_step(play, destination, first, target,
-                                   seq_playbackResolution, seq_playbackAdaptive, &value))
+        if(automationPlayback_step(play, destination, first, target, &value))
             autoNode_updateValue(node, value);
     }
 }
@@ -2648,14 +2645,6 @@ static __attribute__((noinline)) void seq_autoRecordStepTick(uint8_t step)
 	}
 }
 
-void seq_setAutomationPlaybackResolution(uint8_t index)
-{
-    seq_playbackResolution = index > 3 ? 3 : index;
-}
-void seq_setAutomationPlaybackAlgorithm(uint8_t adaptive)
-{
-    seq_playbackAdaptive = adaptive ? 1 : 0;
-}
 void seq_setAutomationRecordMode(uint8_t enabled)
 {
 	if(seq_autoSession) {

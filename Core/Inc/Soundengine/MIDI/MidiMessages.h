@@ -496,8 +496,6 @@ extern Param2EnumsDefinition Param2Enums;
 #define FRONT_SEQ_BAR_RESET_MODE		0x32	// reset bar on manual pattern change (0 is default - to not reset)
 #define FRONT_SEQ_ERASE_ON_OFF			0x33    // turn erase mode on/off
 #define FRONT_SEQ_SET_REC_MODE			0x3A    // 0=MIDI notes only, 1=parameter recording
-#define FRONT_SEQ_SET_AUTO_RES			0x3B    // 0..3 -> 1/2/4/8
-#define FRONT_SEQ_SET_AUTO_ALG			0x3C    // 0=fixed, 1=adaptive
 //#define FRONT_SEQ_TRACK_ROTATION		0x34	// rotate a track's start position 0 to 15
 #define FRONT_SEQ_EUKLID_ROTATION		0x35
 

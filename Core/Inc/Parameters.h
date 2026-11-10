@@ -426,8 +426,6 @@ enum ParamEnums
 
 		PAR_PATTERN_MODE,
 		PAR_REC_MODE, /* RAM-only; never stored in glo.cfg */
-		PAR_AUTO_RES, /* 0..3: 1/2/4/8 updates per step */
-		PAR_AUTO_ALG, /* 0=fixed, 1=adaptive */
 
 	NUM_PARAMS	
 };

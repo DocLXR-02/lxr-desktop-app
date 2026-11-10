@@ -13,8 +13,7 @@ typedef struct {
 } AutomationPlaybackLane;
 /* Always publish the step boundary value. Intermediates are deduplicated. */
 uint8_t automationPlayback_step(AutomationPlaybackLane *lane, uint16_t destination,
-                                uint8_t from, uint8_t to, uint8_t resolution,
-                                uint8_t adaptive, uint8_t *value);
+                                uint8_t from, uint8_t to, uint8_t *value);
 uint8_t automationPlayback_tick(AutomationPlaybackLane *lane, uint8_t phase,
                                 uint8_t *value);
 #endif
