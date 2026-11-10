@@ -47,6 +47,21 @@ Source `3ca1256ba62ee5cf4411a68cc0df6c6769ec98b9` passed [CI 42877760459](https:
 
 Nominal remaining headroom: ITCM **1080 B**, DTCM **23648 B** before runtime stack and SRAM **118348 B**. CPU/WCET, IRQ/DMA deadlines, stack high-water and long-run reliability are **UNMEASURED**, and actual hardware listening is **PENDING**.
 
+### Experimental automation playback A/B — matched build resources (2026-11-10)
+
+Based on owner-tested capture candidate `2e3a60e251dffbceefc0ee4af258463f5d87126c`, the independent experimental A/B playback candidate at `3ca1256ba62ee5cf4411a68cc0df6c6769ec98b9` passed [CI 42877760459](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/42877760459). [Full immutable-source build report](codex-berichte/2026-11-10_automation-playback-ab-arm-validation.md). This is **not** the accepted firmware distribution.
+
+| Static resource | Approved R19 | Previous capture test | A/B playback test | A/B minus capture |
+|---|---:|---:|---:|---:|
+| FLASH `.text` | 152,024 B | 153,984 B | **154,744 B** | **+760 B** |
+| ITCM | 15,208 B | 15,272 B | **15,304 B** | **+32 B** |
+| DTCM | 107,420 B | 107,424 B | **107,424 B** | **0 B** |
+| SRAM / linker RAM region | 274,660 B | 274,748 B | **274,868 B** | **+120 B** |
+| Complete FLASH load payload | 288,168 B | 290,216 B | **291,080 B** | **+864 B** |
+| Updater IMG | 288,184 B | 290,232 B | **291,096 B** | **+864 B** |
+
+Remaining nominal capacity gaps: ITCM **1,080 B**, DTCM **23,648 B** before runtime stack, SRAM **118,348 B**. Live CPU/WCET and audio/IRQ/DMA timing, stack high-water and long-duration reliability are **UNMEASURED**. Per-parameter CC processing may dominate interpolation CPU cost; high-density two-lane/seven-voice stress and actual hardware hearing remain OPEN. The original R19/R18 references are unchanged.
+
 ## 1. Correction: reports are not unique to R4
 
 The preceding response singled out the R4 report as additional provenance for the R4 number. It should not have suggested that later builds lack reports.
