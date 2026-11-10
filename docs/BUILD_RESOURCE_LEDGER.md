@@ -17,6 +17,21 @@ Date: 2026-11-03 (Europe/Vienna). Current synchronization: **LXR-SYNC-2026-11-03
 
 Current nominal headroom: ITCM **1,176 B**, DTCM **23,652 B** and SRAM **118,556 B**, inferred from static section fit. These figures **do not measure CPU/WCET, IRQ/DMA deadlines, stack high-water, thermal or long-run reliability**. The exact final firmware SHA-256 is `a1d53435ce922c4ef57ce595bf8c180b5225340780b6ad3241b6340af652e57b`. Physical USB-MIDI device test remains NOT RUN, consciously accepted by the owner for final release. The original accepted R18 sound reference remains frozen.
 
+### Experimental BUG008 (validation-only) vs final R19, 2026-11-10
+
+The **non-released, unflashed** BUG008 candidate at source `2e3a60e251dffbceefc0ee4af258463f5d87126c` passed [Arm Release CI 42842043263](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/42842043263). This entry is **not** a replacement for the accepted R19 baseline. See the [per-build technical report](docs/codex-berichte/2026-11-10_bug008-continuous-loop-automation-candidate-arm-validation.md).
+
+| Static resource (bytes) | Final R19 | BUG008 test candidate | Candidate delta |
+|---|---:|---:|---:|
+| FLASH `.text` | 152,024 | 153,984 | **+1,960** |
+| ITCM | 15,208 | 15,272 | **+64** |
+| DTCM | 107,420 | 107,424 | **+4** |
+| General SRAM / linker RAM-region use | 274,660 | 274,748 | **+88** |
+| Complete FLASH load payload | 288,168 | 290,216 | **+2,048** |
+| IMG including updater header | 288,184 | 290,232 | **+2,048** |
+
+Nominal candidate gaps: ITCM **1,112 B**, DTCM **23,648 B** before stack, SRAM **118,468 B**. CPU/WCET, IRQ/DMA deadlines, stack high-water, and long-running reliability remain **UNMEASURED**; physical device input/audio tests were **NOT RUN**.
+
 ## 1. Correction: reports are not unique to R4
 
 The preceding response singled out the R4 report as additional provenance for the R4 number. It should not have suggested that later builds lack reports.
