@@ -3066,9 +3066,9 @@ static void menu_encoderChangeParameter(int8_t inc)
 	// TODO this will also send MIDI_CC or CC_2 for the above items that have already been sent. is this desired?
 	//send parameter change to uart tx
 	if(paramNr < 128) // => Sound Parameter
-		frontPanel_sendData(MIDI_CC,(uint8_t)paramNr,*paramValue);
+		frontPanel_sendData(activeParameters[PAR_REC_MODE] ? CC_LIVE_LOW : MIDI_CC, (uint8_t)paramNr, *paramValue);
 	else if(paramNr > 127 && (paramNr < END_OF_SOUND_PARAMETERS)) // => Sound Parameter above 127
-		frontPanel_sendData(CC_2,(uint8_t)(paramNr-128),*paramValue);
+		frontPanel_sendData(activeParameters[PAR_REC_MODE] ? CC_LIVE_HIGH : CC_2, (uint8_t)(paramNr-128), *paramValue);
 	else // non sound parameters (ie current step data, etc)
 		menu_parseGlobalParam(paramNr,activeParameters[paramNr]);
 
@@ -4285,9 +4285,9 @@ uint8_t menu_parseKnobValue(uint8_t potNr, int16_t diff)
 
 				//-----------------
 		if(paramNr<128) // => Sound Parameter below 128
-			frontPanel_sendData(MIDI_CC,(uint8_t)paramNr,dtypeValue);
+			frontPanel_sendData(activeParameters[PAR_REC_MODE] ? CC_LIVE_LOW : MIDI_CC, (uint8_t)paramNr, dtypeValue);
 		else if(paramNr>=128 && (paramNr < END_OF_SOUND_PARAMETERS)) // => Sound Parameter above 127
-			frontPanel_sendData(CC_2,(uint8_t)(paramNr-128),dtypeValue);
+			frontPanel_sendData(activeParameters[PAR_REC_MODE] ? CC_LIVE_HIGH : CC_2, (uint8_t)(paramNr-128), dtypeValue);
 		else
 			menu_parseGlobalParam(paramNr,dtypeValue);
 		break;

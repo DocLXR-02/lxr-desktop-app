@@ -437,7 +437,12 @@ static void frontParser_handleMidiMessage()
 		break;
 
 	//MIDI SYNTH MESSAGES
+	case FRONT_CC_LIVE_LOW:
 	case MIDI_CC: //cortex_midiMsg.status
+		/* Only physical input events may arm a parameter take.
+		 * Internal parameter refreshes still use the original MIDI_CC status. */
+		const uint8_t isPhysicalInput = (cortex_midiMsg.status == FRONT_CC_LIVE_LOW);
+		cortex_midiMsg.status = MIDI_CC;
 		// this is for parameters below 128
 		// fix offset between front an cortex
 		// front params start at 1, cortex at 2 (because of midi in mod wheel==0x1
@@ -449,7 +454,7 @@ static void frontParser_handleMidiMessage()
 
 		//only perform the parameter change if it is not a param lock
 		/* In parameter mode, capture the original value before CC processing. */
-		if(seq_isAutomationRecordMode())
+		if(seq_isAutomationRecordMode() && isPhysicalInput)
 			seq_recordAutomation(frontParser_activeTrack, cortex_midiMsg.data1, cortex_midiMsg.data2);
 		if(!seq_isAutomationStepArmed())
 			midiParser_ccHandler(cortex_midiMsg,1, 0, 0.f);
@@ -458,10 +463,13 @@ static void frontParser_handleMidiMessage()
 		break;
 
 	//CC2 above 127
+	case FRONT_CC_LIVE_HIGH:
 	case FRONT_CC_2: // cortex_midiMsg.status
 		{
+			const uint8_t isPhysicalInput = (cortex_midiMsg.status == FRONT_CC_LIVE_HIGH);
+			cortex_midiMsg.status = FRONT_CC_2;
 			//only perform the parameter change if it is not a param lock
-			if(seq_isAutomationRecordMode())
+			if(seq_isAutomationRecordMode() && isPhysicalInput)
 				seq_recordAutomation(frontParser_activeTrack, cortex_midiMsg.data1+128, cortex_midiMsg.data2);
 			if(!seq_isAutomationStepArmed())
 				midiParser_ccHandler(cortex_midiMsg,1, 0, 0.f);

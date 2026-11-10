@@ -45,7 +45,9 @@ extern uint8_t frontPanel_sysexMode;
 #define CODEC_CC			0xd3
 #define VOICE_CC			0xd4
 #define SET_BPM				0xd5
-#define CC_2				0xd6		//for parameters above 127
+#define CC_2				0xd6
+#define CC_LIVE_LOW			0xe2 // Physical sound-parameter input; distinguishes refresh from knob movement
+#define CC_LIVE_HIGH			0xe3 // Physical sound-parameter input above 127		//for parameters above 127
 #define CC_LFO_TARGET		0xd7
 #define CC_VELO_TARGET		0xd8
 //#define STEP_CC				0xd9	//toggle sub step pattern step on/off
@@ -139,7 +141,7 @@ extern uint8_t frontPanel_sysexMode;
 
 #define SEQ_BAR_RESET_MODE  0x32
 #define SEQ_ERASE_ON_OFF    0x33 // **RECORD data2=1: erase on data2=0: erase off
-#define SEQ_SET_REC_MODE    0x35 // 0=original, 1=continuous parameter recording
+#define SEQ_SET_REC_MODE    0x3A // 0=original, 1=continuous parameter recording
 //#define SEQ_TRACK_ROTATION	0x34 // **PATROT rotate a track's start position 0 to 15
 //#define SEQ_EUKLID_ROTATION	0x35
 

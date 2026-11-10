@@ -419,7 +419,9 @@ extern Param2EnumsDefinition Param2Enums;
 #define FRONT_CODEC_CONTROL				0xd3
 #define VOICE_CC						0xd4
 #define FRONT_SET_BPM					0xd5
-#define FRONT_CC_2						0xd6	//for parameters above 127
+#define FRONT_CC_2						0xd6
+#define FRONT_CC_LIVE_LOW				0xe2 // Physical sound-parameter input below 128
+#define FRONT_CC_LIVE_HIGH			0xe3 // Physical sound-parameter input above 127	//for parameters above 127
 #define FRONT_CC_LFO_TARGET				0xd7
 #define FRONT_CC_VELO_TARGET			0xd8
 //#define FRONT_STEP_CC					0xd9	// toggle a step in the subStepPattern array
@@ -493,7 +495,7 @@ extern Param2EnumsDefinition Param2Enums;
 #define FRONT_SEQ_MIDI_RX_FILTER		0x31    // rx filtering
 #define FRONT_SEQ_BAR_RESET_MODE		0x32	// reset bar on manual pattern change (0 is default - to not reset)
 #define FRONT_SEQ_ERASE_ON_OFF			0x33    // turn erase mode on/off
-#define FRONT_SEQ_SET_REC_MODE			0x35    // 0=original, 1=continuous parameter recording
+#define FRONT_SEQ_SET_REC_MODE			0x3A    // 0=original, 1=continuous parameter recording
 //#define FRONT_SEQ_TRACK_ROTATION		0x34	// rotate a track's start position 0 to 15
 #define FRONT_SEQ_EUKLID_ROTATION		0x35
 
