@@ -507,8 +507,10 @@ static __attribute__((noinline)) void seq_autoPlaybackStartStep(uint8_t track, u
     if(track >= NUM_TRACKS || (seq_mutedTracks & (1u << track))) return;
     uint8_t length = seq_patternSet.length[seq_activePattern][track];
     if(length == 0u) length = 16u;
+    if(length > NUM_STEPS) length = NUM_STEPS; /* Corrupt length must never index beyond 64. */
     if(step >= length) return;
-    const uint8_t next = (uint8_t)((step + 1u) % length);
+    uint8_t next = (uint8_t)(step + 1u);
+    if(next >= length) next = 0u; /* Avoid division in the playback path. */
 #if USE_PATTERN_EDIT_BUFFER
     const Step *current = &patternBackupBuffer.seq_subStepPattern[track][step];
     const Step *following = &patternBackupBuffer.seq_subStepPattern[track][next];
