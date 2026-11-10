@@ -1,0 +1,80 @@
+name: Automation fixed/adaptive playback ARM and host validation
+on:
+  push:
+    branches:
+      - feature/automation-playback-ab-2026-11-10
+permissions:
+  contents: read
+jobs:
+  automation-playback-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Record source identity
+        run: |
+          mkdir -p build/automation-playback-evidence
+          git rev-parse HEAD | tee build/automation-playback-evidence/SOURCE_SHA.txt
+          git -c core.whitespace=cr-at-eol diff --check HEAD^ HEAD
+      - name: Compile and exercise standalone capture state machine
+        shell: bash
+        run: |
+          set -euo pipefail
+          cc -std=c11 -O2 -Wall -Wextra -Werror -fsanitize=undefined,bounds -fno-sanitize-recover=all \
+            -ICore/Inc Core/Src/Soundengine/Sequencer/automationCapture.c tests/bug008/host.c \
+            -o build/automation-playback-evidence/bug008-host
+          build/automation-playback-evidence/bug008-host 2>&1 | tee build/automation-playback-evidence/bug008-host.log
+      - name: Playback numerical regression (fixed/adaptive and bounds)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cc -std=c11 -O2 -Wall -Wextra -Werror -fsanitize=undefined,bounds -fno-sanitize-recover=all \
+            -ICore/Inc Core/Src/Soundengine/Sequencer/automationPlayback.c tests/automation_playback/host.c \
+            -o build/automation-playback-evidence/playback-host
+          build/automation-playback-evidence/playback-host 2>&1 | tee build/automation-playback-evidence/playback-host.log
+      - name: Existing globals and project storage regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/project_storage/run.py 2>&1 | tee build/automation-playback-evidence/project-storage.log
+          python3 tests/project_transaction/run.py 2>&1 | tee build/automation-playback-evidence/project-transaction.log
+      - name: Reuse R19 regressions for USB-MIDI, Delay and Compressor
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r18_delay_mono/run.py build/ap-delay 2>&1 | tee build/automation-playback-evidence/delay.log
+          python3 tests/r18_usb_midi/run.py build/ap-usb 2>&1 | tee build/automation-playback-evidence/usb.log
+          python3 tests/r18_compressor_mono/run.py build/ap-compressor 2>&1 | tee build/automation-playback-evidence/compressor.log
+          python3 tests/fx_clip_r18/compare.py 2>&1 | tee build/automation-playback-evidence/clp-compare.log
+      - name: Install R19-matched ARM GNU Toolchain 14.3.rel1
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz
+          curl -fL --retry 3 "$URL" -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          echo "8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd  $RUNNER_TEMP/arm-toolchain.tar.xz" | sha256sum --check
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+      - name: Build candidate firmware (validation only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --preset release 2>&1 | tee build/automation-playback-evidence/configure.log
+          cmake --build --preset release --parallel 2 2>&1 | tee build/automation-playback-evidence/build.log
+          arm-none-eabi-size -A build/release/LXR_V2_STM32F765.elf 2>&1 | tee build/automation-playback-evidence/sections.log
+          arm-none-eabi-gcc --version > build/automation-playback-evidence/COMPILER.txt
+          cp build/release/LXR_V2_STM32F765.map build/automation-playback-evidence/
+          cp build/release/LXR_V2_STM32F765.elf build/automation-playback-evidence/
+          cp build/release/LXR_V2_V1.7.img build/automation-playback-evidence/AUTOMATION_AB_TEST_NOT_FOR_FLASH.img
+          (cd build/automation-playback-evidence && sha256sum AUTOMATION_AB_TEST_NOT_FOR_FLASH.img LXR_V2_STM32F765.elf LXR_V2_STM32F765.map > OUTPUT_SHA256SUMS.txt)
+          echo "EXPERIMENTAL SOUND-CHANGING AUTOMATION CANDIDATE: NOT YET DEVICE-TESTED OR RELEASED." > build/automation-playback-evidence/NOT_FOR_FLASHING.txt
+      - name: Preserve evidence also on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: automation-ab-candidate-evidence
+          path: build/automation-playback-evidence/
+          retention-days: 30
+          if-no-files-found: error
