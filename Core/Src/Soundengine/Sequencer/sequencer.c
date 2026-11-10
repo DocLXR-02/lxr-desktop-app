@@ -24,6 +24,7 @@
 #include "Soundengine/DSPAudio/CymbalVoice.h"
 #include "Soundengine/Sequencer/sequencer.h"
 #include "Soundengine/Sequencer/automationCapture.h"
+#include "Soundengine/Sequencer/automationPlayback.h"
 #include <string.h>
 #include <Soundengine/MIDI/CortexParser.h>
 #include "Soundengine/USB/usb_manager.h"
@@ -101,6 +102,14 @@ static uint8_t seq_autoPattern;
 static uint8_t seq_autoLane;
 static AutomationCapture seq_autoCapture;
 static __attribute__((noinline)) void seq_autoRecordStepTick(uint8_t step);
+
+/* Runtime-only playback quality; no change to project/kit/pattern storage. */
+static uint8_t seq_playbackResolution;
+static uint8_t seq_playbackAdaptive;
+static uint8_t seq_playbackLastPhase = 255u;
+static AutomationPlaybackLane seq_playback[NUM_TRACKS][2];
+static __attribute__((noinline)) void seq_autoPlaybackStartStep(uint8_t track, uint8_t step);
+static __attribute__((noinline)) void seq_autoPlaybackSubTick(void);
 
 uint8_t seq_eraseActive=0;					/**RECORD will be 1 if live erasing the active voice  */
 
@@ -489,17 +498,78 @@ static void seq_sendMidi(MidiMsg msg)
 
 
 //------------------------------------------------------------------------------
-static void seq_parseAutomationNodes(uint8_t track, Step* stepData)
+/*
+ * Playback is now step-synchronous, independent of note triggers.
+ * The two automation lanes each retain one fixed target per pattern.
+ */
+static __attribute__((noinline)) void seq_autoPlaybackStartStep(uint8_t track, uint8_t step)
 {
-	/* Only suppress old automation in the lane being actively re-recorded. */
-	const uint8_t suppress = seq_autoSession && seq_autoCapture.changed &&
-		track == seq_autoTrack && seq_activePattern == seq_autoPattern;
-	const uint8_t dest1 = (suppress && seq_autoLane == 0) ? NO_AUTOMATION : stepData->param1Nr;
-	const uint8_t dest2 = (suppress && seq_autoLane == 1) ? NO_AUTOMATION : stepData->param2Nr;
-	autoNode_setDestination(&seq_automationNodes[track][0], dest1);
-	autoNode_setDestination(&seq_automationNodes[track][1], dest2);
-	autoNode_updateValue(&seq_automationNodes[track][0], stepData->param1Val);
-	autoNode_updateValue(&seq_automationNodes[track][1], stepData->param2Val);
+    if(track >= NUM_TRACKS || (seq_mutedTracks & (1u << track))) return;
+    uint8_t length = seq_patternSet.length[seq_activePattern][track];
+    if(length == 0u) length = 16u;
+    if(step >= length) return;
+    const uint8_t next = (uint8_t)((step + 1u) % length);
+#if USE_PATTERN_EDIT_BUFFER
+    const Step *current = &patternBackupBuffer.seq_subStepPattern[track][step];
+    const Step *following = &patternBackupBuffer.seq_subStepPattern[track][next];
+#else
+    const Step *current = &seq_patternSet.seq_subStepPattern[seq_activePattern][track][step];
+    const Step *following = &seq_patternSet.seq_subStepPattern[seq_activePattern][track][next];
+#endif
+    for(uint8_t lane=0; lane<2; lane++) {
+        AutomationNode *node = &seq_automationNodes[track][lane];
+        AutomationPlaybackLane *play = &seq_playback[track][lane];
+        if(seq_autoSession && seq_autoCapture.changed &&
+           seq_autoPattern == seq_activePattern && seq_autoTrack == track &&
+           seq_autoLane == lane) {
+            play->divisions = 0; /* Live knob wins during an incomplete take. */
+            continue;
+        }
+        uint16_t destination = lane ? current->param2Nr : current->param1Nr;
+        const uint8_t first = lane ? current->param2Val : current->param1Val;
+        const uint8_t nextDest = lane ? following->param2Nr : following->param1Nr;
+        const uint8_t last = lane ? following->param2Val : following->param1Val;
+        if(destination == 0 || destination >= END_OF_SOUND_PARAMETERS)
+            destination = NO_AUTOMATION;
+        if(node->destination != destination)
+            autoNode_setDestination(node, destination);
+        if(destination == NO_AUTOMATION) {
+            play->divisions = 0;
+            continue;
+        }
+        /* Never interpolate across a destination or OFF boundary. */
+        const uint8_t target = nextDest == destination ? last : first;
+        uint8_t value;
+        if(automationPlayback_step(play, destination, first, target,
+                                   seq_playbackResolution, seq_playbackAdaptive, &value))
+            autoNode_updateValue(node, value);
+    }
+}
+/*
+ * At most one 3/24-phase wake-up: 8x maximum. No audio-sample-rate
+ * interpolation, no heap, no stored extra points, no new interrupt.
+ */
+static __attribute__((noinline)) void seq_autoPlaybackSubTick(void)
+{
+    if(!seq_running) { seq_playbackLastPhase=255u; return; }
+    const uint8_t phase = (uint8_t)seq_prescaleCounter;
+    if(phase == seq_playbackLastPhase || phase >= 24u) return;
+    seq_playbackLastPhase = phase;
+    if(phase == 0u || (phase % 3u) != 0u) return;
+    for(uint8_t track=0; track<NUM_TRACKS; track++) {
+        if(seq_mutedTracks & (1u << track)) continue;
+        for(uint8_t lane=0; lane<2; lane++) {
+            if(seq_autoSession && seq_autoCapture.changed &&
+               seq_autoPattern == seq_activePattern && seq_autoTrack == track &&
+               seq_autoLane == lane) continue;
+            AutomationNode *node = &seq_automationNodes[track][lane];
+            if(node->destination == NO_AUTOMATION || node->destination == 0u)
+                continue;
+            uint8_t value;
+            if(automationPlayback_tick(&seq_playback[track][lane], phase, &value))
+                autoNode_updateValue(node, value);
+        }
+    }
 }
 //------------------------------------------------------------------------------
 void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note)
@@ -510,11 +580,7 @@ void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note)
 	if(voiceNr > 6) return;
 
 
-#if USE_PATTERN_EDIT_BUFFER
-	seq_parseAutomationNodes(voiceNr, &patternBackupBuffer.seq_subStepPattern[voiceNr][seq_stepIndex[voiceNr]]);
-#else
-	seq_parseAutomationNodes(voiceNr, &seq_patternSet.seq_subStepPattern[seq_activePattern][voiceNr][seq_stepIndex[voiceNr]]);
-#endif
+/* Automation is advanced at every sequencer step, not on voice retrigger. */
 
 	//turn the trigger off before sending the next one
 	/*
@@ -1378,6 +1444,7 @@ IN_ITCM_RAM void seq_nextStep()
 		}
 		if(seq_autoSession && i == seq_autoTrack)
 			seq_autoRecordStepTick((uint8_t)seq_stepIndex[i]);
+		seq_autoPlaybackStartStep((uint8_t)i, (uint8_t)seq_stepIndex[i]);
 
 		//if track is not muted
 		if(!(seq_mutedTracks & (1<<i) ) )
@@ -1866,7 +1933,7 @@ float seq_getElapsedStepTimePercent()
 			}
 		}
 	}
-
+	seq_autoPlaybackSubTick();
 }
 
 //------------------------------------------------------------------------------
@@ -2331,32 +2398,7 @@ void seq_recordAutomation(uint8_t voice, uint8_t dest, uint8_t value)
 		    seq_canAssignAutomationDestination(seq_autoPattern, seq_autoTrack, seq_autoLane, dest)))
 			autoCapture_event(&seq_autoCapture, dest, midiParser_originalCcValues[dest], value);
 	}
-	if(seq_recordActive)
-	{
-		//uint8_t quantizedStep = seq_quantize(seq_stepIndex[voice]);
-		const uint8_t step = seq_stepIndex[voice];
-
-		//only record to active steps
-		/*
-
-		if( seq_intIsMainStepActive(voice,quantizedStep/8,seq_activePattern) &&
-				seq_intIsStepActive(voice,quantizedStep,seq_activePattern))
-			*/
-		if( seq_intIsMainStepActive(voice,step,seq_activePattern) )
-		{
-      if(seq_activeAutomTrack == 0) {
-        seq_patternSet.seq_subStepPattern[seq_activePattern][voice][step].param1Nr = dest;
-        seq_patternSet.seq_subStepPattern[seq_activePattern][voice][step].param1Val = value;
-      } else {
-        seq_patternSet.seq_subStepPattern[seq_activePattern][voice][step].param2Nr = dest;
-        seq_patternSet.seq_subStepPattern[seq_activePattern][voice][step].param2Val = value;
-      }
-      
-      // seq_patternSet.seq_subStepPattern[seq_activePattern][voice][step].paramNr[seq_activeAutomTrack] = dest;
-      // seq_patternSet.seq_subStepPattern[seq_activePattern][voice][step].paramVal[seq_activeAutomTrack] = value;
-      
-		}
-	}
+	/* MIDI note recording never modifies automation lanes. */
 
 	if( (seq_armedArmedAutomationStep	!= -1) && (seq_armedArmedAutomationTrack != -1) &&
 		seq_canAssignAutomationDestination(seq_activePattern, seq_armedArmedAutomationTrack, seq_activeAutomTrack, dest) )
@@ -2550,6 +2592,10 @@ uint8_t seq_canAssignAutomationDestination(uint8_t pattern, uint8_t track, uint8
 		const Step *data = &seq_patternSet.seq_subStepPattern[pattern][track][step];
 		if((lane == 0 ? data->param2Nr : data->param1Nr) == dest)
 			return 0;
+		/* Exactly one destination per automation lane (including manual edits). */
+		const uint8_t mine = lane == 0 ? data->param1Nr : data->param2Nr;
+		if(mine != NO_AUTOMATION && mine != 0 && mine != dest)
+			return 0;
 	}
 	return 1;
 }
@@ -2600,6 +2646,14 @@ static __attribute__((noinline)) void seq_autoRecordStepTick(uint8_t step)
 	}
 }
 
+void seq_setAutomationPlaybackResolution(uint8_t index)
+{
+    seq_playbackResolution = index > 3 ? 3 : index;
+}
+void seq_setAutomationPlaybackAlgorithm(uint8_t adaptive)
+{
+    seq_playbackAdaptive = adaptive ? 1 : 0;
+}
 void seq_setAutomationRecordMode(uint8_t enabled)
 {
 	if(seq_autoSession) {

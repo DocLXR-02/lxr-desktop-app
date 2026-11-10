@@ -160,7 +160,8 @@ static FRESULT preset_txnValidate(const char *folder, uint8_t strict,
         uint32_t size = f_size((FIL*)&SDFile);
         uint8_t type = key < 2 ? key : (key - 2) % 3 + 2;
         uint8_t prefix[14] = {0}, tail[8] = {0};
-        if((type == 0 && size != 8) || (type == 1 && size != NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS) ||
+        if((type == 0 && size != 8) || (type == 1 && size != PAR_REC_MODE - PAR_BEGINNING_OF_GLOBALS &&
+            size != PAR_REC_MODE - PAR_BEGINNING_OF_GLOBALS + 1u) ||
            (type == 2 && (size < 8 || size > END_OF_SOUND_PARAMETERS + 8 || (strict && size != END_OF_SOUND_PARAMETERS + 8))) ||
            (type == 3 && (size < 8 || size > PROJECT_PATTERN_BYTES)) || (type == 4 && size != MAX_SONG_LENGTH + 8))
             res = FR_INT_ERR;
@@ -413,7 +414,7 @@ static FRESULT preset_txnSpace(void)
     if(!volume || !volume->csize) return FR_INT_ERR;
     uint32_t cluster = (uint32_t)volume->csize * _MAX_SS;
     uint32_t required = (8u + cluster - 1u) / cluster +
-                        (NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS + cluster - 1u) / cluster;
+                        (PAR_REC_MODE - PAR_BEGINNING_OF_GLOBALS + cluster - 1u) / cluster;
     required += NUM_KIT_SLOTS * ((8u + END_OF_SOUND_PARAMETERS + cluster - 1u) / cluster +
                 (PROJECT_PATTERN_BYTES + cluster - 1u) / cluster +
                 (8u + MAX_SONG_LENGTH + cluster - 1u) / cluster);

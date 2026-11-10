@@ -250,6 +250,8 @@ const Name valueNames[NUM_NAMES] =
 		{SHORT_P4, CAT_FX, LONG_P4},/*TEXT_FX_P4*/
 		{SHORT_KCM, CAT_GLOBAL, LONG_PATTERN_MODE},/*TEXT_AUTO_SWITCH_KIT*/
 		{SHORT_MODE, CAT_SEQUENCER, LONG_MODE}, /* TEXT_REC_MODE */
+		{SHORT_FIL_RESO, CAT_SEQUENCER, LONG_AUTO_RESOLUTION}, /* TEXT_AUTO_RES */
+		{SHORT_ALG, CAT_SEQUENCER, LONG_AUTO_ALGORITHM}, /* TEXT_AUTO_ALG */
 
 
 };
@@ -567,6 +569,8 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	    /*PAR_MIDI_NOTE7*/		DTYPE_NOTE_NAME,
 		/*PAR_PATTERN_MODE*/ DTYPE_MENU | (MENU_PAT_MODE<<8),
 	    /*PAR_REC_MODE*/ DTYPE_MENU | (MENU_REC_MODE<<8),
+	    /*PAR_AUTO_RES*/ DTYPE_MENU | (MENU_AUTO_RES<<8),
+	    /*PAR_AUTO_ALG*/ DTYPE_MENU | (MENU_AUTO_ALG<<8),
 };
 
 
@@ -2639,6 +2643,10 @@ static uint8_t getMaxEntriesForMenu(uint8_t menuId)
 
 	case MENU_REC_MODE:
 		return recModeNames[0][0];
+	case MENU_AUTO_RES:
+		return autoResNames[0][0];
+	case MENU_AUTO_ALG:
+		return autoAlgNames[0][0];
 	case MENU_PAT_MODE:
 		return patModeNames[0][0];
 
@@ -2746,6 +2754,12 @@ static void getMenuItemNameForValue(const uint8_t menuId, const uint8_t curParmV
 
 	case MENU_REC_MODE:
 		p=recModeNames[curParmVal+1];
+		break;
+	case MENU_AUTO_RES:
+		p=autoResNames[curParmVal+1];
+		break;
+	case MENU_AUTO_ALG:
+		p=autoAlgNames[curParmVal+1];
 		break;
 	case MENU_PAT_MODE:
 		p=patModeNames[curParmVal+1];
@@ -3526,6 +3540,12 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 
 	case PAR_REC_MODE:
 		frontPanel_sendData(SEQ_CC,SEQ_SET_REC_MODE,value);
+		break;
+	case PAR_AUTO_RES:
+		frontPanel_sendData(SEQ_CC,SEQ_SET_AUTO_RES,value);
+		break;
+	case PAR_AUTO_ALG:
+		frontPanel_sendData(SEQ_CC,SEQ_SET_AUTO_ALG,value);
 		break;
 
 	case PAR_P1_DEST:

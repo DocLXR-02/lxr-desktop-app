@@ -894,7 +894,7 @@ static FRESULT preset_writeGlobalData()
 {
 	FRESULT res;
 	int i;
-	for(i=PAR_BEGINNING_OF_GLOBALS;(i<NUM_PARAMS);i++)
+	for(i=PAR_BEGINNING_OF_GLOBALS;(i<PAR_REC_MODE);i++)
 	{
 		res = preset_writeChecked(&activeParameters[i],1);
 		if(res != FR_OK) return res;
@@ -917,10 +917,14 @@ FRESULT preset_saveGlobals()
 // Load globals only after a complete read and a successful close.
 static FRESULT preset_loadGlobalFile(void)
 {
-    uint8_t data[NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS];
+    uint8_t data[PAR_REC_MODE - PAR_BEGINNING_OF_GLOBALS];
     UINT count;
     FRESULT res = preset_openShared((FIL*)&SDFile, "glo.cfg", FA_READ);
     if(res != FR_OK) return res;
+    /* Read original R19 and one-byte-expanded experiment files safely. */
+    const uint32_t bytes = f_size((FIL*)&SDFile);
+    if(bytes != sizeof(data) && bytes != sizeof(data) + 1u)
+        return preset_finishRead(FR_INT_ERR);
     res = f_read((FIL*)&SDFile, data, sizeof(data), &count);
     if(res == FR_OK && count != sizeof(data)) res = FR_INT_ERR;
     res = preset_finishRead(res);

@@ -752,6 +752,12 @@ static void frontParser_handleSeqCC()
 	case FRONT_SEQ_SET_REC_MODE:
 		seq_setAutomationRecordMode(cortex_midiMsg.data2);
 		break;
+	case FRONT_SEQ_SET_AUTO_RES:
+		seq_setAutomationPlaybackResolution(cortex_midiMsg.data2);
+		break;
+	case FRONT_SEQ_SET_AUTO_ALG:
+		seq_setAutomationPlaybackAlgorithm(cortex_midiMsg.data2);
+		break;
 
 	case FRONT_SEQ_ERASE_ON_OFF:
 		seq_setErasingMode(cortex_midiMsg.data2);
