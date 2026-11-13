@@ -2020,29 +2020,29 @@ static uint8_t menu_renderAutomationNotice(void)
     menu_autoShortName(menu_autoTarget, target);
     if(notice == 1u) {
         menu_autoShortName(menu_autoOtherTarget, other);
-        (void)snprintf(line0, sizeof(line0), "REC trk%u %s",
-                       (unsigned)(menu_autoLane + 1u), target);
-        (void)snprintf(line1, sizeof(line1), "    trk%u %s",
-                       (unsigned)(2u - menu_autoLane), other);
+        (void)snprintf(line0, sizeof(line0), "REC trk%c %s",
+                       (int)('1' + (menu_autoLane & 1u)), target);
+        (void)snprintf(line1, sizeof(line1), "    trk%c %s",
+                       (int)('2' - (menu_autoLane & 1u)), other);
     } else {
         memcpy(line0, "PARAM BLOCKED!", 15);
         switch(notice - 1u) {
         case MENU_AUTO_BLOCK_OTHER_LANE:
-            (void)snprintf(line1, sizeof(line1), "%s on trk%u", target,
-                           (unsigned)(menu_autoOwnerLane + 1u));
+            (void)snprintf(line1, sizeof(line1), "%s on trk%c", target,
+                           (int)('1' + (menu_autoOwnerLane & 1u)));
             break;
         case MENU_AUTO_BLOCK_LANE_LOCKED:
-            (void)snprintf(line1, sizeof(line1), "trk%u: %s ONLY",
-                           (unsigned)(menu_autoLane + 1u), target);
+            (void)snprintf(line1, sizeof(line1), "trk%c: %s ONLY",
+                           (int)('1' + (menu_autoLane & 1u)), target);
             break;
         case MENU_AUTO_BLOCK_MULTI:
-            (void)snprintf(line1, sizeof(line1), "trk%u MULTI PARAM",
-                           (unsigned)(menu_autoLane + 1u));
+            (void)snprintf(line1, sizeof(line1), "trk%c MULTI PARAM",
+                           (int)('1' + (menu_autoLane & 1u)));
             break;
         case MENU_AUTO_BLOCK_GLOBAL:
-            (void)snprintf(line1, sizeof(line1), "%s on V%u trk%u", target,
-                           (unsigned)(menu_autoOwnerVoice + 1u),
-                           (unsigned)(menu_autoOwnerLane + 1u));
+            (void)snprintf(line1, sizeof(line1), "%s on V%c trk%c", target,
+                           (int)('1' + (menu_autoOwnerVoice % 7u)),
+                           (int)('1' + (menu_autoOwnerLane & 1u)));
             break;
         default: break;
         }
