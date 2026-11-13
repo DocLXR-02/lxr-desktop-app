@@ -65,6 +65,16 @@ enum
 
 extern uint8_t menu_loadedPresetNr[NUM_CURRENT];
 extern uint32_t sucessTimer;
+#define DISPLAY_NOTICE_DURATION_MS 1500u
+enum MenuAutomationBlock {
+    MENU_AUTO_BLOCK_OTHER_LANE = 1,
+    MENU_AUTO_BLOCK_LANE_LOCKED,
+    MENU_AUTO_BLOCK_MULTI,
+    MENU_AUTO_BLOCK_GLOBAL
+};
+void menu_showAutomationOverview(uint8_t lane, uint8_t selectedTarget, uint8_t otherTarget);
+void menu_showAutomationBlocked(uint8_t reason, uint8_t target, uint8_t lane,
+                                uint8_t ownerVoice, uint8_t ownerLane);
 
 void menu_setShownPattern(uint8_t patternNr);
 uint8_t menu_getViewedPattern();

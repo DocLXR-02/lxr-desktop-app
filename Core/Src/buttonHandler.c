@@ -53,6 +53,11 @@ volatile struct {
 
 } buttonHandler_stateMemory;
 
+void buttonHandler_syncRecordingState(uint8_t active)
+{
+    buttonHandler_stateMemory.seqRecording = active ? 1u : 0u;
+    led_setValue(buttonHandler_stateMemory.seqRecording, LED_REC);
+}
 static uint8_t buttonHandler_mutedVoices = 0;
 volatile static int8_t buttonHandler_armedAutomationStep = NO_STEP_SELECTED;
 
@@ -1170,7 +1175,7 @@ static void buttonHandler_seqButtonPressed(uint8_t seqButtonPressed)
 				if(saveResult != FR_OK) { menu_showSdError(saveResult); return; }
 				menu_selectedPresetNr[SAVE_TYPE_PATTERN] = seqButtonPressed + 16 * menu_activePatternBank;
 				menu_activePage = PATTERN_SAVE_PAGE_OK;
-				sucessTimer = systick_ticks;
+				sucessTimer = HAL_GetTick();
 				menu_repaint();
 
 			}

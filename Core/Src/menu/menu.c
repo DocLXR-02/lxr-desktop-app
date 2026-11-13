@@ -672,6 +672,15 @@ uint8_t menu_selectedPresetNr[NUM_PRESET_LOCATIONS];
 uint8_t menu_loadedPresetNr[NUM_CURRENT];
 
 uint32_t sucessTimer = 0;
+/* Transient LCD notices use the HAL millisecond clock, never TIM14 ticks. */
+static volatile uint8_t menu_autoNotice;
+static volatile uint8_t menu_autoTarget;
+static volatile uint8_t menu_autoLane;
+static volatile uint8_t menu_autoOtherTarget;
+static volatile uint8_t menu_autoOwnerVoice;
+static volatile uint8_t menu_autoOwnerLane;
+static volatile uint32_t menu_autoSince;
+static uint8_t menu_renderAutomationNotice(void);
 /* Notification only: no page/input/transport state is changed. Latest error wins. */
 /* Only the two synchronous manual RAM kit loads publish this notice. */
 static volatile uint8_t menu_kitLoadNotice;
@@ -1002,7 +1011,7 @@ void menu_tick()
 
 	if((menu_activePage == PATTERN_SAVE_PAGE_OK) || (menu_activePage == KIT_SAVE_PAGE_OK))
 	{
-		if(systick_ticks - sucessTimer > 4000)
+		if((uint32_t)(HAL_GetTick() - sucessTimer) >= DISPLAY_NOTICE_DURATION_MS)
 		{
 
 			buttonHandler_setMode(SELECT_MODE_VOICE);
@@ -1827,6 +1836,7 @@ void menu_repaint()
 {
     if(menu_renderKitLoad()) return;
     if(menu_renderSdError()) return;
+    if(menu_renderAutomationNotice()) return;
 	if(screensaver_Active) return;
 
 	visibleCursor = 0;
@@ -1941,6 +1951,109 @@ void menu_handleSaveScreenKnobValue(uint8_t potNr, uint8_t value)
 
 }
 //-----------------------------------------------------------------
+
+static void menu_autoShortName(uint8_t target, char out[4])
+{
+    if(target == 255u || target == PAR_NONE) {
+        memcpy(out, "OFF", 4);
+        return;
+    }
+    if(target == 254u) {
+        memcpy(out, "MUL", 4);
+        return;
+    }
+    switch(target) {
+    case PAR_VOICE_DECIMATION_ALL: memcpy(out, "0sr", 4); return;
+    case PAR_FX_TYPE: memcpy(out, "FTY", 4); return;
+    case PAR_FX_ROUTING: memcpy(out, "RTE", 4); return;
+    case PAR_FX_DRY_WET: memcpy(out, "D/W", 4); return;
+    case PAR_FX_DIST_TYPE: memcpy(out, "DTY", 4); return;
+    case PAR_FX_RATIO: memcpy(out, "RAT", 4); return;
+    case PAR_FX_WAVE: memcpy(out, "WAV", 4); return;
+    case PAR_FX_DELAY_TYPE: memcpy(out, "DLY", 4); return;
+    default: break;
+    }
+    if(target < END_OF_SOUND_PARAMETERS) {
+        const uint8_t idx = paramToModTarget[target];
+        if(idx < getNumModTargets() && pgm_read_word(&modTargets[idx].param) == target) {
+            const uint8_t name = pgm_read_byte(&modTargets[idx].nameIdx);
+            memcpy(out, shortNames[pgm_read_byte(&valueNames[name].shortName)], 3);
+            out[3] = 0;
+            upr_three(out);
+            while(out[0] && out[strlen(out) - 1] == ' ')
+                out[strlen(out) - 1] = 0;
+            return;
+        }
+    }
+    memcpy(out, "PAR", 4);
+}
+void menu_showAutomationOverview(uint8_t lane, uint8_t selectedTarget, uint8_t otherTarget)
+{
+    menu_autoTarget = selectedTarget;
+    menu_autoOtherTarget = otherTarget;
+    menu_autoLane = lane;
+    menu_autoSince = HAL_GetTick();
+    menu_autoNotice = 1u;
+    menu_repaintAll();
+}
+void menu_showAutomationBlocked(uint8_t reason, uint8_t target, uint8_t lane,
+                                uint8_t ownerVoice, uint8_t ownerLane)
+{
+    menu_autoTarget = target;
+    menu_autoLane = lane;
+    menu_autoOwnerVoice = ownerVoice;
+    menu_autoOwnerLane = ownerLane;
+    menu_autoSince = HAL_GetTick();
+    menu_autoNotice = (uint8_t)(reason + 1u);
+    menu_repaintAll();
+}
+static uint8_t menu_renderAutomationNotice(void)
+{
+    const uint8_t notice = menu_autoNotice;
+    if(!notice) return 0;
+    if((uint32_t)(HAL_GetTick() - menu_autoSince) >= DISPLAY_NOTICE_DURATION_MS) {
+        menu_autoNotice = 0;
+        menu_repaintAll();
+        return 0;
+    }
+    char line0[17] = {0}, line1[17] = {0}, target[4], other[4];
+    menu_autoShortName(menu_autoTarget, target);
+    if(notice == 1u) {
+        menu_autoShortName(menu_autoOtherTarget, other);
+        (void)snprintf(line0, sizeof(line0), "REC trk%u %s",
+                       (unsigned)(menu_autoLane + 1u), target);
+        (void)snprintf(line1, sizeof(line1), "    trk%u %s",
+                       (unsigned)(2u - menu_autoLane), other);
+    } else {
+        memcpy(line0, "PARAM BLOCKED!", 15);
+        switch(notice - 1u) {
+        case MENU_AUTO_BLOCK_OTHER_LANE:
+            (void)snprintf(line1, sizeof(line1), "%s on trk%u", target,
+                           (unsigned)(menu_autoOwnerLane + 1u));
+            break;
+        case MENU_AUTO_BLOCK_LANE_LOCKED:
+            (void)snprintf(line1, sizeof(line1), "trk%u: %s ONLY",
+                           (unsigned)(menu_autoLane + 1u), target);
+            break;
+        case MENU_AUTO_BLOCK_MULTI:
+            (void)snprintf(line1, sizeof(line1), "trk%u MULTI PARAM",
+                           (unsigned)(menu_autoLane + 1u));
+            break;
+        case MENU_AUTO_BLOCK_GLOBAL:
+            (void)snprintf(line1, sizeof(line1), "%s on V%u trk%u", target,
+                           (unsigned)(menu_autoOwnerVoice + 1u),
+                           (unsigned)(menu_autoOwnerLane + 1u));
+            break;
+        default: break;
+        }
+    }
+    memset(editDisplayBuffer, ' ', sizeof(editDisplayBuffer));
+    memcpy(editDisplayBuffer[0], line0, strlen(line0));
+    memcpy(editDisplayBuffer[1], line1, strlen(line1));
+    visibleCursor = 0;
+    display_needs_refresh = 1;
+    return 1;
+}
 static void menu_showKitLoad(uint8_t morph)
 {
     menu_kitLoadSince = HAL_GetTick();
@@ -1951,7 +2064,7 @@ static uint8_t menu_renderKitLoad(void)
 {
     uint8_t notice = menu_kitLoadNotice;
     if(!notice) return 0;
-    if((uint32_t)(HAL_GetTick()-menu_kitLoadSince) >= 750u) {
+    if((uint32_t)(HAL_GetTick()-menu_kitLoadSince) >= DISPLAY_NOTICE_DURATION_MS) {
         menu_kitLoadNotice = 0;
         return 0;
     }
@@ -1966,7 +2079,12 @@ static uint8_t menu_renderKitLoad(void)
 /* Rendered by the existing bounded display refresh, never by a wait loop. */
 static void menu_expireSdError(void)
 {
-    if(menu_kitLoadNotice && (uint32_t)(HAL_GetTick()-menu_kitLoadSince) >= 750u) {
+    if(menu_autoNotice &&
+       (uint32_t)(HAL_GetTick()-menu_autoSince) >= DISPLAY_NOTICE_DURATION_MS) {
+        menu_autoNotice = 0;
+        menu_repaintAll();
+    }
+    if(menu_kitLoadNotice && (uint32_t)(HAL_GetTick()-menu_kitLoadSince) >= DISPLAY_NOTICE_DURATION_MS) {
         menu_kitLoadNotice = 0;
         menu_repaintAll();
     }
@@ -2111,7 +2229,7 @@ void menu_handleLoadSaveMenu(int8_t inc, uint8_t btnClicked)
 							if(saveResult != FR_OK) { menu_showSdError(saveResult); return; }
 							menu_loadedPresetNr[CURRENT_KIT] = menu_selectedPresetNr[SAVE_TYPE_KIT];
 							menu_activePage = KIT_SAVE_PAGE_OK;
-							sucessTimer = systick_ticks;
+							sucessTimer = HAL_GetTick();
 							menu_repaint();
 
 							break;
@@ -2163,7 +2281,7 @@ void menu_handleLoadSaveMenu(int8_t inc, uint8_t btnClicked)
 
 						}
 						menu_activePage = PATTERN_SAVE_PAGE_OK;
-						sucessTimer = systick_ticks;
+						sucessTimer = HAL_GetTick();
 						menu_repaint();
 					}
 					else
