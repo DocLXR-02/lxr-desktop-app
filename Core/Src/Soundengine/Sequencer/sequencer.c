@@ -102,6 +102,7 @@ static uint8_t seq_autoPattern;
 static uint8_t seq_autoLane;
 static AutomationCapture seq_autoCapture;
 static __attribute__((noinline)) void seq_autoRecordStepTick(uint8_t step);
+static uint8_t seq_autoDisplayLaneTarget(uint8_t pattern, uint8_t track, uint8_t lane);
 
 /* Runtime-only playback quality; no change to project/kit/pattern storage. */
 static uint8_t seq_playbackLastPhase = 255u;
@@ -2392,10 +2393,22 @@ void seq_recordAutomation(uint8_t voice, uint8_t dest, uint8_t value)
 	   seq_autoCapture.active && seq_autoCapture.started &&
 	   seq_armedArmedAutomationStep == -1 && voice == seq_autoTrack &&
 	   seq_activePattern == seq_autoPattern) {
-		if(dest > 0 && dest != NO_AUTOMATION && dest < END_OF_SOUND_PARAMETERS &&
-		   (seq_autoCapture.changed ||
-		    seq_canAssignAutomationDestination(seq_autoPattern, seq_autoTrack, seq_autoLane, dest)))
-			autoCapture_event(&seq_autoCapture, dest, midiParser_originalCcValues[dest], value);
+        if(dest > 0 && dest != NO_AUTOMATION && dest < END_OF_SOUND_PARAMETERS) {
+            if(seq_autoCapture.target != NO_AUTOMATION &&
+               seq_autoCapture.target != dest) {
+                menu_showAutomationBlocked(MENU_AUTO_BLOCK_LANE_LOCKED,
+                                           seq_autoCapture.target, seq_autoLane,
+                                           seq_autoTrack, seq_autoLane);
+            } else if(seq_canAssignAutomationDestination(seq_autoPattern, seq_autoTrack,
+                                                          seq_autoLane, dest)) {
+                const uint8_t wasEmpty = (seq_autoCapture.target == NO_AUTOMATION);
+                if(autoCapture_event(&seq_autoCapture, dest,
+                                     midiParser_originalCcValues[dest], value) && wasEmpty)
+                    menu_showAutomationOverview(seq_autoLane, seq_autoCapture.target,
+                        seq_autoDisplayLaneTarget(seq_autoPattern, seq_autoTrack,
+                                                  (uint8_t)(1u - seq_autoLane)));
+            }
+        }
 	}
 	/* MIDI note recording never modifies automation lanes. */
 
@@ -2583,20 +2596,90 @@ uint8_t seq_isAutomationRecordMode(void)
 	return seq_autoMode;
 }
 
+/* The owner verified live recording of these twelve shared sound targets. */
+static uint8_t seq_isSharedAutomationTarget(uint8_t dest)
+{
+    switch(dest) {
+    case PAR_VOICE_DECIMATION_ALL:
+    case PAR_FX_TYPE:
+    case PAR_FX_ROUTING:
+    case PAR_FX_DRY_WET:
+    case PAR_FX_DIST_TYPE:
+    case PAR_FX_P1:
+    case PAR_FX_P2:
+    case PAR_FX_P3:
+    case PAR_FX_P4:
+    case PAR_FX_RATIO:
+    case PAR_FX_WAVE:
+    case PAR_FX_DELAY_TYPE:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+/* All checks are bounded to the current pattern and are read-only. */
+static uint8_t seq_findAutomationConflict(uint8_t pattern, uint8_t track, uint8_t lane,
+                                           uint8_t dest, uint8_t *ownerVoice,
+                                           uint8_t *ownerLane, uint8_t *lockedTarget)
+{
+    uint8_t alreadyInLane = 0;
+    for(uint8_t step = 0; step < NUM_STEPS; ++step) {
+        const Step *data = &seq_patternSet.seq_subStepPattern[pattern][track][step];
+        const uint8_t other = lane == 0 ? data->param2Nr : data->param1Nr;
+        const uint8_t mine = lane == 0 ? data->param1Nr : data->param2Nr;
+        if(other == dest) {
+            *ownerVoice = track;
+            *ownerLane = (uint8_t)(1u - lane);
+            return MENU_AUTO_BLOCK_OTHER_LANE;
+        }
+        if(mine == dest) alreadyInLane = 1;
+        if(mine != NO_AUTOMATION && mine != 0 && mine != dest) {
+            *lockedTarget = mine;
+            return MENU_AUTO_BLOCK_LANE_LOCKED;
+        }
+    }
+    /* Existing duplicate global assignments may still be edited in-place. */
+    if(!seq_isSharedAutomationTarget(dest) || alreadyInLane) return 0;
+    for(uint8_t voice = 0; voice < NUM_TRACKS; ++voice) {
+        if(voice == track) continue;
+        for(uint8_t step = 0; step < NUM_STEPS; ++step) {
+            const Step *data = &seq_patternSet.seq_subStepPattern[pattern][voice][step];
+            if(data->param1Nr == dest || data->param2Nr == dest) {
+                *ownerVoice = voice;
+                *ownerLane = (uint8_t)(data->param1Nr == dest ? 0u : 1u);
+                return MENU_AUTO_BLOCK_GLOBAL;
+            }
+        }
+    }
+    return 0;
+}
+
 uint8_t seq_canAssignAutomationDestination(uint8_t pattern, uint8_t track, uint8_t lane, uint8_t dest)
 {
-	if(dest == NO_AUTOMATION || dest == 0) return 1; /* OFF is not an assigned target. */
-	if(pattern >= NUM_PATTERN || track >= NUM_TRACKS || lane > 1) return 0;
-	for(uint8_t step=0; step<NUM_STEPS; step++) {
-		const Step *data = &seq_patternSet.seq_subStepPattern[pattern][track][step];
-		if((lane == 0 ? data->param2Nr : data->param1Nr) == dest)
-			return 0;
-		/* Exactly one destination per automation lane (including manual edits). */
-		const uint8_t mine = lane == 0 ? data->param1Nr : data->param2Nr;
-		if(mine != NO_AUTOMATION && mine != 0 && mine != dest)
-			return 0;
-	}
-	return 1;
+    if(dest == NO_AUTOMATION || dest == 0) return 1; /* OFF is not assigned. */
+    if(pattern >= NUM_PATTERN || track >= NUM_TRACKS || lane > 1) return 0;
+    uint8_t ownerVoice = 0, ownerLane = 0, lockedTarget = NO_AUTOMATION;
+    const uint8_t conflict = seq_findAutomationConflict(pattern, track, lane, dest,
+                                   &ownerVoice, &ownerLane, &lockedTarget);
+    if(conflict)
+        menu_showAutomationBlocked(conflict,
+                                   conflict == MENU_AUTO_BLOCK_LANE_LOCKED ? lockedTarget : dest,
+                                   lane, ownerVoice, ownerLane);
+    return conflict == 0;
+}
+
+static uint8_t seq_autoDisplayLaneTarget(uint8_t pattern, uint8_t track, uint8_t lane)
+{
+    uint8_t target = NO_AUTOMATION;
+    for(uint8_t step = 0; step < NUM_STEPS; ++step) {
+        const Step *data = &seq_patternSet.seq_subStepPattern[pattern][track][step];
+        const uint8_t current = lane == 0 ? data->param1Nr : data->param2Nr;
+        if(current == NO_AUTOMATION || current == 0) continue;
+        if(target != NO_AUTOMATION && current != target) return 254u; /* MUL */
+        target = current;
+    }
+    return target;
 }
 
 /* Existing manual multi-target lanes are protected from live replacement. */
@@ -2608,9 +2691,10 @@ static uint8_t seq_autoExistingTarget(uint8_t pattern, uint8_t track, uint8_t la
 		const uint8_t current = lane == 0 ? data->param1Nr : data->param2Nr;
 		if(current == NO_AUTOMATION || current == 0) continue;
 		if(target != NO_AUTOMATION && current != target) {
-			seq_autoBlocked = 1;
-			return NO_AUTOMATION;
-		}
+            seq_autoBlocked = 1;
+            menu_showAutomationBlocked(MENU_AUTO_BLOCK_MULTI, NO_AUTOMATION, lane, track, lane);
+            return NO_AUTOMATION;
+        }
 		target = current;
 	}
 	if(target != NO_AUTOMATION &&
@@ -2673,18 +2757,25 @@ void seq_setRecordingMode(uint8_t active)
 	seq_autoTrack = frontParser_activeTrack;
 	seq_autoPattern = seq_activePattern;
 	seq_autoLane = seq_activeAutomTrack;
-	if(seq_autoTrack >= NUM_TRACKS || seq_autoLane > 1) {
-		seq_autoBlocked = 1;
-		return;
-	}
+    if(seq_autoTrack >= NUM_TRACKS || seq_autoLane > 1) {
+        seq_autoBlocked = 1;
+        seq_autoSession = 0;
+        buttonHandler_syncRecordingState(0);
+        return;
+    }
 	uint8_t length = seq_patternSet.length[seq_autoPattern][seq_autoTrack];
 	if(length == 0) length = 16;
 	const uint8_t target = seq_autoExistingTarget(seq_autoPattern, seq_autoTrack, seq_autoLane);
-	if(seq_autoBlocked) {
-		autoCapture_stop(&seq_autoCapture);
-		return;
-	}
-	autoCapture_arm(&seq_autoCapture, length, target);
+    if(seq_autoBlocked) {
+        autoCapture_stop(&seq_autoCapture);
+        seq_autoSession = 0;
+        buttonHandler_syncRecordingState(0);
+        return;
+    }
+    autoCapture_arm(&seq_autoCapture, length, target);
+    menu_showAutomationOverview(seq_autoLane, target,
+        seq_autoDisplayLaneTarget(seq_autoPattern, seq_autoTrack,
+                                  (uint8_t)(1u - seq_autoLane)));
 }
 
 void seq_setErasingMode(uint8_t active)
