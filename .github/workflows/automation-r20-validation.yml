@@ -4,6 +4,7 @@ on:
     branches:
       - feature/r20-rec-ux-global-conflict-2026-11-13
       - fix/r20-rec-step-notices-2026-11-13
+      - fix/r20-target-names-2026-11-13
 permissions:
   contents: read
 jobs:

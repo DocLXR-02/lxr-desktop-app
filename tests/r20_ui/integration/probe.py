@@ -86,6 +86,11 @@ front_dispatch = """static void frontParser_handleMidiMessage(void) {
     }
 }"""
 manual_menu = "static void manual_menu(uint16_t paramNr, uint8_t value) { switch(paramNr) {\n" + interval(menu, "\tcase PAR_P1_DEST:", "/*\n\tcase PAR_QUANTISATION:") + "\n} }"
+# Use the panel's original parameter bytes and let CortexParser translate them.
+knob_send = """static void knob(uint16_t paramNr, uint8_t dtypeValue) {
+    activeParameters[PAR_REC_MODE] = 1;
+""" + interval(menu, "\t\tif(paramNr<128) // => Sound Parameter below 128",
+               "\t\telse\n\t\t\tmenu_parseGlobalParam(paramNr,dtypeValue);") + "\n}"
 rec_button = "static void press_rec(void) { switch(BUT_REC) {\n" + interval(buttons, "\tcase BUT_REC:", "\tcase BUT_COPY:") + "\n} }"
 button_vars = block(buttons, r"^volatile struct\s*\{") + " buttonHandler_stateMemory;"
 menu_vars = interval(menu, "static volatile uint32_t menu_saveSince;", "uint8_t menu_shownPattern = 0;")
@@ -105,7 +110,7 @@ code = "\n\n".join([
     *selected(cc, "getNumModTargets paramToModTargetInit"),
     save_renderer, *menu_functions, *selected(buttons, "buttonHandler_syncRecordingState"),
     *seq_functions, baseline_guard, *selected(cortex, "frontParser_sendAutomationDestination"), front_dispatch, *selected(cortex, "frontParser_parseUartData"),
-    *selected(source("Core/Src/frontPanelParser.c"), "frontPanel_sendData"), rec_button, manual_menu,
+    *selected(source("Core/Src/frontPanelParser.c"), "frontPanel_sendData"), rec_button, manual_menu, knob_send,
     (here / "cases.c").read_text(),
 ])
 generated = out / "probe.c"

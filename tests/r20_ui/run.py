@@ -44,7 +44,7 @@ for line in ("PARAM BLOCKED!", "trk1: COA ONLY", "trk1 MULTI PARAM",
 
 shared = re.search(r"static\s+uint8_t\s+seq_isSharedAutomationTarget\b.*?^\}", sequencer, re.S | re.M)
 assert shared is not None
-assert len(re.findall(r"^\s*case PAR_", shared.group(), re.M)) == 12
+assert len(re.findall(r"^\s*case [A-Z0-9_]+:", shared.group(), re.M)) == 12
 
 preamble = r"""
 #include <stdint.h>
@@ -60,7 +60,7 @@ preamble = r"""
 #define MENU_AUTO_BLOCK_GLOBAL 4u
 enum {
     PAR_COARSE1 = 20, PAR_FINE1 = 21, PAR_COARSE2 = 22,
-    PAR_VOICE_DECIMATION_ALL = 200,
+    VOICE_DECIMATION_ALL = 115,
     PAR_FX_TYPE, PAR_FX_ROUTING, PAR_FX_DRY_WET, PAR_FX_DIST_TYPE,
     PAR_FX_P1, PAR_FX_P2, PAR_FX_P3, PAR_FX_P4, PAR_FX_RATIO,
     PAR_FX_WAVE, PAR_FX_DELAY_TYPE
@@ -98,7 +98,7 @@ static int check(uint8_t dest, uint8_t want, uint8_t expectedVoice,
 int main(void)
 {
     const uint8_t global_targets[] = {
-        PAR_VOICE_DECIMATION_ALL, PAR_FX_TYPE, PAR_FX_ROUTING,
+        VOICE_DECIMATION_ALL, PAR_FX_TYPE, PAR_FX_ROUTING,
         PAR_FX_DRY_WET, PAR_FX_DIST_TYPE, PAR_FX_P1, PAR_FX_P2,
         PAR_FX_P3, PAR_FX_P4, PAR_FX_RATIO, PAR_FX_WAVE, PAR_FX_DELAY_TYPE
     };

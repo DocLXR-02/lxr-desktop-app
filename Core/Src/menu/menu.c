@@ -1964,6 +1964,8 @@ static void menu_autoShortName(uint8_t target, char out[4])
         memcpy(out, "MUL", 4);
         return;
     }
+    /* Stored low destinations use MIDI CC numbers. Menu tables use panel IDs. */
+    if(target < 128u) --target;
     switch(target) {
     case PAR_VOICE_DECIMATION_ALL: memcpy(out, "0sr", 4); return;
     case PAR_FX_TYPE: memcpy(out, "FTY", 4); return;

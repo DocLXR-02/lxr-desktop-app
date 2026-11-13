@@ -48,12 +48,6 @@ static void reset_fixture(void)
     time_to(100);
 }
 
-static void knob(uint8_t id, uint8_t value)
-{
-    if (id >= 128) frontPanel_sendData(FRONT_CC_LIVE_HIGH, id - 128, value);
-    else frontPanel_sendData(FRONT_CC_LIVE_LOW, id - 1, value);
-}
-
 static void arm(void)
 {
     frontPanel_sendData(SEQ_CC, FRONT_SEQ_SET_REC_MODE, 1);
@@ -69,7 +63,7 @@ static void finish_loop(void)
 static void test_recording(void)
 {
     reset_fixture();
-    CELL(0,0,63).param2Nr = PAR_COARSE1;
+    CELL(0,0,63).param2Nr = F_OSC1_COARSE;
     arm();
     assert(rec_led && seq_autoSession);
     time_to(100);
@@ -82,8 +76,8 @@ static void test_recording(void)
     time_to(100);
     expect_row(0, "PARAM BLOCKED!");
     expect_row(1, "COA on trk2");
-    assert(rec_led && seq_autoSession && midiParser_originalCcValues[PAR_COARSE1] == 13);
-    assert(CELL(0,0,63).param2Nr == PAR_COARSE1 && CELL(0,0,0).param1Nr == NO_AUTOMATION);
+    assert(rec_led && seq_autoSession && midiParser_originalCcValues[F_OSC1_COARSE] == 13);
+    assert(CELL(0,0,63).param2Nr == F_OSC1_COARSE && CELL(0,0,0).param1Nr == NO_AUTOMATION);
     time_to(950);
     knob(PAR_COARSE1, 14);
     time_to(2449);
@@ -98,7 +92,7 @@ static void test_recording(void)
     time_to(2451);
     expect_row(1, "trk1: FIN ONLY");
     finish_loop();
-    for (int s = 0; s < 4; ++s) assert(CELL(0,0,s).param1Nr == PAR_FINE1 && CELL(0,0,s).param1Val == 60);
+    for (int s = 0; s < 4; ++s) assert(CELL(0,0,s).param1Nr == F_OSC1_FINE && CELL(0,0,s).param1Val == 60);
     knob(PAR_COARSE1, 16);
     time_to(2452);
     expect_row(1, "trk1: FIN ONLY");
@@ -119,8 +113,8 @@ static void test_recording(void)
 
     reset_fixture();
     seq_activeAutomTrack = 1;
-    CELL(0,0,0).param1Nr = PAR_COARSE1;
-    CELL(0,0,0).param2Nr = PAR_FILTER_FREQ_1;
+    CELL(0,0,0).param1Nr = F_OSC1_COARSE;
+    CELL(0,0,0).param2Nr = FILTER_FREQ_DRUM1;
     arm();
     time_to(100);
     expect_row(0, "REC trk2 FRQ");
@@ -133,13 +127,13 @@ static void test_recording(void)
     expect_row(1, "trk2: FRQ ONLY");
 
     reset_fixture();
-    CELL(0,0,0).param1Nr = PAR_COARSE1;
-    CELL(0,0,63).param1Nr = PAR_FINE1;
+    CELL(0,0,0).param1Nr = F_OSC1_COARSE;
+    CELL(0,0,63).param1Nr = F_OSC1_FINE;
     arm();
     time_to(100);
     expect_row(1, "trk1 MULTI PARAM");
     assert(!rec_led && !buttonHandler_stateMemory.seqRecording && !seq_autoSession);
-    assert(CELL(0,0,0).param1Nr == PAR_COARSE1 && CELL(0,0,63).param1Nr == PAR_FINE1);
+    assert(CELL(0,0,0).param1Nr == F_OSC1_COARSE && CELL(0,0,63).param1Nr == F_OSC1_FINE);
     seq_activeAutomTrack = 1;
     press_rec();
     assert(rec_led && seq_autoSession);
@@ -151,9 +145,103 @@ static void test_recording(void)
     puts("PASS REC: both layouts, OFF/MUL, first assignment, local lock, retry, LED, commits, silence, transport STOP, clear");
 }
 
+static void test_target_names(void)
+{
+    static const struct {
+        uint8_t parameter, destination;
+        const char *name;
+    } targets[] = {
+        {PAR_COARSE1, F_OSC1_COARSE, "COA"},
+        {PAR_FINE1, F_OSC1_FINE, "FIN"},
+        {PAR_FILTER_FREQ_1, FILTER_FREQ_DRUM1, "FRQ"},
+        {PAR_VELOA1, VELOA1, "ATK"},
+        {PAR_VELOD1, VELOD1, "DEC"},
+        {PAR_VOICE_DECIMATION_ALL, VOICE_DECIMATION_ALL, "0sr"},
+        {PAR_FREQ_LFO1, FREQ_LFO1, "FRQ"},
+        {PAR_FILTER_DRIVE_1, PAR_FILTER_DRIVE_1, "DRV"},
+        {PAR_FX_P4, PAR_FX_P4, "P4"},
+    };
+    for (uint8_t lane = 0; lane < 2; ++lane) {
+        for (unsigned i = 0; i < sizeof(targets) / sizeof(targets[0]); ++i) {
+            for (unsigned manual = 0; manual < 2; ++manual) {
+                reset_fixture();
+                seq_activeAutomTrack = lane;
+                if (manual) {
+                    manual_menu(lane ? PAR_P2_DEST : PAR_P1_DEST,
+                                paramToModTarget[targets[i].parameter]);
+                } else {
+                    arm();
+                    seq_autoRecordStepTick(0);
+                    knob(targets[i].parameter, 45);
+                    finish_loop();
+                    press_rec();
+                }
+                const Step *stored = &CELL(0,0,0);
+                assert((lane ? stored->param2Nr : stored->param1Nr) == targets[i].destination);
+                arm();
+                time_to(100);
+                char line[17];
+                snprintf(line, sizeof(line), "REC trk%c %s", '1' + lane, targets[i].name);
+                expect_row(0, line);
+                seq_autoRecordStepTick(0);
+                knob(PAR_FX_P1, 53);
+                time_to(100);
+                expect_row(0, "PARAM BLOCKED!");
+                snprintf(line, sizeof(line), "trk%c: %s ONLY", '1' + lane, targets[i].name);
+                expect_row(1, line);
+                assert((lane ? stored->param2Nr : stored->param1Nr) == targets[i].destination);
+            }
+        }
+    }
+    puts("PASS target names: both tracks show actual stored destinations from panel REC and STEP");
+}
+
+static void test_decimation_step_conflict(void)
+{
+    reset_fixture();
+    CELL(0,4,0).param1Nr = VOICE_DECIMATION_ALL;
+    manual_menu(PAR_P2_DEST, paramToModTarget[PAR_VOICE_DECIMATION_ALL]);
+    time_to(100);
+    expect_row(0, "PARAM BLOCKED!");
+    expect_row(1, "0sr on V5 trk1");
+    assert(CELL(0,0,0).param2Nr == NO_AUTOMATION);
+
+    reset_fixture();
+    CELL(0,4,0).param1Nr = FREQ_LFO1;
+    manual_menu(PAR_P2_DEST, paramToModTarget[PAR_FREQ_LFO1]);
+    assert(CELL(0,0,0).param2Nr == FREQ_LFO1);
+    reset_fixture();
+    CELL(0,4,0).param1Nr = VOICE_DECIMATION_ALL;
+    CELL(0,0,0).param2Nr = VOICE_DECIMATION_ALL;
+    arm();
+    seq_autoRecordStepTick(0);
+    knob(PAR_VOICE_DECIMATION_ALL, 57);
+    time_to(100);
+    expect_row(1, "0sr on trk2");
+    assert(CELL(0,0,0).param1Nr == NO_AUTOMATION);
+
+    reset_fixture();
+    frontParser_activeTrack = 4;
+    arm();
+    seq_autoRecordStepTick(0);
+    knob(PAR_VOICE_DECIMATION_ALL, 43);
+    finish_loop();
+    press_rec();
+    assert(CELL(0,4,0).param1Nr == VOICE_DECIMATION_ALL);
+    frontParser_activeTrack = 0;
+    arm();
+    seq_autoRecordStepTick(0);
+    knob(PAR_VOICE_DECIMATION_ALL, 53);
+    time_to(100);
+    expect_row(1, "0sr on V5 trk1");
+    finish_loop();
+    assert(CELL(0,0,0).param1Nr == NO_AUTOMATION);
+    puts("PASS 0sr STEP, sibling-track and cross-voice REC conflicts, and adjacent voice-local LFO control");
+}
+
 static void test_global(void)
 {
-    static const struct { uint8_t id; const char *name; } targets[] = {
+    static const struct { uint8_t parameter; const char *name; } targets[] = {
         {PAR_VOICE_DECIMATION_ALL,"0sr"}, {PAR_FX_TYPE,"FTY"}, {PAR_FX_ROUTING,"RTE"},
         {PAR_FX_DRY_WET,"D/W"}, {PAR_FX_DIST_TYPE,"DTY"}, {PAR_FX_P1,"P1"},
         {PAR_FX_P2,"P2"}, {PAR_FX_P3,"P3"}, {PAR_FX_P4,"P4"},
@@ -162,7 +250,8 @@ static void test_global(void)
     for (unsigned i = 0; i < sizeof(targets) / sizeof(targets[0]); ++i) {
         for (int inverse = 0; inverse < 2; ++inverse) {
             reset_fixture();
-            uint8_t id = targets[i].id;
+            const uint8_t parameter = targets[i].parameter;
+            const uint8_t id = parameter == PAR_VOICE_DECIMATION_ALL ? VOICE_DECIMATION_ALL : parameter;
             int owner = inverse ? 0 : 6;
             int voice = inverse ? 6 : 0;
             frontParser_activeTrack = voice;
@@ -171,7 +260,7 @@ static void test_global(void)
             else CELL(0,owner,63).param1Nr = id;
             arm();
             seq_autoRecordStepTick(0);
-            knob(id, 37);
+            knob(parameter, 37);
             time_to(100);
             char line[17];
             snprintf(line, sizeof(line), "%s on V%c trk%c", targets[i].name,
@@ -182,7 +271,7 @@ static void test_global(void)
             assert(CELL(0,voice,0).param1Nr == NO_AUTOMATION && CELL(0,voice,0).param2Nr == NO_AUTOMATION);
             seq_clearAutomation(owner, 0, inverse ? 1 : 0);
             CELL(1,owner,0).param1Nr = id;
-            knob(id, 38);
+            knob(parameter, 38);
             finish_loop();
             assert((inverse ? CELL(0,voice,0).param1Nr : CELL(0,voice,0).param2Nr) == id);
             assert(CELL(1,owner,0).param1Nr == id);
@@ -206,12 +295,12 @@ static void test_global(void)
     assert(!seq_autoCapture.changed);
 
     reset_fixture();
-    CELL(0,4,2).param1Nr = PAR_COARSE1;
+    CELL(0,4,2).param1Nr = F_OSC1_COARSE;
     arm();
     seq_autoRecordStepTick(0);
     knob(PAR_COARSE1, 30);
     finish_loop();
-    assert(CELL(0,0,0).param1Nr == PAR_COARSE1 && CELL(0,4,2).param1Nr == PAR_COARSE1);
+    assert(CELL(0,0,0).param1Nr == F_OSC1_COARSE && CELL(0,4,2).param1Nr == F_OSC1_COARSE);
     puts("PASS shared: all 12 IDs across both lanes and boundary voices, conflicts, free controls, existing duplicates and pattern isolation");
 }
 
@@ -288,11 +377,11 @@ static void test_manual(void)
     seq_armedArmedAutomationTrack = 0;
     seq_activeAutomTrack = 1;
     knob(PAR_FINE1, 50);
-    assert(CELL(0,0,2).param2Nr == PAR_FINE1 && CELL(0,0,2).param2Val == 50);
+    assert(CELL(0,0,2).param2Nr == F_OSC1_FINE && CELL(0,0,2).param2Val == 50);
     knob(PAR_COARSE1, 90);
     time_to(100);
     expect_row(1, "trk2: FIN ONLY");
-    assert(CELL(0,0,2).param2Nr == PAR_FINE1 && CELL(0,0,2).param2Val == 50);
+    assert(CELL(0,0,2).param2Nr == F_OSC1_FINE && CELL(0,0,2).param2Val == 50);
     puts("BASELINE FIX8 guard rejects a different target on an occupied lane and accepts P4 on a free lane despite a cross-voice owner");
     puts("PASS manual controls: accepted writes, rejected destination preserves stored bytes at rejection, clear/OFF, shared conflict, hold-STEP block");
 }
@@ -427,8 +516,10 @@ int main(void)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
     paramToModTargetInit();
+    test_target_names();
     test_recording();
     test_global();
+    test_decimation_step_conflict();
     test_context();
     test_manual();
     test_timing();

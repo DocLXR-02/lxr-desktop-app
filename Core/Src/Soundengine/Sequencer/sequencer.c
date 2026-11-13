@@ -2587,7 +2587,7 @@ uint8_t seq_isAutomationRecordMode(void)
 static uint8_t seq_isSharedAutomationTarget(uint8_t dest)
 {
     switch(dest) {
-    case PAR_VOICE_DECIMATION_ALL:
+    case VOICE_DECIMATION_ALL: /* Stored low destination uses the MIDI CC number. */
     case PAR_FX_TYPE:
     case PAR_FX_ROUTING:
     case PAR_FX_DRY_WET:
