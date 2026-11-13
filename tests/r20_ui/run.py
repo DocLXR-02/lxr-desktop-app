@@ -13,11 +13,11 @@ button = (root / "Core/Src/buttonHandler.c").read_text()
 main = (root / "Core/Src/main.c").read_text()
 
 def extract(name):
-    match = re.search(r"static\s+uint8_t\s+" + re.escape(name) + r"\s*\(", sequencer)
+    match = re.search(r"static\s+uint8_t\s+" + re.escape(name) + r"\s*\([^;{}]*\)\s*\{", sequencer)
     if not match:
         raise AssertionError(f"Missing function {name}")
     start = match.start()
-    open_brace = sequencer.index("{", match.end())
+    open_brace = sequencer.index("{", match.start())
     depth = 0
     for pos in range(open_brace, len(sequencer)):
         if sequencer[pos] == "{":
