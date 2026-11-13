@@ -1174,9 +1174,7 @@ static void buttonHandler_seqButtonPressed(uint8_t seqButtonPressed)
 
 				if(saveResult != FR_OK) { menu_showSdError(saveResult); return; }
 				menu_selectedPresetNr[SAVE_TYPE_PATTERN] = seqButtonPressed + 16 * menu_activePatternBank;
-				menu_activePage = PATTERN_SAVE_PAGE_OK;
-				sucessTimer = HAL_GetTick();
-				menu_repaint();
+				menu_showSaveSuccess(PATTERN_SAVE_PAGE_OK);
 
 			}
 			else

@@ -270,6 +270,8 @@ void seq_setRecordingMode(uint8_t active);
 void seq_setAutomationRecordMode(uint8_t enabled);
 uint8_t seq_isAutomationRecordMode(void);
 uint8_t seq_canAssignAutomationDestination(uint8_t pattern, uint8_t track, uint8_t lane, uint8_t dest);
+uint8_t seq_assignAutomationStep(uint8_t pattern, uint8_t track, uint8_t lane,
+                                 uint8_t step, uint8_t dest, const uint8_t *value);
 //------------------------------------------------------------------------------
 void seq_setErasingMode(uint8_t active);
 //------------------------------------------------------------------------------

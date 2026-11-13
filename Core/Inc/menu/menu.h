@@ -64,7 +64,7 @@ enum
 };
 
 extern uint8_t menu_loadedPresetNr[NUM_CURRENT];
-extern uint32_t sucessTimer;
+void menu_showSaveSuccess(uint8_t page);
 #define DISPLAY_NOTICE_DURATION_MS 1500u
 enum MenuAutomationBlock {
     MENU_AUTO_BLOCK_OTHER_LANE = 1,

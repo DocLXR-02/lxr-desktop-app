@@ -36,6 +36,15 @@ static void frontParser_handleMidiMessage();
 static void frontParser_handleSysexData(unsigned char data);
 static void frontParser_handleSeqCC();
 
+static void frontParser_sendAutomationDestination(uint8_t status, uint8_t dest)
+{
+    /* The panel and sound engine use different IDs below 128. */
+    if(dest < 128 && dest) dest--;
+    uart_sendFrontpanelByte(status);
+    uart_sendFrontpanelByte(dest >> 7);
+    uart_sendFrontpanelByte(dest & 0x7f);
+}
+
 //a counter for the received bytes
 //each message is made up from 3 bytes (status 0xb0, parameter nr and parameter value)
  uint8_t frontParser_rxCnt=0;
@@ -505,56 +514,24 @@ static void frontParser_handleMidiMessage()
 	}
 		break; // case FRONT_CC_LFO_TARGET
 
-	case FRONT_SET_P1_DEST: { // cortex_midiMsg.status
-		// **AUTOM add 1 to the value as our cortex parameters are off by 1 for the lower 127 params
-			uint8_t hi = cortex_midiMsg.data1;
-			uint8_t lo = cortex_midiMsg.data2;
-			uint8_t val = (hi<<7)|lo;
-			if(val && val < 128 )
-				val++;
-			if(!seq_canAssignAutomationDestination(frontParser_shownPattern, frontParser_activeTrack, 0, val))
-				break;
+    case FRONT_SET_P1_DEST:
+    case FRONT_SET_P2_DEST: {
+        const uint8_t status = cortex_midiMsg.status;
+        const uint8_t lane = status == FRONT_SET_P1_DEST ? 0u : 1u;
+        const uint8_t pattern = frontParser_shownPattern;
+        const uint8_t track = frontParser_activeTrack;
+        const uint8_t step = seq_selectedStep;
+        if(pattern >= NUM_PATTERN || track >= NUM_TRACKS || step >= NUM_STEPS)
+            break;
 
-#if USE_PATTERN_EDIT_BUFFER
-			patternBackupBuffer.seq_subStepPattern[frontParser_activeTrack][seq_selectedStep].param1Nr = val;
-
-#else
-
-			seq_patternSet.seq_subStepPattern[frontParser_shownPattern]
-			                                 [frontParser_activeTrack]
-			                                 [seq_selectedStep].param1Nr = val;
-#endif
-		}
-		break;
-	case FRONT_SET_P2_DEST: { // cortex_midiMsg.status
-		// **AUTOM same here
-			uint8_t hi = cortex_midiMsg.data1;
-			uint8_t lo = cortex_midiMsg.data2;
-			uint8_t val = (hi<<7)|lo;
-			if(val && val < 128 )
-				val++;
-			if(!seq_canAssignAutomationDestination(frontParser_shownPattern, frontParser_activeTrack, 1, val))
-				break;
-
-#if USE_PATTERN_EDIT_BUFFER
-			if( (currentPattern == seq_activePattern) )
-			{
-				patternBackupBuffer.seq_subStepPattern[frontParser_activeTrack][seq_selectedStep].param2Nr = val;
-			}
-			else
-			{
-				seq_patterns.seq_subStepPattern[frontParser_shownPattern]
-				                                 [frontParser_activeTrack]
-				                                 [seq_selectedStep].param2Nr = val;
-			}
-
-#else
-			seq_patternSet.seq_subStepPattern[frontParser_shownPattern]
-			                                 [frontParser_activeTrack]
-			                                 [seq_selectedStep].param2Nr = val;
-#endif
-		}
-		break;
+        uint8_t dest = (cortex_midiMsg.data1 << 7) | cortex_midiMsg.data2;
+        if(dest && dest < 128) dest++;
+        if(!seq_assignAutomationStep(pattern, track, lane, step, dest, NULL)) {
+            const Step *stored = &seq_patternSet.seq_subStepPattern[pattern][track][step];
+            frontParser_sendAutomationDestination(status, lane == 0 ? stored->param1Nr : stored->param2Nr);
+        }
+        break;
+    }
 	case FRONT_SET_P1_VAL: { // cortex_midiMsg.status
 			uint8_t stepNr = cortex_midiMsg.data1;
 			uint8_t value = cortex_midiMsg.data2;
@@ -977,13 +954,7 @@ static void frontParser_handleSeqCC()
 		uint8_t dest = seq_patternSet.seq_subStepPattern[frontParser_shownPattern]
 														[frontParser_activeTrack]
 														[data2].param1Nr;
-		if(dest < 128 && dest)
-			dest--;
-		hi = dest>>7;
-		lo = dest&0x7f;
-		uart_sendFrontpanelByte(FRONT_SET_P1_DEST);
-		uart_sendFrontpanelByte(hi);
-		uart_sendFrontpanelByte(lo);
+		frontParser_sendAutomationDestination(FRONT_SET_P1_DEST, dest);
 
 		uint8_t val = seq_patternSet.seq_subStepPattern[frontParser_shownPattern]
 													   [frontParser_activeTrack]
@@ -997,13 +968,7 @@ static void frontParser_handleSeqCC()
 		dest = seq_patternSet.seq_subStepPattern[frontParser_shownPattern]
 												[frontParser_activeTrack]
 												[data2].param2Nr;
-		if(dest < 128 && dest)
-			dest--;
-		hi = dest>>7;
-		lo = dest&0x7f;
-		uart_sendFrontpanelByte(FRONT_SET_P2_DEST);
-		uart_sendFrontpanelByte(hi);
-		uart_sendFrontpanelByte(lo);
+		frontParser_sendAutomationDestination(FRONT_SET_P2_DEST, dest);
 
 		val = seq_patternSet.seq_subStepPattern[frontParser_shownPattern]
 											   [frontParser_activeTrack]

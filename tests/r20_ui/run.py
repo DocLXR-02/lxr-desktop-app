@@ -29,10 +29,9 @@ def extract(name):
     raise AssertionError(f"Unclosed function {name}")
 
 assert "#define DISPLAY_NOTICE_DURATION_MS 1500u" in menu_h
-assert "HAL_GetTick() - sucessTimer" in menu
-assert "sucessTimer = HAL_GetTick();" in menu
-assert "sucessTimer = HAL_GetTick();" in button
-assert "systick_ticks - sucessTimer" not in menu
+assert "HAL_GetTick() - menu_saveSince" in menu
+assert "menu_saveSince = HAL_GetTick();" in menu
+assert "menu_showSaveSuccess(PATTERN_SAVE_PAGE_OK);" in button
 assert ">= 750u" not in menu
 assert 'lcd_string("LXR LAB R20");' in main
 assert "menu_renderAutomationNotice()) return;" in menu
@@ -67,6 +66,8 @@ enum {
     PAR_FX_WAVE, PAR_FX_DELAY_TYPE
 };
 typedef struct { uint8_t param1Nr, param2Nr; } Step;
+static uint8_t seq_autoSession, seq_autoPattern, seq_autoTrack, seq_autoLane;
+static struct { uint8_t changed, target; } seq_autoCapture;
 static struct { Step seq_subStepPattern[NUM_PATTERN][NUM_TRACKS][NUM_STEPS]; } seq_patternSet;
 """
 tests = r"""
