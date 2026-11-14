@@ -4,7 +4,7 @@ These rules apply to Codex tasks in `DocLXR-02/lxr-desktop-app`. Treat this repo
 
 ## Project safety
 
-- Never modify, commit to, force-push, or merge into `main`. For authorized changes use `lab-setup` or a dedicated branch based on `lab-setup`; keep the exact base commit in the report.
+- Protect `main` from direct commits, merges and force-pushes. Perform authorized firmware, test and CI code changes and associated checks, tests and builds in a separate Codex task. Use the assigned release number and dedicated numbered branch from the exact firmware base named in the task. See [the canonical workflow](docs/WORKFLOW.md).
 - Do not flash firmware or direct hardware tests without Daniel's explicit approval, a validated backup, and a recovery plan. A successful build does not prove correct audio behavior.
 - Diagnose before changing code. Do not broaden a bug fix into unrelated DSP, UI, timing, or preset modifications. Distinguish hardware observations, code evidence, hypotheses, and tests.
 - Respect explicit task restrictions. In particular, a task that expressly forbids *all* file changes, commits, or pushes is not authorization to make a report commit.
@@ -28,7 +28,7 @@ Verify the remote branch and exact file URL after pushing (not merely a local fi
 
 ## Current project context
 
-- Read docs/PROJECT_STATUS.md on branch docs/lab-project-state and its evidence index before continuing; that branch is documentation, not R11 firmware source. Use the source SHA explicitly pinned in the task.
+- Read the project status, workflow and evidence index on `docs/lab-project-state`. Use the exact firmware SHA and assigned release number pinned in the task. Rules on this documentation branch are also referenced in new source tasks.
 - Keep owner listening, source evidence, native tests, CI/build and unmeasured target gates separate. Do not repeat completed work because an older KnowledgeBase or blocker report predates the final R11 report.
 - Deliverable builds require a matched resource ledger including ITCM/DTCM/SRAM/full flash, transient stack where relevant, per-instance state versus shared code, and measured timing or UNMEASURED.
 - Follow functional/musical acceptance with a scoped efficiency/robustness review. Sound changes for efficiency require an explicit comparison and owner approval; preserve the previous reference.

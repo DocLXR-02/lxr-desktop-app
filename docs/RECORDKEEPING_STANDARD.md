@@ -19,7 +19,7 @@ Maintain **both** a concise decision-oriented technical report **and** the prima
 
 Every completed or interrupted consequential task must distinguish **executed**, **inherited**, **proposed**, **failed**, **not run**, and **not measured**. The report contains:
 
-- Task objective and exclusions; requester authorization; source and documentation baselines; output locations; exact file/commit changes or explicit no-change statement.
+- Firmware release number and stable topic title; task objective and exclusions; requester authorization; source and documentation baselines; output locations; exact file/commit changes or explicit no-change statement.
 - Evidence reuse inventory and why new tests are necessary; technical findings and hypotheses clearly separated; alternative decisions and reasons for rejection.
 - Environment: compiler/interpreter, versions and relevant flags, test fixture, seed, actual hardware or host/emulator, input file/hash, limitations and substitutions.
 - Executed command or exact reproducible invocation, its parameters, exit code, meaningful stdout/stderr (or an accessible unabridged log), test counts and result; **retain failed attempts and corrective reruns**, not only eventual passes.

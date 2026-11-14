@@ -1,10 +1,25 @@
 # LXR Firmware Lab — current project state
 
-Snapshot: 2026-11-08 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-08-R19-FINAL-OWNER-APPROVAL**. This record supersedes the previous R19-candidate-pending-release and 2026-11-05 R18-only status snapshots; historical reports remain unchanged.
+Snapshot: 2026-11-14 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-14-R20**. The top R20 record and current workflow govern continuation. The dated entries below retain historical context.
 
 This is the current public entry point for continuing the lab. Read this file, [hardware observations](HARDWARE_VALIDATION.md), the [resource ledger](BUILD_RESOURCE_LEDGER.md), [evidence index](EVIDENCE_INDEX.md), [workflow](WORKFLOW.md) and [recordkeeping standard](RECORDKEEPING_STANDARD.md) before proposing another task. Reports are historical evidence at their pinned commits. A report branch is not a firmware source branch.
 
 This documentation branch descends from historical lab-setup `5829398cea5d337200393757e39a37d4d8148256`. **Never build the documentation branch to produce firmware.** For new R19 investigations use the pinned source SHA `638b6eaae5b1624637d20cbc11a4a3e0175edca2`; R18 remains the sonic comparison reference. R18 CLP **sound** is owner-accepted; this is not a source merge, public release, hardware timing certification, or measured stack reserve.
+
+## R20 automation — owner closed active work (2026-11-14)
+
+The owner confirmed that the corrected candidate displayed automation assignments correctly on the LXR-02. On 2026-11-14 the owner chose to proceed on the assumption that automation works and to revisit issues if new symptoms emerge. The detailed final hardware test matrix was not supplied. R20 is closed for active automation work. **R19 remains the approved stable distribution.** [Owner record](hardware/2026-11-14_r20-automation-owner-disposition.md)
+
+| R20 lineage | Exact source | Evidence |
+|---|---|---|
+| Acceptable FIX8 design and firmware base | [`e82fd4f3c239bfcb21400c3f94756f6fced02586`](https://github.com/DocLXR-02/lxr-desktop-app/commit/e82fd4f3c239bfcb21400c3f94756f6fced02586) | [FIX8 ARM build](codex-berichte/2026-11-10_live-automation-fixed8-final-build.md), [CI 42894478378](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/42894478378) |
+| Initial R20 REC UI and conflict protection | [`b56e70ced8337476f1e302b61edcc3d718eb4e2f`](https://github.com/DocLXR-02/lxr-desktop-app/commit/b56e70ced8337476f1e302b61edcc3d718eb4e2f) | [CI 43338109758](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/43338109758), [build report](https://github.com/DocLXR-02/lxr-desktop-app/blob/5838f8bd80b935e2fe34a356aeacd1256bcbaca7/docs/codex-berichte/2026-11-13_r20-rec-ui-global-conflicts-arm-build.md) |
+| R20 follow-up for pending target ownership, LCD timing and STEP state | [`f40eff9b8938f57cb7f1c719211a23b2da236dc1`](https://github.com/DocLXR-02/lxr-desktop-app/commit/f40eff9b8938f57cb7f1c719211a23b2da236dc1) | [CI 43399545352](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/43399545352), [build report](codex-berichte/2026-11-13_r20-rec-step-notices-corrective-build.md) |
+| R20 current test candidate with displayed target names and shared 0sr correction | [`b01537282047bda5299cdb1bedeab5e5d5b9bcca`](https://github.com/DocLXR-02/lxr-desktop-app/commit/b01537282047bda5299cdb1bedeab5e5d5b9bcca) | [CI 43404559276](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/43404559276), [build report](codex-berichte/2026-11-13_r20-automation-target-names-build.md) |
+
+The pinned R20 candidate is on `fix/r20-target-names-2026-11-13`. Test IMG `LXR_V2_R20_NAMES_TEST.img`: 293,504 B, SHA-256 `27ebacee348b8dd42d0a2cf35d1513676c712583c2891559483a8a47353e0056`. One-image ZIP `LXR_V2_R20_NAMES_TEST.zip`: 210,077 B, SHA-256 `13c81c9615d83774f34a69eb6d6e12d1682e04ba211692aa4a241b035970bd34`. Host coverage confirms cross-voice and STEP duplicate protection for `0sr`. The owner confirmed the displayed assignment names. Physical `0sr` conflict coverage, CPU/WCET, IRQ/DMA deadlines, stack high-water and long-term reliability remain unverified or unmeasured as applicable.
+
+The capture and A/B experiments are historical R20 lineage. The A/B source [`3ca1256ba62ee5cf4411a68cc0df6c6769ec98b9`](https://github.com/DocLXR-02/lxr-desktop-app/commit/3ca1256ba62ee5cf4411a68cc0df6c6769ec98b9) remains an archived comparison. The latest R20 candidate descends from the fixed-8-only source. Its predecessor refs remain pinned for reproducibility. For the next approved code change, assign **R21** with a stable topic title and an explicit firmware base SHA in a separate Codex task. [Workflow](WORKFLOW.md)
 
 ## Live automation recording — FIX8 design finalized and musically closed (2026-11-10)
 
@@ -24,9 +39,9 @@ An owner-authorized isolated BUG008 development branch `fix/bug008-continuous-au
 
 Following [successful final candidate ARM/host CI 42842043263](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/42842043263), the owner **explicitly authorized limited physical installation and testing** of the experimental candidate at source `2e3a60e251dffbceefc0ee4af258463f5d87126c`. The existing 290,232-byte CI image was independently verified and repackaged byte-for-byte as a one-image ZIP `LXR_V2_BUG008_TEST.zip`, SHA-256 `e03f9e0cb5a6ba011f17043422ec6d343856df761b16ba6e37733db81f0e747d`. See the [authorization and delivery record](hardware/2026-11-10_bug008_owner_device_test_authorization.md). **Owner installation and device observations are NOT YET REPORTED**; no new firmware build, flash by the assistant, merge, release, acceptance or bootloader edit occurred. The approved final distribution is still R19. Early stopped takes currently **discard** rather than tail-fill. Preserve R18/R19 references and do not infer any physical reliability measurements.
 
-## Experimental Automation Playback A/B — ARM/host PASS, owner listening PENDING (2026-11-10)
+## Historical pre-listening A/B snapshot — ARM/host PASS (2026-11-10)
 
-**Current non-released evaluation build** `3ca1256ba62ee5cf4411a68cc0df6c6769ec98b9` on `feature/automation-playback-ab-2026-11-10`, derived from the owner-tested multi-take capture source `2e3a60e251dffbceefc0ee4af258463f5d87126c`. Approved R19 and accepted R18 CLP sound references are unchanged. [Final successful CI 42877760459](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/42877760459), [independent English per-build report](codex-berichte/2026-11-10_automation-playback-ab-fixed-adaptive-arm-build.md).
+**Then-current test candidate** `3ca1256ba62ee5cf4411a68cc0df6c6769ec98b9` on `feature/automation-playback-ab-2026-11-10`, derived from the owner-tested multi-take capture source `2e3a60e251dffbceefc0ee4af258463f5d87126c`. Approved R19 and accepted R18 CLP sound references are unchanged. [Final successful CI 42877760459](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/42877760459), [independent English per-build report](codex-berichte/2026-11-10_automation-playback-ab-fixed-adaptive-arm-build.md).
 
 Playback now applies the two fixed parameter automation lanes per voice at every step independent of note triggers, with live A/B settings `res=1x/2x/4x/8x` and `alg=fix/aut` for fixed/adaptive linear interpolation; `mod=mid` records notes only, while `mod=par` retains the owner-tested continuous capture. Global-file writes again use the original R19 size, and the loader/project checker accepts original R19 and one-byte-expanded earlier experimental `glo.cfg` sizes. Previously overwritten global preferences are **not recovered** by the new build.
 
@@ -40,13 +55,13 @@ A transient two-line LCD message on the first post-flash boot (not photographed)
 
 The owner requests the menu label `mid` instead of `org`; `org` presently includes legacy live parameter capture, so a correct MIDI-only mode requires a behavioral guard, not just a string replacement. The owner also confirmed the original automation playback only updates at voice triggers, not between sparse notes; the new recorder stores all steps but does not solve this. A separate playback design (BUG008B) requires musical approval. Read the [full owner observation and source analysis](hardware/2026-11-10_bug008_first_owner_device_result_and_glo-config-regression.md). **No correction build, code edit, merge, release or new device test was performed by this review.**
 
-## Experimental automation architecture extension — A/B playback candidate, 2026-11-10 (CI/ARM PASS, hardware PENDING)
+## Historical A/B architecture and build snapshot — CI/ARM PASS (2026-11-10)
 
 The owner authorized a **new playback architecture** (not a defect fix in the original manufacturer's deliberately note-triggered playback). The experimental source `3ca1256ba62ee5cf4411a68cc0df6c6769ec98b9` on `feature/automation-playback-ab-2026-11-10` extends the earlier owner-tested multi-take recorder. Step-independent parameter playback now supports two fixed parameter targets per voice with selectable `res=1x/2x/4x/8x` and `alg=fix/aut` via `SHIFT+REC`. `mod=mid` distinguishes MIDI note recording from `mod=par` parameter capture. Global storage length is restored to the R19 format; compatibility read of the one-byte-expanded previous experimental `glo.cfg` is included but real SD migration is NOT TESTED.
 
 [Final CI 42877760459](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/42877760459): complete ARM Release and targeted capture, interpolation, project storage, delay, USB-MIDI, compressor and CLP regressions PASS. Static **A/B minus capture**: FLASH `.text` **+760 B**, ITCM **+32 B**, DTCM **0 B**, SRAM **+120 B**, total image **+864 B**. A/B image SHA-256 `45604028ba6b655422e33578a24b3d84baedd180f82914d3a9f38a8e5b5abcb9`; image-only test ZIP SHA-256 `20bf5a8cff317122d532113422241a6e268826a87fe8f73cfb0971d0479eedcb`. Separate [2026-11-10 per-build report](codex-berichte/2026-11-10_automation-playback-ab-arm-validation.md) retains exact provenance, failure boundaries and device-test protocol.
 
-**Current authorization and disposition:** validated **test candidate only**; no owner installation, hearing acceptance, main merge or public firmware release has been reported for this specific A/B candidate. R19 is still the approved stable distribution, and the R18 CLP sonic reference is closed/protected. CPU/WCET, IRQ/DMA deadline, stack high-water and sustained reliability are **UNMEASURED**. Preserve SD backup and the accepted R19 recovery image; unexpected sound, timing, global-file or MIDI regressions are STOP conditions.
+**Disposition at that checkpoint:** CI-validated test candidate. The later owner listening and FIX8 decision are recorded above. R19 is still the approved stable distribution, and the R18 CLP sonic reference is closed/protected. CPU/WCET, IRQ/DMA deadline, stack high-water and sustained reliability are **UNMEASURED**. Preserve SD backup and the accepted R19 recovery image; unexpected sound, timing, global-file or MIDI regressions are STOP conditions.
 
 ## Current final-owner-approved distribution — R19 (2026-11-08)
 
@@ -76,7 +91,7 @@ The [read-only investigation plan](https://github.com/DocLXR-02/lxr-desktop-app/
 
 ## Chat-first continuation and retention
 
-Normal CHAT is the default place for source-level investigation, GitHub evidence reading, design discussion and verification. Codex is reserved for justified, narrowly authorized build/test/implementation work after the [mandatory efficiency gate](WORKFLOW.md#chat-first-execution-and-mandatory-codex-efficiency-gate). Work is used only for autonomous app/browser/computer workflows with demonstrated incremental value. The private KnowledgeBase and project instructions contain the owner's plan/model/budget preferences; do not place them or the internal language rule into the public README.
+CHAT handles planning, read-only source and evidence review, and independent verification. A separate Codex task is mandatory for code changes and their implementation checks, tests and builds. Use the numbered-release workflow in [WORKFLOW.md](WORKFLOW.md).
 
 The [recordkeeping standard](RECORDKEEPING_STANDARD.md) requires a reasoned task report **and** durable reproducible critical evidence. Prior R11 audit Markdown reports and hashes are published, but their listed local-only analysis scripts and JSON/log outputs were **not** all archived to GitHub. This gap remains open and should not trigger an indiscriminate rerun. CI logs/artifacts expire; preserve decisive evidence, commands, inputs and hashes with provenance. The next Codex task must explicitly link this documentation branch because the existing R11 firmware source branch does not inherit new documentation-branch instructions.
 

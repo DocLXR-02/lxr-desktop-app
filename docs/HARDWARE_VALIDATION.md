@@ -1,6 +1,6 @@
 # LXR Firmware Lab — owner hardware observations
 
-Snapshot: 2026-11-08 (Europe/Vienna), with earlier observations retained historically. These are owner reports from the project conversation, **not assistant-performed measurements**. Historical per-test times were not retained; do not invent per-test timestamps. CLP R18 owner's positive listening acceptance was recorded on 2026-11-03. See [R18 chapter closure](CLP_R18_SONIC_ACCEPTANCE.md).
+Snapshot: 2026-11-14 (Europe/Vienna), with earlier observations retained historically. These are owner reports from the project conversation, **not assistant-performed measurements**. Historical per-test times were not retained; do not invent per-test timestamps. CLP R18 owner's positive listening acceptance was recorded on 2026-11-03. See [R18 chapter closure](CLP_R18_SONIC_ACCEPTANCE.md).
 
 | Stage | Owner observation | What remains unproven |
 |---|---|---|
@@ -43,3 +43,7 @@ These describe the original test behavior, not current R18 onset predictions. Se
 ## 2026-11-10 — Live automation owner hearing and FIX8 design closure
 
 On real LXR-02 hardware, the owner compared the former A/B test image at 120 BPM with a single note on Step 1 decaying to Step 16 and rapid bidirectional COA modulation. FIX8 was perceived as smooth; FIX4 retained slightly audible steps, and AUTO8 was similar to FIX4. The owner approved **FIX8 as the sole musical design** and declared Live Recording changes closed. Full [owner hearing record](hardware/2026-11-10_automation-ab-owner-hearing-and-fix8-decision.md). The derived fixed-only image SHA-256 `f8ce015318bcd806f21c0d6f41e468d15eaf78f09ac5b552992fe67e3606764e` passed ARM/host CI but **was not itself physically tested** in this record; CPU/WCET, IRQ/DMA, stack and long-duration stability remain UNMEASURED. R19 accepted distribution and R18 CLP sonic reference remain protected.
+
+## 2026-11-14 — R20 automation disposition
+
+The owner confirmed correct display of dynamically assigned automation parameters on the LXR-02 with the current R20 test candidate. The owner opted to close active work and revisit future symptoms if observed. Exact test candidate, evidence boundaries and remaining unmeasured items are in the [R20 owner record](hardware/2026-11-14_r20-automation-owner-disposition.md).

@@ -1,9 +1,17 @@
 # LXR Firmware Lab — Changelog
 
-**As of:** 2026-11-03 · **Owner-accepted FX-CLP sound reference: R18 (CLP v2.1).** R4, R11 and R14 remain historical reference versions. Scope: implemented lab changes and their real source/build/hardware evidence, not every reported or suspected bug. [R18 owner acceptance](CLP_R18_SONIC_ACCEPTANCE.md). See [current state](PROJECT_STATUS.md).
+**As of:** 2026-11-14 · **Owner-accepted FX-CLP sound reference: R18 (CLP v2.1).** R4, R11 and R14 remain historical reference versions. Scope: implemented lab changes and their real source/build/hardware evidence, not every reported or suspected bug. [R18 owner acceptance](CLP_R18_SONIC_ACCEPTANCE.md). See [current state](PROJECT_STATUS.md).
 
 > [!CAUTION]
 > **Experimental firmware — no general safety clearance.** The lab revisions have owner listening/short-term testing on **one** device; the historical R11 investigation used an agreed FILTER-OFF setup. R18 has now been **musically accepted on that device**, but target CPU deadline, stack high-water, long-term operation, compatibility across LXR-02 units, and risks to connected audio equipment/hearing have **not** been independently assessed. Malfunctions, lost data, and damage cannot be ruled out. Use at your own risk. Back up projects externally, retain official manufacturer firmware as a recovery option, and start audio testing at low volume. See [R4 hardware validation](R4_HARDWARE_VALIDATION.md).
+
+## Numbered firmware revisions
+
+| Firmware revision | Scope and documented status |
+|---|---|
+| **R19** | Approved stable distribution. Combined Delay mono-safe access, USB-MIDI buffer ownership and Compressor mono saturation fixes. [Release record](releases/2026-11-08_r19_final_owner_approved_distribution.md) |
+| **R20** | Live two-lane automation and FIX8 playback, REC/LCD feedback and conflict protection, STEP synchronization and target name correction. Current test candidate [`b01537282047bda5299cdb1bedeab5e5d5b9bcca`](https://github.com/DocLXR-02/lxr-desktop-app/commit/b01537282047bda5299cdb1bedeab5e5d5b9bcca). Owner confirmed the displayed assignments and closed active automation work. [Owner record](hardware/2026-11-14_r20-automation-owner-disposition.md) |
+| **R21** | Next sequential number for a newly authorized change. Assignment starts with the Codex task. [Workflow](WORKFLOW.md) |
 
 ## Verified R4 changes
 

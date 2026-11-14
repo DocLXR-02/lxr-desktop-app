@@ -1,6 +1,22 @@
 # LXR build evidence and effect cost ledger
 
-Date: 2026-11-03 (Europe/Vienna). Current synchronization: **LXR-SYNC-2026-11-03-CLP-R18**. This ledger preserves the historical R11 offline audit and adds the independently verified R14–R18 matched-release static resource figures. Publication is **documentation only**; it creates no firmware build or device measurement.
+Snapshot: 2026-11-14 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-14-R20**. The new R20 entry uses matched ARM Release MAP and section results. Earlier observations are retained.
+
+## R20 automation test lineage (2026-11-13)
+
+Arm GNU 14.3.Rel1 / GCC 14.3.1 Release. Runtime spans include alignment. General SRAM includes the 512 B linker-reserved heap.
+
+| Bytes | FIX8 base | Initial R20 | Corrective R20 | Current R20 candidate | Current minus initial |
+|---|---:|---:|---:|---:|---:|
+| Flash `.text` | 154,448 | 155,960 | 157,056 | 157,064 | +1,104 |
+| ITCM | 15,304 | 15,304 | 15,304 | 15,304 | 0 |
+| DTCM occupied span | 107,424 | 107,424 | 107,424 | 107,424 | 0 |
+| General SRAM occupied span | 274,860 | 274,876 | 274,884 | 274,884 | +8 |
+| Application flash load payload | 290,712 | 292,384 | 293,480 | 293,488 | +1,104 |
+| Updater IMG | 290,728 | 292,400 | 293,496 | 293,504 | +1,104 |
+
+Current nominal gaps: 1,080 B ITCM, 23,648 B DTCM before runtime stack, 118,332 B SRAM. CPU/WCET, IRQ/DMA deadlines, stack high-water and long-term reliability remain **UNMEASURED**. [Initial CI](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/43338109758), [corrective report](codex-berichte/2026-11-13_r20-rec-step-notices-corrective-build.md), [current report](codex-berichte/2026-11-13_r20-automation-target-names-build.md).
+
 
 ## Current R19 final distribution — matched static resources (2026-11-08)
 

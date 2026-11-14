@@ -1,14 +1,16 @@
 # LXR Firmware Lab — continuation and build evidence
 
-Snapshot: 2026-11-03. CLP **sound accepted at R18**; synchronization is documentation-only, not a new development or runtime-profiling authorization.
+Snapshot: 2026-11-14 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-14-R20**. R18 CLP sound remains the protected musical reference.
 
 ## Chat-first execution and mandatory Codex efficiency gate
 
-**Default to normal ChatGPT CHAT** for discussion, source and GitHub read-only analysis, architectural decisions, task planning and independent result reviews. Work is exceptional: recommend it only when autonomous multi-application, cloud-browser or computer interaction has concrete value beyond CHAT and targeted Codex. Use Codex for explicitly authorized implementation, toolchain-dependent builds, executable tests and tightly scoped engineering work. Neither a longer question nor higher reasoning effort alone justifies Work. Projects organize context; they are not an execution mode.
+- **CHAT** handles planning, read-only source and evidence analysis, acceptance criteria, and independent review of Codex results. Authorized documentation-only synchronization belongs in this workflow.
+- **A separate Codex Cloud task is mandatory** for every code change, including firmware, test code and build/CI scripts, and for its implementation checks, regressions, tests and builds. This also applies to small fixes. CHAT prepares an English task with the release number, stable topic title, exact source base, authorized scope, tests and expected artifacts. The owner authorizes and launches the task in Codex. If execution starts later, record its task reference and actual status.
+- **WORK** is outside the normal firmware workflow. Use it only for a separately agreed application or computer workflow with a concrete need. Allowance planning is based on CHAT and Codex use. Current account limits and usage are unverified.
 
 Before **every** Codex handoff, independently inspect the current private KnowledgeBase, this workflow, [PROJECT_STATUS.md](PROJECT_STATUS.md), [EVIDENCE_INDEX.md](EVIDENCE_INDEX.md), [CLP R18 accepted sound](CLP_R18_SONIC_ACCEPTANCE.md) where relevant, applicable AGENTS.md at the **actual source SHA**, and relevant immutable reports, diffs, source code, test fixtures and CI/artifact metadata. Reuse established results; do not rediscover them without a stated gap. Present an explicit efficiency gate to the owner:
 
-1. Why CHAT alone cannot finish the work, and whether Work has any incremental value.
+1. The numbered release, fixed topic title, and executable work assigned to Codex.
 2. Existing evidence to reuse, including open/failed/unmeasured boundaries.
 3. Exact source base SHA, narrowly scoped objective, allowed files/actions.
 4. Excluded work, safety boundaries, acceptance tests and objective stop criteria.
@@ -18,6 +20,12 @@ Before **every** Codex handoff, independently inspect the current private Knowle
 Large tasks at low remaining budget require owner reapproval. Do not silently trade away memory safety, audio regression checks or essential real-device validation for agent savings. Never start a next task automatically after a report. The owner controls code edits, hardware flashing, releases and sound-altering optimization. Preserve main, R4 and R11 reference source and artifacts.
 
 After completion, verify the pushed report, actual commit/diff, CI and build/test evidence, retained raw reproductions and unchanged protected refs. A streaming interruption is not evidence that execution rolled back: inspect remote output before restarting. Keep each delivered firmware image tied to a distinct build report. New chats resume from the current private KnowledgeBase, pinned source and GitHub docs, not from reconstructing an entire chat transcript. Model-specific product limits and currently selected thinking effort are not reliably observable from source control or by this assistant.
+
+## Numbered releases and branch history
+
+- Assign the next unused sequential firmware release number `R<N>` to a new authorized change before implementation. Use that number as the common identifier in the topic, Codex task, branch, commit/CI records, report and artifacts. Keep one stable topic title such as `R21 - <short scope>`. Change the title only when scope genuinely changes and record the reason under the same release number.
+- Prefer one dedicated development branch `release/r<N>` per release from an explicitly pinned source SHA. Keep successive corrections for that release traceable on its branch. Give distinct test images a numbered candidate suffix such as `LXR_V2_R21_TEST01.img` and a matching one-image ZIP. Record each exact commit, CI run and hash. A post-closure change gets a new release number. Release numbering identifies scope and lineage. Final distribution still requires a separate owner decision.
+- Use an experimental branch only when an approved comparison or isolation need is written in its task. Include the parent release number and a short experiment identifier, record the fork SHA and disposition, and return the chosen result to the numbered release record. Preserve existing refs and rejected alternatives as history. Source merges, renames of historical refs, and branch deletion require separate authorization.
 
 ## Evidence retention and reproducibility
 
@@ -50,7 +58,8 @@ Use two passes: functional/musical acceptance first; efficiency/robustness revie
 Read docs/PROJECT_STATUS.md, docs/EVIDENCE_INDEX.md, docs/WORKFLOW.md and docs/RECORDKEEPING_STANDARD.md on docs/lab-project-state and their pinned evidence.
 Read applicable AGENTS.md at the actual source base.
 Choose and verify a source base for the particular next issue. Accepted CLP sound reference: 41b364067bce0d8cde624c184933d9cb88e2725b (R18); protected historical R11: 64263ed25f2e9c7f5d880b493d943bfba29271a8. Do NOT assume all branches can be blindly merged or that the documentation branch contains firmware.
-Only if CHAT is insufficient: explain the execution need and identify reused evidence.
+Release: R<N>. Topic: <stable title>. Branch: release/r<N>. Base SHA: <exact firmware commit>.
+Use the approved Codex task for implementation and its executable checks. Identify reused evidence.
 Objective: <one bounded goal>.
 Allowed changes: <explicit scope>; exclusions: <explicit boundaries>.
 Reuse previous evidence before new tests/builds. Retain failures and substitutions.
@@ -58,6 +67,6 @@ No main/R4 changes, force-push, merge, release, flash or bootloader operation.
 Report actual results, unmeasured gates, resource deltas and next decision.
 ```
 
-This preamble is a template, not an issued task. R18 is **musically closed** by the owner; absent hardware instrumentation, CPU/stack/deadline metrics remain UNMEASURED. Do not silently turn the missing measurements into an unapproved sound change. Start the next unrelated issue and changelog phase in a **new chat** and select source ancestry intentionally. Future source branches do not automatically inherit instructions from this documentation branch; include the current-state reference in explicit task context.
+This preamble is a template, not an issued task. R18 is **musically closed** by the owner; absent hardware instrumentation, CPU/stack/deadline metrics remain UNMEASURED. Do not silently turn the missing measurements into an unapproved sound change. Assign the next new firmware topic its sequential release number and select its source ancestry intentionally. Future source branches do not automatically inherit instructions from this documentation branch; include the current-state reference in explicit task context.
 
 Firmware delivery: LXR_V2_R<N>.zip contains only LXR_V2_R<N>.img; evidence is separate. Startup line1: LXR LAB R<N>; line2 blank. Do not issue a new image merely to synchronize documents.
