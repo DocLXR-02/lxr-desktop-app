@@ -319,8 +319,16 @@ static void morph_alias(void)
  chord();choose_two();confirm();assert(menu_voiceCopyNotice==1&&mainParameters[1][PAR_COARSE5]==123);
  puts("PASS zero-amount pending sweep rejected until actual completion, then transfer succeeds");
 }
+#ifdef LXR_EXTRA_TEST_SOURCE
+#define main r21_regression_main
+#endif
 int main(int argc,char **argv){(void)argv;paramToModTargetInit();if(argc>1){morph_alias();return 0;}storage_roundtrip();all_engines();lfo_cases();rejection_cases();button_edges();legacy_and_load();morph_alias();
  reset_r21();armed_step=1;buttonHandler_resetLock1=1;buttonHandler_originalParameter[0]=PAR_COARSE5;
  buttonHandler_originalValue[0]=32;activeParameters[PAR_COARSE5]=111;
  chord();choose_two();confirm();assert(mainParameters[1][PAR_COARSE5]==32&&activeParameters[PAR_COARSE5]==111);
  puts("PASS held STEP snapshot excludes temporary parameter locks without changing active buffer or recording automation");return 0;}
+
+#ifdef LXR_EXTRA_TEST_SOURCE
+#undef main
+#include LXR_EXTRA_TEST_SOURCE
+#endif

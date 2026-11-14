@@ -1,4 +1,4 @@
-/* R21 saved parameter transfer. Included by presetManager.c; no engine or SD calls. */
+/* R22 cross-kit saved parameter transfer. Included by presetManager.c; no engine or SD calls. */
 static const uint8_t preset_voiceBaseIds[6][27] = {
     { PAR_COARSE1, PAR_FINE1, PAR_VELOA1, PAR_VELOD1, PAR_VOL_SLOPE1, PAR_FILTER_FREQ_1, PAR_RESO_1, PAR_FILTER_TYPE_1, PAR_FILTER_DRIVE_1, PAR_TRANS1_VOL, PAR_TRANS1_WAVE, PAR_TRANS1_FREQ, PAR_VOL1, PAR_PAN1, PAR_VOICE_DECIMATION1, PAR_PWM_1, PAR_OSC_WAVE_DRUM1, PAR_MOD_WAVE_DRUM1, PAR_MOD_EG1, PAR_MODAMNT1, PAR_PITCH_SLOPE1, PAR_FMAMNT1, PAR_FM_FREQ1, PAR_MIX_MOD_1, PAR_DRIVE1, PAR_NONE },
     { PAR_COARSE2, PAR_FINE2, PAR_VELOA2, PAR_VELOD2, PAR_VOL_SLOPE2, PAR_FILTER_FREQ_2, PAR_RESO_2, PAR_FILTER_TYPE_2, PAR_FILTER_DRIVE_2, PAR_TRANS2_VOL, PAR_TRANS2_WAVE, PAR_TRANS2_FREQ, PAR_VOL2, PAR_PAN2, PAR_VOICE_DECIMATION2, PAR_PWM_2, PAR_OSC_WAVE_DRUM2, PAR_MOD_WAVE_DRUM2, PAR_MOD_EG2, PAR_MODAMNT2, PAR_PITCH_SLOPE2, PAR_FMAMNT2, PAR_FM_FREQ2, PAR_MIX_MOD_2, PAR_DRIVE2, PAR_NONE },
@@ -11,6 +11,62 @@ static const uint8_t preset_voiceLfoGroups[] = {
     PAR_FREQ_LFO1, PAR_AMOUNT_LFO1, PAR_WAVE_LFO1, PAR_VOICE_LFO1,
     PAR_TARGET_LFO1, PAR_RETRIGGER_LFO1, PAR_SYNC_LFO1, PAR_OFFSET_LFO1
 };
+/* R22 Drum semantic fields. Rows name equivalent saved IDs explicitly;
+ * no parameter-range or numeric-offset remapping is used. The final rows
+ * map eligible LFO destinations only; they do not add copied base fields. */
+static const uint8_t preset_drumFields[][3] = {
+    { PAR_COARSE1, PAR_COARSE2, PAR_COARSE3 },
+    { PAR_FINE1, PAR_FINE2, PAR_FINE3 },
+    { PAR_VELOA1, PAR_VELOA2, PAR_VELOA3 },
+    { PAR_VELOD1, PAR_VELOD2, PAR_VELOD3 },
+    { PAR_VOL_SLOPE1, PAR_VOL_SLOPE2, PAR_VOL_SLOPE3 },
+    { PAR_FILTER_FREQ_1, PAR_FILTER_FREQ_2, PAR_FILTER_FREQ_3 },
+    { PAR_RESO_1, PAR_RESO_2, PAR_RESO_3 },
+    { PAR_FILTER_TYPE_1, PAR_FILTER_TYPE_2, PAR_FILTER_TYPE_3 },
+    { PAR_FILTER_DRIVE_1, PAR_FILTER_DRIVE_2, PAR_FILTER_DRIVE_3 },
+    { PAR_TRANS1_VOL, PAR_TRANS2_VOL, PAR_TRANS3_VOL },
+    { PAR_TRANS1_WAVE, PAR_TRANS2_WAVE, PAR_TRANS3_WAVE },
+    { PAR_TRANS1_FREQ, PAR_TRANS2_FREQ, PAR_TRANS3_FREQ },
+    { PAR_VOL1, PAR_VOL2, PAR_VOL3 },
+    { PAR_PAN1, PAR_PAN2, PAR_PAN3 },
+    { PAR_VOICE_DECIMATION1, PAR_VOICE_DECIMATION2, PAR_VOICE_DECIMATION3 },
+    { PAR_PWM_1, PAR_PWM_2, PAR_PWM_3 },
+    { PAR_OSC_WAVE_DRUM1, PAR_OSC_WAVE_DRUM2, PAR_OSC_WAVE_DRUM3 },
+    { PAR_MOD_WAVE_DRUM1, PAR_MOD_WAVE_DRUM2, PAR_MOD_WAVE_DRUM3 },
+    { PAR_MOD_EG1, PAR_MOD_EG2, PAR_MOD_EG3 },
+    { PAR_MODAMNT1, PAR_MODAMNT2, PAR_MODAMNT3 },
+    { PAR_PITCH_SLOPE1, PAR_PITCH_SLOPE2, PAR_PITCH_SLOPE3 },
+    { PAR_FMAMNT1, PAR_FMAMNT2, PAR_FMAMNT3 },
+    { PAR_FM_FREQ1, PAR_FM_FREQ2, PAR_FM_FREQ3 },
+    { PAR_MIX_MOD_1, PAR_MIX_MOD_2, PAR_MIX_MOD_3 },
+    { PAR_DRIVE1, PAR_DRIVE2, PAR_DRIVE3 },
+    { PAR_FREQ_LFO1, PAR_FREQ_LFO2, PAR_FREQ_LFO3 },
+    { PAR_AMOUNT_LFO1, PAR_AMOUNT_LFO2, PAR_AMOUNT_LFO3 },
+    { PAR_WAVE_LFO1, PAR_WAVE_LFO2, PAR_WAVE_LFO3 },
+    { PAR_VOICE_LFO1, PAR_VOICE_LFO2, PAR_VOICE_LFO3 },
+    { PAR_TARGET_LFO1, PAR_TARGET_LFO2, PAR_TARGET_LFO3 },
+    { PAR_RETRIGGER_LFO1, PAR_RETRIGGER_LFO2, PAR_RETRIGGER_LFO3 },
+    { PAR_SYNC_LFO1, PAR_SYNC_LFO2, PAR_SYNC_LFO3 },
+    { PAR_OFFSET_LFO1, PAR_OFFSET_LFO2, PAR_OFFSET_LFO3 },
+    { PAR_VEL_DEST_1, PAR_VEL_DEST_2, PAR_VEL_DEST_3 },
+    { PAR_VELO_MOD_AMT_1, PAR_VELO_MOD_AMT_2, PAR_VELO_MOD_AMT_3 },
+    { PAR_VOLUME_MOD_ON_OFF1, PAR_VOLUME_MOD_ON_OFF2, PAR_VOLUME_MOD_ON_OFF3 },
+};
+static uint16_t preset_mapDrumParameter(uint8_t source, uint8_t target, uint16_t id)
+{
+    if(source == target) return id;
+    if(source >= 3 || target >= 3) return PAR_NONE;
+    for(unsigned i = 0; i < sizeof(preset_drumFields) / sizeof(preset_drumFields[0]); ++i)
+        if(preset_drumFields[i][source] == id) return preset_drumFields[i][target];
+    return PAR_NONE;
+}
+static uint8_t preset_encodeVoiceDestination(uint8_t voice, uint16_t id)
+{
+    for(unsigned i = 0; i < getNumModTargets(); ++i)
+        if(pgm_read_word(&modTargets[i].param) == id && voiceFromModTargValue(i) == voice + 1)
+            return (uint8_t)i;
+    return 0; /* OFF cannot represent an eligible mapped destination. */
+}
 static uint8_t preset_voiceOwnsParameter(uint8_t voice, uint16_t id)
 {
     if(voice >= 6 || id == PAR_NONE) return 0;
@@ -53,10 +109,11 @@ static uint8_t preset_voiceMorphConflict(uint8_t target)
     return morphParameters == mainParameters[target] &&
            (activeParameters[PAR_MORPH] != 0 || morph_state != 0);
 }
-uint8_t preset_transferVoice(const PresetVoiceCopy *copy, uint8_t target)
+uint8_t preset_transferVoiceTo(const PresetVoiceCopy *copy, uint8_t target, uint8_t targetVoice)
 {
     uint8_t staged[END_OF_SOUND_PARAMETERS];
-    if(!preset_voiceCopyContextValid(copy) || target >= NUM_KIT_SLOTS || target == copy->kit)
+    if(!preset_voiceCopyContextValid(copy) || target >= NUM_KIT_SLOTS || target == copy->kit ||
+       targetVoice >= 6 || (copy->voice != targetVoice && (copy->voice >= 3 || targetVoice >= 3)))
         return 0;
     if(preset_voiceMorphConflict(target)) return PRESET_VOICE_MORPH_ACTIVE;
     memcpy(staged, mainParameters[target], sizeof(staged));
@@ -64,20 +121,27 @@ uint8_t preset_transferVoice(const PresetVoiceCopy *copy, uint8_t target)
     for(unsigned i = 0; preset_voiceBaseIds[voice][i] != PAR_NONE; ++i) {
         uint8_t id = preset_voiceBaseIds[voice][i];
         if(copy->values[id] > 127) return 0;
-        staged[id] = copy->values[id];
+        uint16_t mapped = preset_mapDrumParameter(voice, targetVoice, id);
+        if(mapped == PAR_NONE || mapped >= END_OF_SOUND_PARAMETERS) return PRESET_VOICE_REJECTED;
+        staged[mapped] = copy->values[id];
     }
     uint16_t dest = preset_voiceLfoDestination(copy->values, voice);
     if(copy->values[PAR_AMOUNT_LFO1 + voice] != 0 &&
        copy->values[PAR_VOICE_LFO1 + voice] == voice + 1 &&
        preset_voiceOwnsParameter(voice, dest)) {
+        uint16_t mappedDest = preset_mapDrumParameter(voice, targetVoice, dest);
+        uint8_t mappedIndex = preset_encodeVoiceDestination(targetVoice, mappedDest);
+        if(mappedDest == PAR_NONE || mappedIndex == 0) return PRESET_VOICE_REJECTED;
         for(unsigned i = 0; i < sizeof(preset_voiceLfoGroups); ++i) {
             uint8_t id = preset_voiceLfoGroups[i] + voice;
             /* Target-list indices legitimately exceed 127. */
             if(preset_voiceLfoGroups[i] != PAR_TARGET_LFO1 && copy->values[id] > 127) return 0;
-            staged[id] = copy->values[id];
+            staged[preset_voiceLfoGroups[i] + targetVoice] = copy->values[id];
         }
+        staged[PAR_VOICE_LFO1 + targetVoice] = targetVoice + 1;
+        staged[PAR_TARGET_LFO1 + targetVoice] = mappedIndex;
         for(uint8_t i = 0; i < 6; ++i)
-            if(i != voice && preset_voiceLfoDestination(staged, i) == dest)
+            if(i != targetVoice && preset_voiceLfoDestination(staged, i) == mappedDest)
                 staged[PAR_TARGET_LFO1 + i] = 0; /* Existing OFF encoding. */
     }
     /* The sequencer/clock can change context in an interrupt. Guard only the
@@ -94,4 +158,10 @@ uint8_t preset_transferVoice(const PresetVoiceCopy *copy, uint8_t target)
     }
     __set_PRIMASK(mask);
     return result;
+}
+
+/* R21 callers retain same-instrument behavior. Every same-kit transfer rejects. */
+uint8_t preset_transferVoice(const PresetVoiceCopy *copy, uint8_t target)
+{
+    return preset_transferVoiceTo(copy, target, copy ? copy->voice : 0);
 }

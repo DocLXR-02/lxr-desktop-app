@@ -1,7 +1,8 @@
-/* R21 direct transfer selector. Its snapshot exists only during one session. */
+/* R22 cross-kit direct transfer selector. Its snapshot exists only during one session. */
 static PresetVoiceCopy menu_voiceCopy;
 static uint8_t menu_voiceCopyActive, menu_voiceCopyTarget, menu_voiceCopyCopyHeld;
 static uint8_t menu_voiceCopyDrain, menu_voiceCopyNotice;
+static uint8_t menu_voiceCopyTargetVoice, menu_voiceCopyVoiceHeld;
 static uint32_t menu_voiceCopyReleased, menu_voiceCopySince;
 
 static void menu_finishVoiceCopy(uint8_t notice)
@@ -18,6 +19,20 @@ static void menu_finishVoiceCopy(uint8_t notice)
  * panel presses cancel and are consumed. START/STOP still operates normally. */
 uint8_t menu_voiceTransferButton(uint8_t button, uint8_t pressed)
 {
+    if(button >= BUT_VOICE_1 && button <= BUT_VOICE_3) {
+        uint8_t bit = (uint8_t)(1u << (button - BUT_VOICE_1));
+        if(!pressed && (menu_voiceCopyVoiceHeld & bit)) {
+            menu_voiceCopyVoiceHeld &= (uint8_t)~bit;
+            return 1;
+        }
+        if(pressed && (menu_voiceCopyVoiceHeld & bit)) return 1;
+        if(pressed && menu_voiceCopyActive && menu_voiceCopy.voice < 3) {
+            menu_voiceCopyVoiceHeld |= bit;
+            menu_voiceCopyTargetVoice = button - BUT_VOICE_1;
+            menu_repaintAll();
+            return 1;
+        }
+    }
     if(button == BUT_COPY && !pressed && menu_voiceCopyCopyHeld) {
         menu_voiceCopyCopyHeld = 0;
         return 1;
@@ -48,7 +63,7 @@ static uint8_t menu_voiceTransferEncoder(int8_t inc, uint8_t button)
             }
             if(click && (uint32_t)(now - menu_voiceCopyReleased) >= 40u) {
                 uint8_t result = buttonHandler_getShift() || buttonHandler_getCopy() ?
-                    PRESET_VOICE_REJECTED : preset_transferVoice(&menu_voiceCopy, menu_voiceCopyTarget);
+                    PRESET_VOICE_REJECTED : preset_transferVoiceTo(&menu_voiceCopy, menu_voiceCopyTarget, menu_voiceCopyTargetVoice);
                 menu_finishVoiceCopy(result == PRESET_VOICE_OK ? 1 :
                     result == PRESET_VOICE_MORPH_ACTIVE ? 4 : 2);
             }
@@ -71,6 +86,7 @@ static uint8_t menu_voiceTransferEncoder(int8_t inc, uint8_t button)
         copyClear_reset();
         if(preset_captureVoice(&menu_voiceCopy, menu_getActiveVoice())) {
             menu_voiceCopyTarget = menu_voiceCopy.kit;
+            menu_voiceCopyTargetVoice = menu_voiceCopy.voice;
             menu_voiceCopyActive = 1;
             menu_voiceCopyNotice = 0;
             menu_repaintAll();
@@ -94,8 +110,12 @@ static uint8_t menu_renderVoiceTransfer(void)
     memset(editDisplayBuffer[0], ' ', 16);
     memset(editDisplayBuffer[1], ' ', 16);
     if(menu_voiceCopyActive) {
-        snprintf(line, sizeof(line), "V%u > KIT %02u?", (unsigned)menu_voiceCopy.voice + 1u,
-                 (unsigned)menu_voiceCopyTarget + 1u);
+        if(menu_voiceCopy.voice < 3)
+            snprintf(line, sizeof(line), "D%u > K%02u D%u?", (unsigned)menu_voiceCopy.voice + 1u,
+                     (unsigned)menu_voiceCopyTarget + 1u, (unsigned)menu_voiceCopyTargetVoice + 1u);
+        else
+            snprintf(line, sizeof(line), "V%u > KIT %02u?", (unsigned)menu_voiceCopy.voice + 1u,
+                     (unsigned)menu_voiceCopyTarget + 1u);
         memcpy(editDisplayBuffer[0], line, strlen(line));
         memcpy(editDisplayBuffer[1], "DATA yes COPY no", 16);
     } else {

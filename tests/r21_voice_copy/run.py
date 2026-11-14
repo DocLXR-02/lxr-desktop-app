@@ -47,6 +47,8 @@ with tempfile.TemporaryDirectory(prefix='lxr-r21-') as tmp:
     cmd += ['-I'+str(R/p) for p in f.includes] + ['-I'+str(tmp), '-I'+str(H)]
     cmd += [str(H/'host.c'), str(R/'Core/Src/menu/Cc2Text.c'),
             str(R/'Core/Src/Preset/initKit.c'), str(R/'Core/Src/Parameters.c'), '-o', str(tmp/'host')]
+    if globals().get('EXTRA_TEST_SOURCE'):
+        cmd.insert(1, '-DLXR_EXTRA_TEST_SOURCE="' + EXTRA_TEST_SOURCE + '"')
     env = os.environ.copy(); env['ASAN_OPTIONS'] = 'detect_leaks=0'
     subprocess.run(cmd,cwd=R,env=env,check=True)
     subprocess.run([str(tmp/'host'),*sys.argv[1:]],cwd=R,env=env,check=True,timeout=90)

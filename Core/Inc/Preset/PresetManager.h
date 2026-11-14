@@ -135,6 +135,7 @@ typedef struct {
 uint8_t preset_captureVoice(PresetVoiceCopy *copy, uint8_t track);
 uint8_t preset_voiceCopyContextValid(const PresetVoiceCopy *copy);
 enum { PRESET_VOICE_REJECTED, PRESET_VOICE_OK, PRESET_VOICE_MORPH_ACTIVE };
+uint8_t preset_transferVoiceTo(const PresetVoiceCopy *copy, uint8_t target, uint8_t targetVoice);
 uint8_t preset_transferVoice(const PresetVoiceCopy *copy, uint8_t target);
 
 #endif /* PRESETMANAGER_H_ */
