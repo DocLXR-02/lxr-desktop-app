@@ -714,6 +714,8 @@ uint8_t menu_activePatternBank = 0;
 static uint8_t editModeActive = 0;			/**< when edit mode is active, only the currently active parameter is shown with full name*/
 static uint8_t lastEncoderButton = 0;		/**< stores the state of the encoder button so the edit mode is only switched once when the button is pressed*/
 
+#include "voiceTransfer.inc"
+
 /** array holding all the available parameter values*/
 uint8_t mainParameters[NUM_KIT_SLOTS][END_OF_SOUND_PARAMETERS];
 //uint8_t abs_pot_Parameter_position[NUM_PARAMS];
@@ -1835,6 +1837,7 @@ void menu_repaintGeneric()
 // repaint the screen
 void menu_repaint()
 {
+    if(menu_renderVoiceTransfer()) return;
     if(menu_renderKitLoad()) return;
     if(menu_renderSdError()) return;
     if(menu_activePage != PATTERN_SAVE_PAGE_OK && menu_activePage != KIT_SAVE_PAGE_OK &&
@@ -2103,6 +2106,7 @@ static uint8_t menu_renderKitLoad(void)
 /* Rendered by the existing bounded display refresh, never by a wait loop. */
 static void menu_expireSdError(void)
 {
+    menu_expireVoiceTransfer();
     if(menu_autoNotice &&
        (uint32_t)(HAL_GetTick()-menu_autoSince) >= DISPLAY_NOTICE_DURATION_MS) {
         menu_autoNotice = 0;
@@ -2913,6 +2917,7 @@ static void getMenuItemNameForValue(const uint8_t menuId, const uint8_t curParmV
 // button - 1 if the button is depressed, 0 if its not
 void menu_parseEncoder(int8_t inc, uint8_t button)
 {
+    if(menu_voiceTransferEncoder(inc, button)) return;
 	uint8_t btnClicked=0;
 	// handle the button being clicked or released
 	if(button != lastEncoderButton) { // was the button clicked?

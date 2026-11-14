@@ -108,6 +108,7 @@ code = "\n\n".join([
     *menu_enums, enum(menu_h, "MenuAutomationBlock"), *type_defs, *tables, menu_vars,
     button_vars, (here / "state.h").read_text(),
     *selected(cc, "getNumModTargets paramToModTargetInit"),
+    "static uint8_t menu_renderVoiceTransfer(void) { return 0; }\nstatic void menu_expireVoiceTransfer(void) {}",
     save_renderer, *menu_functions, *selected(buttons, "buttonHandler_syncRecordingState"),
     *seq_functions, baseline_guard, *selected(cortex, "frontParser_sendAutomationDestination"), front_dispatch, *selected(cortex, "frontParser_parseUartData"),
     *selected(source("Core/Src/frontPanelParser.c"), "frontPanel_sendData"), rec_button, manual_menu, knob_send,

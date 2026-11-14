@@ -41,6 +41,9 @@ static void *interleaved_copy(void *to,const void *from,size_t count)
  return result;
 }
 #define memcpy interleaved_copy
+/* This fixture exercises notifications outside an R21 selector session. */
+static uint8_t menu_renderVoiceTransfer(void){return 0;}
+static void menu_expireVoiceTransfer(void){}
 #include "functions.inc"
 #undef memcpy
 static void reset(void)

@@ -21,6 +21,7 @@
 #include "menu/menu.h"
 //#include <util/delay.h>
 #include "lcd.h"
+#include "buttonHandler.h"
 //#include <avr/pgmspace.h>
 #include <stdlib.h>
 //#include <util/atomic.h>
@@ -39,6 +40,10 @@
 
 //FATFS SDFatFS;		/* File system object for the logical drive */
 //FIL SDFile;		/* place to hold 1 file*/
+/* R21 context revision: invalidates a selector even after A/B/A loads. */
+static volatile uint32_t preset_kitRevision;
+#include "voiceTransfer.inc"
+
 static uint8_t morph_state = 0; //flag for non blocking morph
 static uint8_t morph_index = 0;
 char savefileNames[NUM_KIT_SLOTS][NUM_SAVEFILE_NAMES][8];
@@ -367,14 +372,14 @@ void preset_touchTimer(PresetTimer type)
 
 FRESULT preset_saveTmpKit()
 {
-    if(menu_selectedPresetNr[SAVE_TYPE_KIT] >= NUM_KIT_SLOTS) return FR_INVALID_PARAMETER;
+    if(menu_loadedPresetNr[CURRENT_KIT] >= NUM_KIT_SLOTS) return FR_INVALID_PARAMETER;
     FRESULT res;
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
     HAL_TIM_Base_Start_IT(&htim2);
 #endif
     res = preset_openShared((FIL*)&SDFile, "/tmp/tmp.snd", FA_CREATE_ALWAYS | FA_WRITE);
     if(res == FR_OK) {
-        res = preset_writeChecked(&menu_selectedPresetNr[SAVE_TYPE_KIT], 1);
+        res = preset_writeChecked(&menu_loadedPresetNr[CURRENT_KIT], 1);
         if(res == FR_OK) res = preset_writeChecked(activeParameters, END_OF_SOUND_PARAMETERS);
         res = preset_finishSave(res);
     }
@@ -403,7 +408,8 @@ FRESULT preset_LoadTmpKit(void)
         if(data[PAR_TARGET_LFO1+i] >= nmt) data[PAR_TARGET_LFO1+i] = 0;
     }
     memcpy(activeParameters, data, sizeof(data));
-    menu_selectedPresetNr[SAVE_TYPE_KIT] = slot;
+    menu_selectedPresetNr[SAVE_TYPE_KIT] = menu_loadedPresetNr[CURRENT_KIT] = slot;
+    ++preset_kitRevision;
     preset_sendDrumsetParameters();
     return FR_OK;
 }
@@ -816,6 +822,8 @@ void preset_loadDrumsetRam(uint8_t presetNr, uint8_t isMorph, uint8_t sendImmedi
 	}
 	else
 	{
+		++preset_kitRevision;
+        menu_loadedPresetNr[CURRENT_KIT] = presetNr;
 		//copy parameters to edit buffer
 		memcpy(activeParameters, mainParameters[presetNr], sizeof(uint8_t) * END_OF_SOUND_PARAMETERS);
 		//if(activeParameters[PAR_PATTERN_MODE] = 1)
@@ -2182,7 +2190,7 @@ FRESULT preset_createProject(uint8_t presetNr)
 /* Existing serializers, unchanged payloads; project metadata is written last. */
 static FRESULT preset_writeProjectData(uint8_t presetNr)
 {
-    preset_saveDrumsetRam(menu_selectedPresetNr[SAVE_TYPE_KIT], 0);
+    preset_saveDrumsetRam(menu_loadedPresetNr[CURRENT_KIT], 0);
     FRESULT res = preset_savePatternRAM(seq_activePattern);
     if(res != FR_OK) return res;
     res = preset_saveGlobals();
@@ -2212,7 +2220,8 @@ FRESULT preset_saveProject(uint8_t presetNr)
     if(res != FR_OK) return res;
     res = preset_projectPath(folder, sizeof(folder), presetNr);
     if(res != FR_OK) return res;
-    if(menu_selectedPresetNr[SAVE_TYPE_KIT] >= NUM_KIT_SLOTS || seq_activePattern >= NUM_PATTERN)
+    if(menu_selectedPresetNr[SAVE_TYPE_KIT] >= NUM_KIT_SLOTS ||
+       menu_loadedPresetNr[CURRENT_KIT] >= NUM_KIT_SLOTS || seq_activePattern >= NUM_PATTERN)
         return FR_INVALID_PARAMETER;
     for(uint8_t i = 0; i < NUM_PATTERN; i++)
         if(seq_patternSet.kitNr[i] >= NUM_KIT_SLOTS) return FR_INT_ERR;

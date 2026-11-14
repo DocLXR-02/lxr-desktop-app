@@ -125,4 +125,15 @@ uint8_t preset_isNameEmpty(char* name);
 FRESULT preset_storageError(void);
 uint8_t preset_autosaveIsPaused(void);
 
+
+/* A single selector session owns this snapshot; never a persistent clipboard. */
+typedef struct {
+    uint32_t revision;
+    uint8_t kit, project, pattern, voice;
+    uint8_t values[END_OF_SOUND_PARAMETERS];
+} PresetVoiceCopy;
+uint8_t preset_captureVoice(PresetVoiceCopy *copy, uint8_t track);
+uint8_t preset_voiceCopyContextValid(const PresetVoiceCopy *copy);
+uint8_t preset_transferVoice(const PresetVoiceCopy *copy, uint8_t target);
+
 #endif /* PRESETMANAGER_H_ */

@@ -244,6 +244,7 @@ void seq_deleteRow();
 void seq_insertRow();
 //------------------------------------------------------------------------------
 uint8_t seq_isRunning();
+uint8_t seq_hasPendingKitChange(void);
 //------------------------------------------------------------------------------
 uint8_t seq_isStepActive(uint8_t voice, uint8_t stepNr, uint8_t patternNr);
 //------------------------------------------------------------------------------

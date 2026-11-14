@@ -677,6 +677,7 @@ void menu_setLoadSaveCategory(uint8_t cat);
 void menu_init();
 //-----------------------------------------------------------------
 /** takes the values received from the encoder and translates it to menu changes*/
+uint8_t menu_voiceTransferButton(uint8_t button, uint8_t pressed);
 void menu_parseEncoder(int8_t inc, uint8_t button);
 //-----------------------------------------------------------------
 void menu_switchPage(uint8_t pageNr);

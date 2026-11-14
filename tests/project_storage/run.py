@@ -56,7 +56,7 @@ def production_source():
         definition = h.extract(source, n)
         prototypes.append(definition[:definition.index('{')].rstrip()+';\n')
     prefix=transaction[:transaction.index('static FRESULT preset_txnMutation')]
-    code = prefix + ''.join(prototypes) + ''.join(h.extract(source,n) for n in helpers)
+    code = 'static volatile uint32_t preset_kitRevision;\n' + prefix + ''.join(prototypes) + ''.join(h.extract(source,n) for n in helpers)
     # RAM/sequence helpers are unchanged production bodies, not algorithm replicas.
     seq = (ROOT/'Core/Src/Soundengine/Sequencer/sequencer.c').read_text()
     names = ['seq_resetNote','seq_clearTrack','seq_clearPattern','seq_copyPatternToBackupBuffer']

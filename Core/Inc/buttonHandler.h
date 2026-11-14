@@ -156,6 +156,7 @@ void buttonHandler_init();
 //--------------------------------------------------------
 void buttonHandler_tick();
 //--------------------------------------------------------
+void buttonHandler_copyEditableBase(uint8_t *out, uint16_t count);
 void buttonHandler_buttonPressed(uint8_t buttonNr);
 //--------------------------------------------------------
 //uint8_t buttonHandler_getMutedVoices();

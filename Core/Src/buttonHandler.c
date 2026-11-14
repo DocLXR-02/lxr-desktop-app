@@ -1579,7 +1579,21 @@ static void buttonHandler_voiceButtonPressed(uint8_t voiceNr)
 }
 
 //--------------------------------------------------------
+/* Snapshot editable base values without copying a held STEP's temporary locks. */
+void buttonHandler_copyEditableBase(uint8_t *out, uint16_t count)
+{
+    memcpy(out, activeParameters, count);
+    if(buttonHandler_getArmedAutomationStep() == NO_STEP_SELECTED) return;
+    /* Lane 1 holds the earliest base if both lanes temporarily lock one ID. */
+    for(int lane = 1; lane >= 0; --lane) {
+        uint16_t id = buttonHandler_originalParameter[lane];
+        uint8_t locked = lane ? buttonHandler_resetLock2 : buttonHandler_resetLock1;
+        if(locked && id < count) out[id] = buttonHandler_originalValue[lane];
+    }
+}
+
 void buttonHandler_buttonPressed(uint8_t buttonNr) {
+    if(menu_voiceTransferButton(buttonNr, 1)) return;
 
 	screensaver_touch();
 
@@ -2009,6 +2023,7 @@ void buttonHandler_buttonPressed(uint8_t buttonNr) {
 
 //--------------------------------------------------------
 void buttonHandler_buttonReleased(uint8_t buttonNr) {
+    if(menu_voiceTransferButton(buttonNr, 0)) return;
 
 
 

@@ -33,7 +33,7 @@ assert "HAL_GetTick() - menu_saveSince" in menu
 assert "menu_saveSince = HAL_GetTick();" in menu
 assert "menu_showSaveSuccess(PATTERN_SAVE_PAGE_OK);" in button
 assert ">= 750u" not in menu
-assert 'lcd_string("LXR LAB R20");' in main
+assert 'lcd_string("LXR LAB R21");' in main
 assert "menu_renderAutomationNotice()) return;" in menu
 assert "buttonHandler_syncRecordingState(0);" in sequencer
 assert "menu_showAutomationBlocked" in sequencer

@@ -1988,6 +1988,11 @@ void seq_setMainStep(uint8_t patternNr, uint8_t voice, uint8_t stepNr, uint8_t o
 //	}
 //}
 //------------------------------------------------------------------------------
+/* Includes same-pattern reload requests, not just a different pattern index. */
+uint8_t seq_hasPendingKitChange(void)
+{
+    return seq_loadPendigFlag || seq_activePattern != seq_pendingPattern;
+}
 uint8_t seq_isRunning() {
 	return seq_running;
 }
