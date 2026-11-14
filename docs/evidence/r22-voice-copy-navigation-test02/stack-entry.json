@@ -1,0 +1,107 @@
+{
+  "entries": [
+    {
+      "candidate": "TEST01",
+      "symbol": "preset_transferVoiceTo",
+      "address": "0x801f380",
+      "symbol_bytes": 1172,
+      "entry_hex": "2de9f04fc7b0019118b1c3790446052b04d90027",
+      "saved_register_mask": "0x4ff0",
+      "saved_register_bytes": 36,
+      "fixed_sp_subtract_bytes": 284,
+      "fixed_entry_frame_bytes": 320,
+      "elf_sha256": "32e7cb2d2cd2b5942061077134cf6cc700d1c0ce72b45fafbab49892619bd177"
+    },
+    {
+      "candidate": "TEST01",
+      "symbol": "menu_parseEncoder",
+      "address": "0x801c0d0",
+      "symbol_bytes": 2516,
+      "entry_hex": "2de9f84f0c46af4f0646dff8f082ecf793f9211e",
+      "saved_register_mask": "0x4ff8",
+      "saved_register_bytes": 40,
+      "fixed_sp_subtract_bytes": 0,
+      "fixed_entry_frame_bytes": 40,
+      "elf_sha256": "32e7cb2d2cd2b5942061077134cf6cc700d1c0ce72b45fafbab49892619bd177"
+    },
+    {
+      "candidate": "TEST01",
+      "symbol": "menu_voiceTransferButton",
+      "address": "0x8019218",
+      "symbol_bytes": 240,
+      "entry_hex": "38b5431edab2022a2ed84ff0010c2e4c0cfa03f0",
+      "saved_register_mask": "0x4038",
+      "saved_register_bytes": 16,
+      "fixed_sp_subtract_bytes": 0,
+      "fixed_entry_frame_bytes": 16,
+      "elf_sha256": "32e7cb2d2cd2b5942061077134cf6cc700d1c0ce72b45fafbab49892619bd177"
+    },
+    {
+      "candidate": "TEST01",
+      "symbol": "menu_repaint",
+      "address": "0x8019f74",
+      "symbol_bytes": 3064,
+      "entry_hex": "a64b2de9f0431b788fb01bbba44a1478002c66d0",
+      "saved_register_mask": "0x43f0",
+      "saved_register_bytes": 28,
+      "fixed_sp_subtract_bytes": 60,
+      "fixed_entry_frame_bytes": 88,
+      "elf_sha256": "32e7cb2d2cd2b5942061077134cf6cc700d1c0ce72b45fafbab49892619bd177"
+    },
+    {
+      "candidate": "TEST02",
+      "symbol": "preset_transferVoiceTo",
+      "address": "0x801f6ec",
+      "symbol_bytes": 1172,
+      "entry_hex": "2de9f04fc7b0019118b1c3790446052b04d90027",
+      "saved_register_mask": "0x4ff0",
+      "saved_register_bytes": 36,
+      "fixed_sp_subtract_bytes": 284,
+      "fixed_entry_frame_bytes": 320,
+      "elf_sha256": "a4ad4f3ef852f8c8f210c9016ad9ad7f9d7c28b2671a5000fddc83227aacca5c"
+    },
+    {
+      "candidate": "TEST02",
+      "symbol": "menu_parseEncoder",
+      "address": "0x801c364",
+      "symbol_bytes": 2732,
+      "entry_hex": "2de9f84f0c46724f0646dff8f481ecf749f83b78",
+      "saved_register_mask": "0x4ff8",
+      "saved_register_bytes": 40,
+      "fixed_sp_subtract_bytes": 0,
+      "fixed_entry_frame_bytes": 40,
+      "elf_sha256": "a4ad4f3ef852f8c8f210c9016ad9ad7f9d7c28b2671a5000fddc83227aacca5c"
+    },
+    {
+      "candidate": "TEST02",
+      "symbol": "menu_voiceTransferButton",
+      "address": "0x8019218",
+      "symbol_bytes": 556,
+      "entry_hex": "f8b504460d46eff7f3f8754b1a78022a35d0182c",
+      "saved_register_mask": "0x40f8",
+      "saved_register_bytes": 24,
+      "fixed_sp_subtract_bytes": 0,
+      "fixed_entry_frame_bytes": 24,
+      "elf_sha256": "a4ad4f3ef852f8c8f210c9016ad9ad7f9d7c28b2671a5000fddc83227aacca5c"
+    },
+    {
+      "candidate": "TEST02",
+      "symbol": "menu_repaint",
+      "address": "0x801a0b0",
+      "symbol_bytes": 3408,
+      "entry_hex": "b44b2de9f0471b788eb0fbb9b24a1478002c70d0",
+      "saved_register_mask": "0x47f0",
+      "saved_register_bytes": 32,
+      "fixed_sp_subtract_bytes": 56,
+      "fixed_entry_frame_bytes": 88,
+      "elf_sha256": "a4ad4f3ef852f8c8f210c9016ad9ad7f9d7c28b2671a5000fddc83227aacca5c"
+    }
+  ],
+  "fixed_entry_deltas": {
+    "preset_transferVoiceTo": 0,
+    "menu_repaint": 0,
+    "menu_voiceTransferButton": 8,
+    "menu_parseEncoder": 0
+  },
+  "scope": "Observed Thumb entry PUSH/PUSH.W plus immediate SUB SP only; excludes later path allocation, callers/callees, interrupts, runtime high-water. Selector encoder/renderer are inlined into menu_parseEncoder/menu_repaint."
+}

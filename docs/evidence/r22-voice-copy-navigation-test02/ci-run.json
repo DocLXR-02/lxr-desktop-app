@@ -1,0 +1,15 @@
+{
+  "id": 43647784692,
+  "name": "R22 TEST02 encoder navigation ARM/host validation",
+  "run_attempt": 1,
+  "event": "push",
+  "status": "completed",
+  "conclusion": "success",
+  "head_branch": "release/r22",
+  "head_sha": "4372e60337bf5ce35d67e8b5eb577baa3fffb962",
+  "path": ".github/workflows/r22-drum-copy-validation.yml",
+  "html_url": "https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/43647784692",
+  "created_at": "2026-11-14T22:22:47Z",
+  "run_started_at": "2026-11-14T22:22:47Z",
+  "updated_at": "2026-11-14T22:23:47Z"
+}

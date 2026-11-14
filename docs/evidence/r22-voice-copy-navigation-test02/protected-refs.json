@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "protected_existing_refs": 128,
+  "only_authorized_change": {
+    "refs/heads/release/r22": {
+      "before": "ace7ad95081aac6a015f11b87b6c540ce100b344",
+      "after": "4372e60337bf5ce35d67e8b5eb577baa3fffb962"
+    }
+  },
+  "docs_snapshot": "9b68be76d80de50cb84fa9882c5b9003bcb6faf8",
+  "lab_setup_base": "5829398cea5d337200393757e39a37d4d8148256"
+}

@@ -1,0 +1,11 @@
+{"name": "r22", "argv": ["python3", "tests/r22_drum_copy/run.py"], "exit_code": 0, "seconds": 7.0455905299968435, "log": "r22.log"}
+{"name": "r21", "argv": ["python3", "tests/r21_voice_copy/run.py"], "exit_code": 0, "seconds": 5.2338179660000606, "log": "r21.log"}
+{"name": "project-storage", "argv": ["python3", "tests/project_storage/run.py"], "exit_code": 0, "seconds": 4.817348234999372, "log": "project-storage.log"}
+{"name": "project-transaction", "argv": ["python3", "tests/project_transaction/run.py"], "exit_code": 0, "seconds": 8.721104660002311, "log": "project-transaction.log"}
+{"name": "r20-ui", "argv": ["python3", "tests/r20_ui/run.py"], "exit_code": 0, "seconds": 0.1904848080012016, "log": "r20-ui.log"}
+{"name": "r20-integration", "argv": ["python3", "tests/r20_ui/integration/probe.py", ".", "/workspace/r22-test02/r20-integration"], "exit_code": 0, "seconds": 0.96078301200032, "log": "r20-integration.log"}
+{"name": "delay", "argv": ["python3", "tests/r18_delay_mono/run.py", "/workspace/r22-test02/delay"], "exit_code": 0, "seconds": 2.4267626779983402, "log": "delay.log"}
+{"name": "usb", "argv": ["python3", "tests/r18_usb_midi/run.py", "/workspace/r22-test02/usb"], "exit_code": 0, "seconds": 0.8503096889980952, "log": "usb.log"}
+{"name": "compressor", "argv": ["python3", "tests/r18_compressor_mono/run.py", "/workspace/r22-test02/compressor"], "exit_code": 0, "seconds": 0.5430021610009135, "log": "compressor.log"}
+{"name": "clp", "argv": ["python3", "tests/fx_clip_r18/compare.py"], "exit_code": 0, "seconds": 2.603537682000024, "log": "clp.log"}
+{"name": "parameter-sweeps", "argv": ["python3", "tests/bug001/run.py"], "exit_code": 0, "seconds": 0.9876150689997303, "log": "parameter-sweeps.log"}

@@ -1,0 +1,176 @@
+{
+  "source_sha": "4372e60337bf5ce35d67e8b5eb577baa3fffb962",
+  "base_sha": "ace7ad95081aac6a015f11b87b6c540ce100b344",
+  "files": {
+    "LXR_V2_R22_TEST02.img": {
+      "bytes": 297696,
+      "sha256": "f3a39aa792cc7b54ae9e260bdc6bedd45dbbb28934da43035228b26f7e58c9f3"
+    },
+    "LXR_V2_R22_TEST02.zip": {
+      "bytes": 213653,
+      "sha256": "9f85a4b4fdb9b037837b5291b105894b87ce69fa8862cf28753c301846b0c82c"
+    },
+    "LXR_V2_STM32F765.elf": {
+      "bytes": 404496,
+      "sha256": "a4ad4f3ef852f8c8f210c9016ad9ad7f9d7c28b2671a5000fddc83227aacca5c"
+    },
+    "LXR_V2_STM32F765.map": {
+      "bytes": 552877,
+      "sha256": "690ac84e785bff9e364fa6c614e9bfdfdf2d943c1cd2478118e1745c5b791e94"
+    }
+  },
+  "regions": {
+    ".text": {
+      "TEST01": 159856,
+      "TEST02": 160728,
+      "delta": 872
+    },
+    ".rodata": {
+      "TEST01": 83168,
+      "TEST02": 83272,
+      "delta": 104
+    },
+    "ITCM": {
+      "TEST01": 15304,
+      "TEST02": 15304,
+      "delta": 0,
+      "headroom": 1080
+    },
+    "DTCM": {
+      "TEST01": 107424,
+      "TEST02": 107424,
+      "delta": 0,
+      "headroom": 23648
+    },
+    "SRAM": {
+      "TEST01": 275156,
+      "TEST02": 275164,
+      "delta": 8,
+      "headroom": 118052
+    },
+    "FLASH_payload": {
+      "TEST01": 296704,
+      "TEST02": 297680,
+      "delta": 976,
+      "headroom": 718128
+    }
+  },
+  "sections": {
+    ".isr_vector": {
+      "address": 134250496,
+      "bytes": 504
+    },
+    ".text": {
+      "address": 134251008,
+      "bytes": 160728
+    },
+    ".rodata": {
+      "address": 134411736,
+      "bytes": 83272
+    },
+    ".ARM.extab": {
+      "address": 134495008,
+      "bytes": 0
+    },
+    ".ARM": {
+      "address": 134495008,
+      "bytes": 8
+    },
+    ".preinit_array": {
+      "address": 134495016,
+      "bytes": 0
+    },
+    ".init_array": {
+      "address": 134495016,
+      "bytes": 4
+    },
+    ".fini_array": {
+      "address": 134495020,
+      "bytes": 4
+    },
+    ".data": {
+      "address": 537001984,
+      "bytes": 852
+    },
+    ".bss": {
+      "address": 537002840,
+      "bytes": 273796
+    },
+    "._user_heap": {
+      "address": 537276636,
+      "bytes": 512
+    },
+    ".dtcm": {
+      "address": 536870912,
+      "bytes": 36996
+    },
+    ".dtcmz": {
+      "address": 536907912,
+      "bytes": 70424
+    },
+    ".itcm_text": {
+      "address": 0,
+      "bytes": 15304
+    },
+    ".ARM.attributes": {
+      "address": 0,
+      "bytes": 48
+    },
+    ".comment": {
+      "address": 0,
+      "bytes": 70
+    },
+    ".debug_frame": {
+      "address": 0,
+      "bytes": 2532
+    },
+    ".debug_line_str": {
+      "address": 0,
+      "bytes": 461
+    },
+    ".symtab": {
+      "address": 0,
+      "bytes": 62064
+    },
+    ".strtab": {
+      "address": 0,
+      "bytes": 28011
+    },
+    ".shstrtab": {
+      "address": 0,
+      "bytes": 209
+    }
+  },
+  "segments": [
+    {
+      "address": 134250496,
+      "bytes": 244528,
+      "runtime_address": 134250496,
+      "memory_bytes": 244528
+    },
+    {
+      "address": 134495024,
+      "bytes": 852,
+      "runtime_address": 537001984,
+      "memory_bytes": 852
+    },
+    {
+      "address": 134495876,
+      "bytes": 36996,
+      "runtime_address": 536870912,
+      "memory_bytes": 36996
+    },
+    {
+      "address": 134532872,
+      "bytes": 15304,
+      "runtime_address": 0,
+      "memory_bytes": 15304
+    }
+  ],
+  "boot_string": "LXR LAB R22",
+  "checksum_byte": 136,
+  "CPU_WCET": "UNMEASURED",
+  "IRQ_DMA": "UNMEASURED",
+  "stack_high_water": "UNMEASURED",
+  "reliability": "UNMEASURED"
+}

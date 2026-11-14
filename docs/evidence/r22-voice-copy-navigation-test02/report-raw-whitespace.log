@@ -1,0 +1,10 @@
+docs/evidence/r22-voice-copy-navigation-test02/CI_COMPILER.txt:5: new blank line at EOF.
+docs/evidence/r22-voice-copy-navigation-test02/CI_sections.log:22: new blank line at EOF.
+docs/evidence/r22-voice-copy-navigation-test02/name-editor-first-fixture-error.log:41: trailing whitespace.
++      |                                 ~                                
+docs/evidence/r22-voice-copy-navigation-test02/name-editor-first-fixture-error.log:53: trailing whitespace.
++      |                                 ~                                
+docs/evidence/r22-voice-copy-navigation-test02/name-editor-first-fixture-error.log:63: trailing whitespace.
++      |                         ~~                   
+docs/evidence/r22-voice-copy-navigation-test02/source-diff.patch:47: trailing whitespace.
++ 

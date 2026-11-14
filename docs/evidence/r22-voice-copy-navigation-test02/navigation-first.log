@@ -1,0 +1,27 @@
+PASS R22 cross-kit D1->D1:25 menu-oracle fields, exact all-kit/active/pattern/global preservation, zero transfer dispatch/SD
+PASS R22 cross-kit D1->D2:25 menu-oracle fields, exact all-kit/active/pattern/global preservation, zero transfer dispatch/SD
+PASS R22 cross-kit D1->D3:25 menu-oracle fields, exact all-kit/active/pattern/global preservation, zero transfer dispatch/SD
+PASS R22 cross-kit D2->D1:25 menu-oracle fields, exact all-kit/active/pattern/global preservation, zero transfer dispatch/SD
+PASS R22 cross-kit D2->D2:25 menu-oracle fields, exact all-kit/active/pattern/global preservation, zero transfer dispatch/SD
+PASS R22 cross-kit D2->D3:25 menu-oracle fields, exact all-kit/active/pattern/global preservation, zero transfer dispatch/SD
+PASS R22 cross-kit D3->D1:25 menu-oracle fields, exact all-kit/active/pattern/global preservation, zero transfer dispatch/SD
+PASS R22 cross-kit D3->D2:25 menu-oracle fields, exact all-kit/active/pattern/global preservation, zero transfer dispatch/SD
+PASS R22 cross-kit D3->D3:25 menu-oracle fields, exact all-kit/active/pattern/global preservation, zero transfer dispatch/SD
+PASS R22 all nine same-kit pairs rejected; invalid/cross-type target and null snapshot rejected
+PASS R22 LFO D1->D1: decoded high-ID remap, all8 fields, exact conflicts/OFF, independent same-voice destination, project/load dispatch
+PASS R22 LFO D1->D2: decoded high-ID remap, all8 fields, exact conflicts/OFF, independent same-voice destination, project/load dispatch
+PASS R22 LFO D1->D3: decoded high-ID remap, all8 fields, exact conflicts/OFF, independent same-voice destination, project/load dispatch
+PASS R22 LFO D2->D1: decoded high-ID remap, all8 fields, exact conflicts/OFF, independent same-voice destination, project/load dispatch
+PASS R22 LFO D2->D2: decoded high-ID remap, all8 fields, exact conflicts/OFF, independent same-voice destination, project/load dispatch
+PASS R22 LFO D2->D3: decoded high-ID remap, all8 fields, exact conflicts/OFF, independent same-voice destination, project/load dispatch
+PASS R22 LFO D3->D1: decoded high-ID remap, all8 fields, exact conflicts/OFF, independent same-voice destination, project/load dispatch
+PASS R22 LFO D3->D2: decoded high-ID remap, all8 fields, exact conflicts/OFF, independent same-voice destination, project/load dispatch
+PASS R22 LFO D3->D3: decoded high-ID remap, all8 fields, exact conflicts/OFF, independent same-voice destination, project/load dispatch
+PASS R22 OFF/zero/other-voice/FX/global/invalid/voice-mismatch retain destination LFO
+PASS R22 306 own-LFO destination mappings using independent menu semantics and real target tables, including rate/sync/wave/amount/retrigger/offset/velocity targets
+PASS R22 all nine mappings: STEP base snapshot, unsaved source, source temp recovery, cursor aliases target, real project SD roundtrip, source preserved, normal/immediate loads
+PASS R22 encoder destination editing, ignored COPY, VOICE cancellation, non-Drum cancellation, remapped Morph alias/zero/pending/unrelated/commit guard and pending-pattern/clock rejection
+PASS TEST02 seven source pages: exact 16-cell rows/guards/cursor, immutable source, bounded bidirectional Kit/Drum/OK navigation/editing, K01/K64/D1/D3, non-Drum omission, no premature transaction or data/engine/SD effects
+PASS TEST02 VOICE cancels every stage/source (including held entry/open HH), actual mode setter/normal Voice-to-STEP positive control, held/repeated/bounced mode and DATA drained, exact RAM/engine/pattern/SD preservation
+PASS TEST02 COPY ignored in every editor/focus, held COPY drained at cancel, actual copy reset clears blink state and normal COPY restored; all seven instrument buttons cancel/consume across stages without retarget/track copy
+PASS TEST02 explicit OK commits selected Kit2/Drum3 once even with ignored COPY held; DATA hold/bounce cannot repeat, no FX/MIDI/SD transfer dispatch; unchanged generic save/load DATA routing

@@ -1,0 +1,1 @@
+PASS TEST02 supplementary real unchanged save/load handler + name renderer: navigate/edit character/exit/OK/back, brackets/underline, character bounds and slot selection; no storage/engine adapter called

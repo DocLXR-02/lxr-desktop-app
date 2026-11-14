@@ -1,0 +1,145 @@
+{
+  "total_count": 1,
+  "jobs": [
+    {
+      "id": 132609298661,
+      "name": "r22-voice-copy-validation",
+      "run_attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-14T22:22:50Z",
+      "completed_at": "2026-11-14T22:23:47Z",
+      "html_url": "https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/43647784692/job/132609298661",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-14T22:22:51Z",
+          "completed_at": "2026-11-14T22:22:52Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-14T22:22:52Z",
+          "completed_at": "2026-11-14T22:22:53Z"
+        },
+        {
+          "name": "Record source identity",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-14T22:22:53Z",
+          "completed_at": "2026-11-14T22:22:53Z"
+        },
+        {
+          "name": "R22 direct transfer, selector and project round trips",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-14T22:22:53Z",
+          "completed_at": "2026-11-14T22:23:01Z"
+        },
+        {
+          "name": "Compile and exercise standalone capture state machine",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-14T22:23:01Z",
+          "completed_at": "2026-11-14T22:23:01Z"
+        },
+        {
+          "name": "Playback numerical regression (exhaustive fixed-8 equivalence)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-14T22:23:01Z",
+          "completed_at": "2026-11-14T22:23:02Z"
+        },
+        {
+          "name": "R20 host conflict and LCD timing regression",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-14T22:23:02Z",
+          "completed_at": "2026-11-14T22:23:02Z"
+        },
+        {
+          "name": "Verify adaptive source and extra menu choices removed",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-11-14T22:23:02Z",
+          "completed_at": "2026-11-14T22:23:02Z"
+        },
+        {
+          "name": "Existing globals and project storage regressions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-14T22:23:02Z",
+          "completed_at": "2026-11-14T22:23:11Z"
+        },
+        {
+          "name": "Reuse R19 regressions for USB-MIDI, Delay and Compressor",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-14T22:23:11Z",
+          "completed_at": "2026-11-14T22:23:16Z"
+        },
+        {
+          "name": "Install R19-matched ARM GNU Toolchain 14.3.rel1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-14T22:23:16Z",
+          "completed_at": "2026-11-14T22:23:33Z"
+        },
+        {
+          "name": "Build candidate firmware (validation only)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-11-14T22:23:33Z",
+          "completed_at": "2026-11-14T22:23:42Z"
+        },
+        {
+          "name": "Validate R22 image, ZIP and static resources",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-11-14T22:23:42Z",
+          "completed_at": "2026-11-14T22:23:42Z"
+        },
+        {
+          "name": "Preserve evidence also on failure",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14,
+          "started_at": "2026-11-14T22:23:42Z",
+          "completed_at": "2026-11-14T22:23:44Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 28,
+          "started_at": "2026-11-14T22:23:44Z",
+          "completed_at": "2026-11-14T22:23:44Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 29,
+          "started_at": "2026-11-14T22:23:44Z",
+          "completed_at": "2026-11-14T22:23:44Z"
+        }
+      ]
+    }
+  ]
+}

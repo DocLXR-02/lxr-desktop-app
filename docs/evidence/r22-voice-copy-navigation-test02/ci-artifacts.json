@@ -1,0 +1,23 @@
+{
+  "artifacts": [
+    {
+      "id": 14134945492,
+      "name": "r22-test02-navigation-build-evidence",
+      "size_in_bytes": 755900,
+      "url": "https://api.github.com/repos/DocLXR-02/lxr-desktop-app/actions/artifacts/14134945492",
+      "archive_download_url": "https://api.github.com/repos/DocLXR-02/lxr-desktop-app/actions/artifacts/14134945492/zip",
+      "expired": false,
+      "created_at": "2026-11-14T22:23:44Z",
+      "expires_at": "2026-12-14T22:23:43Z",
+      "updated_at": "2026-11-14T22:23:44Z",
+      "digest": "sha256:e60110358b356a3cbb1a947c1d78c9545659db62d7348095ea349395a0a2a435",
+      "workflow_run": {
+        "id": 43647784692,
+        "repository_id": 1433545727,
+        "head_repository_id": 1433545727,
+        "head_branch": "release/r22",
+        "head_sha": "4372e60337bf5ce35d67e8b5eb577baa3fffb962"
+      }
+    }
+  ]
+}

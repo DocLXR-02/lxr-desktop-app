@@ -1,0 +1,796 @@
+diff --git a/.github/workflows/r22-drum-copy-validation.yml b/.github/workflows/r22-drum-copy-validation.yml
+index 6e9c152..6e414c6 100644
+--- a/.github/workflows/r22-drum-copy-validation.yml
++++ b/.github/workflows/r22-drum-copy-validation.yml
+@@ -1,4 +1,4 @@
+-name: R22 cross-kit Drum copy ARM/host validation
++name: R22 TEST02 encoder navigation ARM/host validation
+ on:
+   push:
+     branches:
+@@ -89,8 +89,8 @@ jobs:
+           arm-none-eabi-gcc --version > build/r22-voice-copy-evidence/COMPILER.txt
+           cp build/release/LXR_V2_STM32F765.map build/r22-voice-copy-evidence/
+           cp build/release/LXR_V2_STM32F765.elf build/r22-voice-copy-evidence/
+-          cp build/release/LXR_V2_V1.7.img build/r22-voice-copy-evidence/LXR_V2_R22_TEST01.img
+-          (cd build/r22-voice-copy-evidence && sha256sum LXR_V2_R22_TEST01.img LXR_V2_STM32F765.elf LXR_V2_STM32F765.map > OUTPUT_SHA256SUMS.txt)
++          cp build/release/LXR_V2_V1.7.img build/r22-voice-copy-evidence/LXR_V2_R22_TEST02.img
++          (cd build/r22-voice-copy-evidence && sha256sum LXR_V2_R22_TEST02.img LXR_V2_STM32F765.elf LXR_V2_STM32F765.map > OUTPUT_SHA256SUMS.txt)
+           echo "R22 VOICE TRANSFER TEST CANDIDATE; OWNER DEVICE TEST PENDING; R18/R19/R20/R21/FIX8 PROTECTED; NO STABLE RELEASE." > build/r22-voice-copy-evidence/NOT_FOR_FLASHING.txt
+       - name: Validate R22 image, ZIP and static resources
+         run: python3 tests/r22_drum_copy/validate_arm.py
+@@ -98,7 +98,7 @@ jobs:
+         if: always()
+         uses: actions/upload-artifact@v4
+         with:
+-          name: r22-voice-copy-build-evidence
++          name: r22-test02-navigation-build-evidence
+           path: build/r22-voice-copy-evidence/
+           retention-days: 30
+           if-no-files-found: error
+diff --git a/Core/Src/menu/voiceTransfer.inc b/Core/Src/menu/voiceTransfer.inc
+index 84bca95..0d4b3be 100644
+--- a/Core/Src/menu/voiceTransfer.inc
++++ b/Core/Src/menu/voiceTransfer.inc
+@@ -1,13 +1,17 @@
+-/* R22 cross-kit direct transfer selector. Its snapshot exists only during one session. */
++/* R22 TEST02: local DATA navigation/editing; only explicit OK transfers. */
+ static PresetVoiceCopy menu_voiceCopy;
+ static uint8_t menu_voiceCopyActive, menu_voiceCopyTarget, menu_voiceCopyCopyHeld;
+ static uint8_t menu_voiceCopyDrain, menu_voiceCopyNotice;
+ static uint8_t menu_voiceCopyTargetVoice, menu_voiceCopyVoiceHeld;
+-static uint32_t menu_voiceCopyReleased, menu_voiceCopySince;
++static uint8_t menu_voiceCopyFocus, menu_voiceCopyEditing, menu_voiceCopySourcePage;
++static uint8_t menu_voiceCopyModeHeld; /* 1 held, 2 released/deglitching. */
++static uint32_t menu_voiceCopyReleased, menu_voiceCopySince, menu_voiceCopyModeReleased;
++enum { VOICE_COPY_KIT, VOICE_COPY_DRUM, VOICE_COPY_OK };
+ 
+ static void menu_finishVoiceCopy(uint8_t notice)
+ {
+     menu_voiceCopyActive = 0;
++    menu_voiceCopyEditing = 0;
+     memset(&menu_voiceCopy, 0, sizeof(menu_voiceCopy));
+     menu_voiceCopyNotice = notice;
+     menu_voiceCopySince = HAL_GetTick();
+@@ -15,32 +19,62 @@ static void menu_finishVoiceCopy(uint8_t notice)
+     menu_voiceCopyReleased = HAL_GetTick();
+     menu_repaintAll();
+ }
+-/* Called before the normal physical-button dispatcher. COPY cancels; other
+- * panel presses cancel and are consumed. START/STOP still operates normally. */
++static void menu_cancelVoiceCopy(void)
++{
++    menu_finishVoiceCopy(0);
++    /* The modal overlay never changed the source page/voice. Restore only UI
++     * state; the normal MODE1 dispatcher would toggle this page into STEP. */
++    menu_activePage = menu_voiceCopySourcePage;
++    editModeActive = 0;
++    visibleCursor = 0;
++    buttonHandler_setMode(SELECT_MODE_VOICE);
++    led_setMode2(SELECT_MODE_VOICE);
++    led_setActiveVoice(menu_getActiveVoice());
++    led_setActiveSelectButton(menu_getSubPage());
++    menu_resetActiveParameter();
++    menu_repaintAll();
++}
+ uint8_t menu_voiceTransferButton(uint8_t button, uint8_t pressed)
+ {
+-    if(button >= BUT_VOICE_1 && button <= BUT_VOICE_3) {
++    uint32_t now = HAL_GetTick();
++    if(menu_voiceCopyModeHeld == 2 && (uint32_t)(now - menu_voiceCopyModeReleased) >= 40u)
++        menu_voiceCopyModeHeld = 0;
++    if(button == BUT_MODE1 && (menu_voiceCopyActive || menu_voiceCopyModeHeld)) {
++        if(pressed) {
++            menu_voiceCopyModeHeld = 1;
++            if(menu_voiceCopyActive) menu_cancelVoiceCopy();
++        } else {
++            menu_voiceCopyModeHeld = 2;
++            menu_voiceCopyModeReleased = now;
++        }
++        return 1;
++    }
++    /* COPY has no dialog action, including while editing or focusing OK. */
++    if(button == BUT_COPY && (menu_voiceCopyActive || menu_voiceCopyCopyHeld)) {
++        menu_voiceCopyCopyHeld = pressed ? 1 : 0;
++        if(!pressed && !menu_voiceCopyActive) menu_voiceCopyReleased = now;
++        return 1;
++    }
++    /* Instrument buttons retain cancel/consume behavior, never retargeting.
++     * Keep their held edges/releases consumed even after the modal closes. */
++    if(button >= BUT_VOICE_1 && button <= BUT_VOICE_7) {
+         uint8_t bit = (uint8_t)(1u << (button - BUT_VOICE_1));
+-        if(!pressed && (menu_voiceCopyVoiceHeld & bit)) {
+-            menu_voiceCopyVoiceHeld &= (uint8_t)~bit;
++        if(menu_voiceCopyVoiceHeld & bit) {
++            if(!pressed) {
++                menu_voiceCopyVoiceHeld &= (uint8_t)~bit;
++                if(!menu_voiceCopyActive) menu_voiceCopyReleased = now;
++            }
+             return 1;
+         }
+-        if(pressed && (menu_voiceCopyVoiceHeld & bit)) return 1;
+-        if(pressed && menu_voiceCopyActive && menu_voiceCopy.voice < 3) {
++        if(pressed && menu_voiceCopyActive) {
+             menu_voiceCopyVoiceHeld |= bit;
+-            menu_voiceCopyTargetVoice = button - BUT_VOICE_1;
+-            menu_repaintAll();
++            menu_finishVoiceCopy(3);
+             return 1;
+         }
+     }
+-    if(button == BUT_COPY && !pressed && menu_voiceCopyCopyHeld) {
+-        menu_voiceCopyCopyHeld = 0;
+-        return 1;
+-    }
+     if(!menu_voiceCopyActive || !pressed) return 0;
+     if(button == BUT_START_STOP) return 0;
+-    if(pressed && !(button == BUT_COPY && menu_voiceCopyCopyHeld))
+-        menu_finishVoiceCopy(3);
++    menu_finishVoiceCopy(3);
+     return 1;
+ }
+ static uint8_t menu_voiceTransferEncoder(int8_t inc, uint8_t button)
+@@ -51,21 +85,35 @@ static uint8_t menu_voiceTransferEncoder(int8_t inc, uint8_t button)
+     if(menu_voiceCopyActive) {
+         lastEncoderButton = button;
+         if(menu_voiceCopyActive == 1) {
+-            /* Both entry controls must be released before confirmation arms. */
+             if(!button && !buttonHandler_getCopy()) {
+                 menu_voiceCopyActive = 2;
+                 menu_voiceCopyReleased = now;
+             }
+         } else {
+-            if(inc) {
+-                int target = (int)menu_voiceCopyTarget + (inc > 0 ? 1 : -1);
+-                if(target >= 0 && target < NUM_KIT_SLOTS) menu_voiceCopyTarget = target;
+-            }
+-            if(click && (uint32_t)(now - menu_voiceCopyReleased) >= 40u) {
+-                uint8_t result = buttonHandler_getShift() || buttonHandler_getCopy() ?
+-                    PRESET_VOICE_REJECTED : preset_transferVoiceTo(&menu_voiceCopy, menu_voiceCopyTarget, menu_voiceCopyTargetVoice);
+-                menu_finishVoiceCopy(result == PRESET_VOICE_OK ? 1 :
+-                    result == PRESET_VOICE_MORPH_ACTIVE ? 4 : 2);
++            if(click) {
++                if((uint32_t)(now - menu_voiceCopyReleased) >= 40u) {
++                    if(menu_voiceCopyFocus != VOICE_COPY_OK)
++                        menu_voiceCopyEditing = !menu_voiceCopyEditing;
++                    else {
++                        uint8_t result = buttonHandler_getShift() ? PRESET_VOICE_REJECTED :
++                            preset_transferVoiceTo(&menu_voiceCopy, menu_voiceCopyTarget, menu_voiceCopyTargetVoice);
++                        menu_finishVoiceCopy(result == PRESET_VOICE_OK ? 1 :
++                            result == PRESET_VOICE_MORPH_ACTIVE ? 4 : 2);
++                    }
++                }
++            } else if(inc) {
++                if(menu_voiceCopyEditing) {
++                    uint8_t *value = menu_voiceCopyFocus == VOICE_COPY_KIT ?
++                        &menu_voiceCopyTarget : &menu_voiceCopyTargetVoice;
++                    uint8_t limit = menu_voiceCopyFocus == VOICE_COPY_KIT ? NUM_KIT_SLOTS - 1 : 2;
++                    if(inc > 0 && *value < limit) ++*value;
++                    if(inc < 0 && *value > 0) --*value;
++                } else {
++                    if(inc > 0 && menu_voiceCopyFocus < VOICE_COPY_OK) ++menu_voiceCopyFocus;
++                    if(inc < 0 && menu_voiceCopyFocus > VOICE_COPY_KIT) --menu_voiceCopyFocus;
++                    if(menu_voiceCopy.voice >= 3 && menu_voiceCopyFocus == VOICE_COPY_DRUM)
++                        menu_voiceCopyFocus = inc > 0 ? VOICE_COPY_OK : VOICE_COPY_KIT;
++                }
+             }
+             if(!button && previous) menu_voiceCopyReleased = now;
+         }
+@@ -74,8 +122,12 @@ static uint8_t menu_voiceTransferEncoder(int8_t inc, uint8_t button)
+     }
+     if(menu_voiceCopyDrain) {
+         lastEncoderButton = button;
+-        if(button) menu_voiceCopyReleased = now;
+-        else if((uint32_t)(now - menu_voiceCopyReleased) >= 40u) menu_voiceCopyDrain = 0;
++        /* Start the release interval at the falling edge, even after a long hold. */
++        if(button || previous || menu_voiceCopyModeHeld == 1 ||
++           menu_voiceCopyCopyHeld || menu_voiceCopyVoiceHeld) menu_voiceCopyReleased = now;
++        else if((uint32_t)(now - menu_voiceCopyReleased) >= 40u &&
++                (menu_voiceCopyModeHeld != 2 || (uint32_t)(now - menu_voiceCopyModeReleased) >= 40u))
++            menu_voiceCopyDrain = 0;
+         return 1;
+     }
+     if(click && buttonHandler_getCopy() && !buttonHandler_getShift() &&
+@@ -87,6 +139,9 @@ static uint8_t menu_voiceTransferEncoder(int8_t inc, uint8_t button)
+         if(preset_captureVoice(&menu_voiceCopy, menu_getActiveVoice())) {
+             menu_voiceCopyTarget = menu_voiceCopy.kit;
+             menu_voiceCopyTargetVoice = menu_voiceCopy.voice;
++            menu_voiceCopySourcePage = menu_activePage;
++            menu_voiceCopyFocus = VOICE_COPY_KIT;
++            menu_voiceCopyEditing = 0;
+             menu_voiceCopyActive = 1;
+             menu_voiceCopyNotice = 0;
+             menu_repaintAll();
+@@ -105,19 +160,29 @@ static void menu_expireVoiceTransfer(void)
+ static uint8_t menu_renderVoiceTransfer(void)
+ {
+     if(!menu_voiceCopyActive && !menu_voiceCopyNotice) return 0;
+-    char line[17];
+     visibleCursor = 0;
+-    memset(editDisplayBuffer[0], ' ', 16);
+-    memset(editDisplayBuffer[1], ' ', 16);
+     if(menu_voiceCopyActive) {
+-        if(menu_voiceCopy.voice < 3)
+-            snprintf(line, sizeof(line), "D%u > K%02u D%u?", (unsigned)menu_voiceCopy.voice + 1u,
+-                     (unsigned)menu_voiceCopyTarget + 1u, (unsigned)menu_voiceCopyTargetVoice + 1u);
+-        else
+-            snprintf(line, sizeof(line), "V%u > KIT %02u?", (unsigned)menu_voiceCopy.voice + 1u,
+-                     (unsigned)menu_voiceCopyTarget + 1u);
+-        memcpy(editDisplayBuffer[0], line, strlen(line));
+-        memcpy(editDisplayBuffer[1], "DATA yes COPY no", 16);
++        uint8_t drum = menu_voiceCopy.voice < 3;
++        const char *row = drum ? "D1 > K01 D1  OK " : "V4 > K01     OK ";
++        if(menu_voiceCopyEditing)
++            row = menu_voiceCopyFocus == VOICE_COPY_KIT ?
++                (drum ? "D1 > [K01] D1 OK" : "V4 > [K01]   OK ") : "D1 > K01 [D1] OK";
++        else if(menu_voiceCopyFocus == VOICE_COPY_OK)
++            row = drum ? "D1 > K01 D1 >OK " : "V4 > K01    >OK ";
++        memcpy(editDisplayBuffer[0], "copy voice to:  ", 16);
++        memcpy(editDisplayBuffer[1], row, 16);
++        editDisplayBuffer[1][1] = '1' + menu_voiceCopy.voice;
++        uint8_t kitColumn = menu_voiceCopyEditing && menu_voiceCopyFocus == VOICE_COPY_KIT ? 7 : 6;
++        uint16_t kit = (uint16_t)menu_voiceCopyTarget + 1;
++        editDisplayBuffer[1][kitColumn] = '0' + kit / 10;
++        editDisplayBuffer[1][kitColumn + 1] = '0' + kit % 10;
++        if(drum) {
++            uint8_t column = !menu_voiceCopyEditing ? 10 :
++                menu_voiceCopyFocus == VOICE_COPY_KIT ? 12 : 11;
++            editDisplayBuffer[1][column] = '1' + menu_voiceCopyTargetVoice;
++        }
++        if(!menu_voiceCopyEditing && menu_voiceCopyFocus != VOICE_COPY_OK)
++            visibleCursor = VIS_CURS(1, menu_voiceCopyFocus == VOICE_COPY_KIT ? 5 : 9, 1);
+     } else {
+         memcpy(editDisplayBuffer[0], "Voice transfer  ", 16);
+         const char *message = menu_voiceCopyNotice == 1 ? "success!        " :
+diff --git a/tests/r21_voice_copy/host.c b/tests/r21_voice_copy/host.c
+index 8303d5a..e90086b 100644
+--- a/tests/r21_voice_copy/host.c
++++ b/tests/r21_voice_copy/host.c
+@@ -32,26 +32,36 @@ uint8_t buttonHandler_originalValue[2],buttonHandler_resetLock1,buttonHandler_re
+ static int8_t armed_step=NO_STEP_SELECTED;
+ int8_t buttonHandler_getArmedAutomationStep(void){return armed_step;}
+ #include "base.inc"
++#define preset_transferVoiceTo production_transferVoiceTo
+ #include "../../Core/Src/Preset/voiceTransfer.inc"
++#undef preset_transferVoiceTo
++static unsigned transfer_calls;
++uint8_t preset_transferVoiceTo(const PresetVoiceCopy *copy,uint8_t kit,uint8_t voice)
++{transfer_calls++;return production_transferVoiceTo(copy,kit,voice);}
+ uint8_t copyClear_Mode;
++#define SRC_DST_NONE -1
++int8_t buttonHandler_copySrc=SRC_DST_NONE,buttonHandler_copyDst=SRC_DST_NONE;
+ uint8_t buttonHandler_getCopy(void){return host_copy;}
+ uint8_t buttonHandler_getShift(void){return host_shift;}
+-uint8_t buttonHandler_getMode(void){return host_mode;}
+ uint8_t menu_getActiveVoice(void){return menu_activeVoice;}
+-void copyClear_reset(void){copyClear_Mode=MODE_NONE;}
++#include "copy-reset.inc"
+ void menu_repaintAll(void){}
+ void screensaver_touch(void){}
+ void copyClear_executeClear(void){clear_actions++;}
+ uint8_t copyClear_isClearModeActive(void){return copyClear_Mode==MODE_CLEAR;}
+ uint8_t copyClear_getClearTarget(void){return 0;}
+ void copyClear_setClearTarget(uint8_t v){(void)v;}
+-void menu_handleLoadSaveMenu(int8_t i,uint8_t b){(void)i;(void)b;}
++static unsigned load_save_calls;
++static int8_t load_save_inc;
++static uint8_t load_save_button;
++void menu_handleLoadSaveMenu(int8_t i,uint8_t b){load_save_calls++;load_save_inc=i;load_save_button=b;}
+ void menu_handleSongMenu(int8_t i,uint8_t b){(void)i;(void)b;}
+ uint8_t seq_getTrackLength(uint8_t voice){return seq_patternSet.length[seq_activePattern][voice];}
+ void seq_setTrackLength(uint8_t voice,uint8_t length){seq_patternSet.length[seq_activePattern][voice]=length;}
+ static void menu_encoderChangeParameter(int8_t i){(void)i;edit_actions++;}
+ static void menu_moveToMenuItem(int8_t i){(void)i;navigate_actions++;}
+ void menu_repaint(void){}
++#include "cursor.inc"
+ #include "../../Core/Src/menu/voiceTransfer.inc"
+ #include "engine.c"
+ #include "encoder.inc"
+@@ -68,6 +78,8 @@ static void reset_r21(void)
+  memset(&buttonHandler_stateMemory,0,sizeof buttonHandler_stateMemory);
+  buttonHandler_stateMemory.selectButtonMode=SELECT_MODE_VOICE;
+  seq_loadPendigFlag=0;morph_state=morph_index=0;armed_step=NO_STEP_SELECTED;buttonHandler_resetLock1=buttonHandler_resetLock2=0;
++ menu_voiceCopyModeHeld=0;
++ menu_voiceCopyVoiceHeld=0;
+  now=100;irq_mask=0;before_commit=0;
+  for(unsigned p=0;p<END_OF_SOUND_PARAMETERS;p++){
+   activeParameters[p]=(p*7+11)%128;
+@@ -91,8 +103,18 @@ static void chord(void)
+  panel_release(BUT_COPY);menu_parseEncoder(0,0);assert(menu_voiceCopyActive==2);
+  now+=40;
+ }
+-static void choose_two(void){while(menu_voiceCopyTarget!=1)menu_parseEncoder(-1,0);}
+-static void confirm(void){menu_parseEncoder(0,1);}
++static void data_click(void){menu_parseEncoder(0,0);now+=40;menu_parseEncoder(0,1);menu_parseEncoder(0,0);now+=40;}
++static void choose_two(void){
++ while(menu_voiceCopyFocus!=VOICE_COPY_KIT)menu_parseEncoder(-1,0);
++ if(!menu_voiceCopyEditing)data_click();
++ while(menu_voiceCopyTarget!=1)menu_parseEncoder(menu_voiceCopyTarget>1?-1:1,0);
++ data_click();
++}
++static void confirm(void){
++ if(menu_voiceCopyEditing)data_click();
++ while(menu_voiceCopyFocus!=VOICE_COPY_OK)menu_parseEncoder(1,0);
++ menu_parseEncoder(0,0);now+=40;menu_parseEncoder(0,1);
++}
+ static void start_clock(void){running=1;}
+ static void storage_roundtrip(void)
+ {
+@@ -102,7 +124,7 @@ static void storage_roundtrip(void)
+  PatternSet *patterns=malloc(sizeof *patterns);memcpy(patterns,&seq_patternSet,sizeof *patterns);
+  unsigned writes_before=physical_writes,apis=api_writes,send_before=sends,fx_before=fx_preparations;
+  char names_before[sizeof savefileNames];memcpy(names_before,savefileNames,sizeof names_before);
+- chord();choose_two();menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[0],"V5 > KIT 02?",12));confirm();
++ chord();choose_two();menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[1],"V5 > K02",8));confirm();
+  assert(menu_voiceCopyNotice==1 && !menu_voiceCopyActive);
+  assert(!memcmp(source,activeParameters,sizeof source));assert(!memcmp(stored_source,mainParameters[9],sizeof stored_source));
+  assert(!memcmp(patterns,&seq_patternSet,sizeof *patterns));free(patterns);
+@@ -227,33 +249,28 @@ static void rejection_cases(void)
+  reset_r21();seq_pendingPattern=1;panel_press(BUT_COPY);menu_parseEncoder(0,1);
+  assert(!menu_voiceCopyActive&&menu_voiceCopyNotice==2);
+  reset_r21();chord();choose_two();uint8_t target[END_OF_SOUND_PARAMETERS];memcpy(target,mainParameters[1],sizeof target);
+- panel_press(BUT_COPY);assert(menu_voiceCopyNotice==3&&!menu_voiceCopyActive);
+- panel_release(BUT_COPY);assert(!memcmp(target,mainParameters[1],sizeof target));
++ panel_press(BUT_MODE1);assert(!menu_voiceCopyActive&&!menu_voiceCopyNotice);
++ panel_release(BUT_MODE1);assert(!memcmp(target,mainParameters[1],sizeof target));
+  for(unsigned j=0;j<END_OF_SOUND_PARAMETERS;j++)assert(menu_voiceCopy.values[j]==0);
+  puts("PASS same/invalid kit, project/kit/pattern change, A/B/A reload, external transport and commit-boundary interrupt rejection, invalid source byte, cancel, truthful LCD, snapshot disposal and interrupt mask restore");
+ }
+ static void button_edges(void)
+ {
+- reset_r21();uint8_t target[END_OF_SOUND_PARAMETERS];memcpy(target,mainParameters[1],sizeof target);
+- panel_press(BUT_COPY);menu_parseEncoder(0,1);
+- for(unsigned i=0;i<10;i++){now++;menu_parseEncoder(0,i%2);}
+- assert(menu_voiceCopyActive==1&&!memcmp(target,mainParameters[1],sizeof target));
+- menu_parseEncoder(0,0);panel_release(BUT_COPY);menu_parseEncoder(0,0);choose_two();
+- now+=1;menu_parseEncoder(0,1);assert(menu_voiceCopyActive==2);
+- menu_parseEncoder(0,0);now+=40;confirm();assert(menu_voiceCopyNotice==1);
+- for(unsigned i=0;i<20;i++){now++;menu_parseEncoder(0,i%2);}
+- assert(!editModeActive && menu_voiceCopyNotice==1);
+- now+=40;menu_parseEncoder(0,0);now+=40;menu_parseEncoder(0,0);
+- menu_parseEncoder(0,1);assert(editModeActive);menu_parseEncoder(1,1);assert(edit_actions);
+- menu_parseEncoder(0,0);menu_parseEncoder(0,1);assert(!editModeActive);menu_parseEncoder(1,1);assert(navigate_actions);
+- reset_r21();panel_press(BUT_COPY);unsigned copies=track_copies;panel_press(BUT_VOICE_3);assert(track_copies==copies+1);panel_release(BUT_COPY);assert(copyClear_Mode==MODE_NONE);
+- panel_press(BUT_SHIFT);panel_press(BUT_COPY);assert(copyClear_Mode==MODE_CLEAR);unsigned clears=clear_actions;menu_parseEncoder(0,1);assert(clear_actions==clears+1&&!menu_voiceCopyActive);panel_release(BUT_COPY);panel_release(BUT_SHIFT);
+- reset_r21();panel_press(BUT_REC);assert(buttonHandler_stateMemory.seqRecording);unsigned steps=step_calls;panel_press(BUT_SEQ1);assert(step_calls==steps+1);
++ reset_r21();chord();choose_two();data_click();assert(menu_voiceCopyEditing&&menu_voiceCopyActive);
++ data_click();assert(!menu_voiceCopyEditing&&menu_voiceCopyActive);confirm();assert(menu_voiceCopyNotice==1);
++ for(unsigned i=0;i<20;i++){now++;menu_parseEncoder(0,i%2);}assert(!editModeActive);
++ menu_parseEncoder(0,0);now+=40;menu_parseEncoder(0,0);menu_parseEncoder(0,1);assert(editModeActive);
++ menu_parseEncoder(1,1);assert(edit_actions);menu_parseEncoder(0,0);menu_parseEncoder(0,1);
++ assert(!editModeActive);menu_parseEncoder(1,1);assert(navigate_actions);
++ reset_r21();panel_press(BUT_COPY);unsigned copies=track_copies;panel_press(BUT_VOICE_3);
++ assert(track_copies==copies+1);panel_release(BUT_COPY);assert(copyClear_Mode==MODE_NONE);
++ panel_press(BUT_SHIFT);panel_press(BUT_COPY);assert(copyClear_Mode==MODE_CLEAR);unsigned clears=clear_actions;
++ menu_parseEncoder(0,1);assert(clear_actions==clears+1&&!menu_voiceCopyActive);panel_release(BUT_COPY);panel_release(BUT_SHIFT);
++ reset_r21();panel_press(BUT_REC);assert(buttonHandler_stateMemory.seqRecording);unsigned steps=step_calls;
++ panel_press(BUT_SEQ1);assert(step_calls==steps+1);
+  reset_r21();chord();panel_press(BUT_START_STOP);assert(running);choose_two();confirm();assert(menu_voiceCopyNotice==2);
+- puts("PASS entry press/release and repeated/bouncing edges, held DATA, fresh confirmation, post-success bounce drain, normal DATA/edit/navigation, COPY/voice dispatch, SHIFT+CLEAR, REC/STEP dispatch, START/STOP rejection");
++ puts("PASS navigation editor exits do not commit; post-success bounce drain, normal DATA/edit/navigation, COPY/voice, SHIFT+CLEAR, REC/STEP and START/STOP rejection");
+ }
+-
+-
+ static void legacy_and_load(void)
+ {
+  reset_r21();uint8_t legacy[100];memset(legacy,21,sizeof legacy);
+diff --git a/tests/r21_voice_copy/panel.c b/tests/r21_voice_copy/panel.c
+index a1947d5..2135e14 100644
+--- a/tests/r21_voice_copy/panel.c
++++ b/tests/r21_voice_copy/panel.c
+@@ -1,20 +1,28 @@
+ /* Unchanged mode/voice/step helpers are adapters; public dispatchers are exact. */
+ static struct {unsigned selectButtonMode:4,seqRunning:1,seqRecording:1,seqErasing:1;} buttonHandler_stateMemory;
+ uint8_t menu_activePatternBank,menu_activeBar;
++#include "mode.inc"
++uint8_t menu_getSubPage(void){return 0;}
++void menu_resetActiveParameter(void){}
++void led_setActiveSelectButton(uint8_t v){(void)v;}
++static void buttonHandler_enterSeqModeStepMode(void){menu_activePage=SEQ_PAGE;}
+ static unsigned voice_calls,step_calls,part_calls,mode_calls,track_copies;
+ static void buttonHandler_voiceButtonPressed(uint8_t v){voice_calls++;if(copyClear_Mode==MODE_COPY_TRACK)track_copies++;else menu_activeVoice=v;}
+ static void buttonHandler_selectButtonPressed(uint8_t v){(void)v;part_calls++;}
+ static void buttonHandler_seqButtonPressed(uint8_t v){(void)v;step_calls++;}
+-static void buttonHandler_handleModeButtons(uint8_t v){(void)v;mode_calls++;}
++static void buttonHandler_handleModeButtons(uint8_t v){mode_calls++;buttonHandler_setMode(v);
++#include "voice-mode.inc"
++}
+ static void buttonHandler_partButtonReleased(uint8_t v){(void)v;}
+ static void buttonHandler_seqButtonReleased(uint8_t v){(void)v;}
+ void buttonHandler_setRunStopState(uint8_t v){buttonHandler_stateMemory.seqRunning=v;running=v;}
+ void buttonHandler_showMuteLEDs(void){}
+-void led_clearAllBlinkLeds(void){}
++static uint32_t blink_leds;
++void led_clearAllBlinkLeds(void){blink_leds=0;}
+ void led_clearSelectLeds(void){}
+ void led_clearVoiceLeds(void){}
+ void led_setValue(uint8_t a,uint8_t b){(void)a;(void)b;}
+-void led_setBlinkLed(uint8_t a,uint8_t b){(void)a;(void)b;}
++void led_setBlinkLed(uint8_t value,uint8_t led){if(led<32){if(value)blink_leds|=1u<<led;else blink_leds&=~(1u<<led);}}
+ void led_setActiveVoice(uint8_t v){(void)v;}
+ void led_setMode2(uint8_t v){(void)v;}
+ void led_updateBarLeds(void){}
+diff --git a/tests/r21_voice_copy/run.py b/tests/r21_voice_copy/run.py
+index 5be1c66..3d4c90d 100644
+--- a/tests/r21_voice_copy/run.py
++++ b/tests/r21_voice_copy/run.py
+@@ -1,7 +1,7 @@
+ #!/usr/bin/env python3
+ """R21 production selector/transfer and real-FatFs project round trips, ASan/UBSan."""
+ from pathlib import Path
+-import importlib.util, json, os, subprocess, sys, tempfile
++import importlib.util, json, os, re, subprocess, sys, tempfile
+ sys.dont_write_bytecode = True
+ R = Path(__file__).resolve().parents[2]
+ H = Path(__file__).resolve().parent
+@@ -36,6 +36,11 @@ with tempfile.TemporaryDirectory(prefix='lxr-r21-') as tmp:
+     a=seq.index('if(activeParameters[PAR_PATTERN_MODE] == SKIP_NEXT_KIT_AUTOLOAD)'); b=seq.index('//use shuffle value from pattern',a)
+     (tmp/'automatic.inc').write_text(seq[a:b])
+     (tmp/'pending.inc').write_text(f.h.extract(seq, 'seq_hasPendingKitChange'))
++    (tmp/'cursor.inc').write_text(re.search(r'^#define VIS_CURS[^\n]+',menu,re.M).group()+'\n')
++    (tmp/'mode.inc').write_text(f.h.extract(buttons,'buttonHandler_getMode')+f.h.extract(buttons,'buttonHandler_setMode'))
++    (tmp/'copy-reset.inc').write_text(f.h.extract((R/'Core/Src/menu/copyClearTools.c').read_text(),'copyClear_reset'))
++    a=buttons.index('case SELECT_MODE_VOICE:',buttons.index('static void buttonHandler_handleModeButtons'));b=buttons.index('case SELECT_MODE_LOAD:',a)
++    (tmp/'voice-mode.inc').write_text('switch(v){'+buttons[a:b]+'default: break;}')
+     (tmp/'encoder.inc').write_text(f.h.extract(menu, 'menu_parseEncoder'))
+     # The entire production public button dispatchers run, with unrelated actions
+     # adapted in panel.c. This catches hook placement and COPY release fallthrough.
+diff --git a/tests/r22_drum_copy/cases.c b/tests/r22_drum_copy/cases.c
+index 470bbf4..9d0de23 100644
+--- a/tests/r22_drum_copy/cases.c
++++ b/tests/r22_drum_copy/cases.c
+@@ -4,15 +4,15 @@ static void r22_reset(unsigned source)
+  reset_r21();menu_voiceCopyVoiceHeld=0;
+  menu_activePage=menu_activeVoice=source;
+ }
+-static void target_button(unsigned target)
++static void target_drum(unsigned target)
+ {
+- unsigned calls=voice_calls,copies=track_copies;
+- uint8_t source=menu_activeVoice,page=menu_activePage;
+- panel_press(BUT_VOICE_1+target);panel_press(BUT_VOICE_1+target);
+- assert(menu_voiceCopyActive&&menu_voiceCopyTargetVoice==target);
++ unsigned calls=voice_calls,copies=track_copies;uint8_t source=menu_activeVoice,page=menu_activePage;
++ while(menu_voiceCopyFocus!=VOICE_COPY_DRUM)menu_parseEncoder(menu_voiceCopyFocus<VOICE_COPY_DRUM?1:-1,0);
++ if(!menu_voiceCopyEditing)data_click();
++ while(menu_voiceCopyTargetVoice!=target)menu_parseEncoder(menu_voiceCopyTargetVoice<target?1:-1,0);
++ data_click();
++ assert(menu_voiceCopyActive&&menu_voiceCopyTargetVoice==target&&!menu_voiceCopyEditing);
+  assert(menu_activeVoice==source&&menu_activePage==page&&voice_calls==calls&&track_copies==copies);
+- panel_release(BUT_VOICE_1+target);
+- assert(!menu_voiceCopyVoiceHeld);
+ }
+ static void menu_oracle(unsigned source,unsigned target,uint8_t *expected)
+ {
+@@ -42,9 +42,9 @@ static void r22_nine_pairs(void)
+   char names[sizeof savefileNames];memcpy(names,savefileNames,sizeof names);
+   uint8_t songs[sizeof seq_songData];memcpy(songs,seq_songData,sizeof songs);
+   unsigned writes=api_writes,sectors=physical_writes,dispatch=sends,fx=fx_preparations;
+-  chord();assert(menu_voiceCopyTargetVoice==source);choose_two();target_button(target);
+-  menu_renderVoiceTransfer();char line[17];snprintf(line,sizeof line,"D%u > K02 D%u?",source+1,target+1);
+-  assert(!memcmp(editDisplayBuffer[0],line,strlen(line)));
++  chord();assert(menu_voiceCopyTargetVoice==source);choose_two();target_drum(target);
++  menu_renderVoiceTransfer();char line[17];snprintf(line,sizeof line,"D%u > K02 D%u  OK ",source+1,target+1);
++  assert(!memcmp(editDisplayBuffer[1],line,strlen(line)));
+   confirm();assert(menu_voiceCopyNotice==1);
+   assert(!memcmp(mainParameters[1],expected,sizeof expected));
+   memcpy(kits+sizeof expected,expected,sizeof expected);
+@@ -63,7 +63,7 @@ static void r22_same_kit_and_invalid(void)
+   r22_reset(source);uint8_t kits[sizeof mainParameters],active[NUM_PARAMS];
+   memcpy(kits,mainParameters,sizeof kits);memcpy(active,activeParameters,sizeof active);
+   unsigned io=api_writes,dispatch=sends,fx=fx_preparations;
+-  chord();target_button(target);confirm();assert(menu_voiceCopyNotice==2);
++  chord();target_drum(target);confirm();assert(menu_voiceCopyNotice==2);
+   assert(!memcmp(kits,mainParameters,sizeof kits)&&!memcmp(active,activeParameters,sizeof active));
+   assert(io==api_writes&&dispatch==sends&&fx==fx_preparations);
+  }
+@@ -104,7 +104,7 @@ static void r22_lfo_cases(void)
+   }
+   expected[PAR_TARGET_LFO1+early]=expected[PAR_TARGET_LFO1+late]=0;
+   unsigned io=api_writes,dispatch=sends,fx=fx_preparations;
+-  chord();choose_two();target_button(target);confirm();assert(menu_voiceCopyNotice==1);
++  chord();choose_two();target_drum(target);confirm();assert(menu_voiceCopyNotice==1);
+   assert(!memcmp(expected,mainParameters[1],sizeof expected));
+   assert(io==api_writes&&dispatch==sends&&fx==fx_preparations);
+   assert(preset_saveProject(0)==FR_OK&&preset_loadProject(0,0)==FR_OK);
+@@ -126,7 +126,7 @@ static void r22_lfo_cases(void)
+   if(kind==5)activeParameters[PAR_TARGET_LFO1]=255;
+   if(kind==6)activeParameters[PAR_VOICE_LFO1]=2;
+   uint8_t prior[8];for(unsigned i=0;i<8;i++)prior[i]=mainParameters[1][preset_voiceLfoGroups[i]+1];
+-  chord();choose_two();target_button(1);confirm();assert(menu_voiceCopyNotice==1);
++  chord();choose_two();target_drum(1);confirm();assert(menu_voiceCopyNotice==1);
+   for(unsigned i=0;i<8;i++)assert(mainParameters[1][preset_voiceLfoGroups[i]+1]==prior[i]);
+  }
+  puts("PASS R22 OFF/zero/other-voice/FX/global/invalid/voice-mismatch retain destination LFO");
+@@ -168,7 +168,7 @@ static void r22_persistence(void)
+   uint16_t target_id[3]={PAR_COARSE1,PAR_COARSE2,PAR_COARSE3};
+   buttonHandler_originalParameter[0]=source_id[source];buttonHandler_originalValue[0]=113;
+   activeParameters[source_id[source]]=7; /* Temporary held-STEP value. */
+-  chord();choose_two();target_button(target);confirm();assert(menu_voiceCopyNotice==1);
++  chord();choose_two();target_drum(target);confirm();assert(menu_voiceCopyNotice==1);
+   assert(mainParameters[1][target_id[target]]==113&&activeParameters[source_id[source]]==7);
+   /* The unchanged release cleanup restores the editable source base before save. */
+   activeParameters[source_id[source]]=buttonHandler_originalValue[0];armed_step=NO_STEP_SELECTED;buttonHandler_resetLock1=0;
+@@ -191,11 +191,10 @@ static void r22_persistence(void)
+ }
+ static void r22_panel_and_morph(void)
+ {
+- r22_reset(2);chord();choose_two();target_button(0);menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[0],"D3 > K02 D1?",12));
+- unsigned calls=voice_calls;panel_press(BUT_VOICE_2);confirm();assert(menu_voiceCopyNotice==1);
+- panel_press(BUT_VOICE_2);panel_release(BUT_VOICE_2);menu_parseEncoder(0,0);
+- assert(!menu_voiceCopyActive&&voice_calls==calls&&menu_activeVoice==2&&!editModeActive);
+- r22_reset(0);chord();choose_two();target_button(2);panel_press(BUT_COPY);assert(menu_voiceCopyNotice==3);panel_release(BUT_COPY);
++ r22_reset(2);chord();choose_two();target_drum(0);menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[1],"D3 > K02 D1",10));
++ unsigned calls=voice_calls;panel_press(BUT_COPY);assert(menu_voiceCopyActive);panel_release(BUT_COPY);
++ confirm();assert(menu_voiceCopyNotice==1&&voice_calls==calls&&menu_activeVoice==2&&!editModeActive);
++ r22_reset(0);chord();choose_two();target_drum(2);panel_press(BUT_MODE1);assert(!menu_voiceCopyActive&&!menu_voiceCopyNotice);panel_release(BUT_MODE1);
+  r22_reset(4);chord();choose_two();panel_press(BUT_VOICE_1);assert(!menu_voiceCopyActive&&menu_voiceCopyNotice==3&&menu_activeVoice==4);panel_release(BUT_VOICE_1);
+  /* Existing 57->123 Morph case uses D5. This remapped case protects an alias
+   * before/at commit while leaving an unrelated target permitted. */
+@@ -205,7 +204,7 @@ static void r22_panel_and_morph(void)
+   morph_state=mode<2?1:0;
+   uint8_t before[sizeof mainParameters],active[NUM_PARAMS];memcpy(before,mainParameters,sizeof before);memcpy(active,activeParameters,sizeof active);
+   unsigned dispatch=sends,fx=fx_preparations,writes=api_writes;
+-  chord();choose_two();target_button(2);
++  chord();choose_two();target_drum(2);
+   if(mode==4)menu_voiceCopyTarget=2;
+   if(mode==5)before_commit=begin_morph_at_commit;
+   confirm();
+@@ -213,12 +212,14 @@ static void r22_panel_and_morph(void)
+   else {assert(menu_voiceCopyNotice==4);assert(!memcmp(before,mainParameters,sizeof before));}
+   assert(!memcmp(active,activeParameters,sizeof active)&&dispatch==sends&&fx==fx_preparations&&writes==api_writes);
+  }
+- r22_reset(0);chord();choose_two();target_button(1);seq_loadPendigFlag=1;confirm();assert(menu_voiceCopyNotice==2);
+- r22_reset(0);chord();choose_two();target_button(1);before_commit=start_clock;confirm();assert(menu_voiceCopyNotice==2);
+- puts("PASS R22 panel target interception/held edge/release cleanup, non-Drum cancellation, remapped Morph alias/zero/pending/unrelated/commit guard and pending-pattern/clock rejection");
++ r22_reset(0);chord();choose_two();target_drum(1);seq_loadPendigFlag=1;confirm();assert(menu_voiceCopyNotice==2);
++ r22_reset(0);chord();choose_two();target_drum(1);before_commit=start_clock;confirm();assert(menu_voiceCopyNotice==2);
++ puts("PASS R22 encoder destination editing, ignored COPY, VOICE cancellation, non-Drum cancellation, remapped Morph alias/zero/pending/unrelated/commit guard and pending-pattern/clock rejection");
+ }
++#include "navigation_cases.c"
+ int main(void)
+ {
+  r22_nine_pairs();r22_same_kit_and_invalid();r22_lfo_cases();r22_all_lfo_destinations();r22_persistence();r22_panel_and_morph();
++ navigation_suite();
+  return 0;
+ }
+diff --git a/tests/r22_drum_copy/navigation_cases.c b/tests/r22_drum_copy/navigation_cases.c
+new file mode 100644
+index 0000000..962b206
+--- /dev/null
++++ b/tests/r22_drum_copy/navigation_cases.c
+@@ -0,0 +1,200 @@
++/* TEST02: drive production public panel/encoder dispatchers independently of
++ * choose_two/target_drum/confirm. Counters wrap the real transaction and LEDs;
++ * data/engine/storage snapshots detect actions before explicit OK. */
++typedef struct {
++ uint8_t kits[sizeof mainParameters],active[sizeof activeParameters];
++ uint8_t engine[sizeof engine_values];
++ unsigned seen[sizeof engine_seen/sizeof *engine_seen];
++ PatternSet patterns;
++ unsigned calls,dispatch,fx,writes,sectors;
++} NavigationSnapshot;
++static NavigationSnapshot *navigation_snapshot(void)
++{
++ NavigationSnapshot *s=malloc(sizeof *s);assert(s);
++ memcpy(s->kits,mainParameters,sizeof s->kits);memcpy(s->active,activeParameters,sizeof s->active);
++ memcpy(s->engine,engine_values,sizeof s->engine);memcpy(s->seen,engine_seen,sizeof s->seen);
++ memcpy(&s->patterns,&seq_patternSet,sizeof s->patterns);
++ s->calls=transfer_calls;s->dispatch=sends;s->fx=fx_preparations;s->writes=api_writes;s->sectors=physical_writes;
++ return s;
++}
++static void navigation_unchanged(const NavigationSnapshot *s)
++{
++ assert(!memcmp(s->kits,mainParameters,sizeof s->kits)&&!memcmp(s->active,activeParameters,sizeof s->active));
++ assert(!memcmp(s->engine,engine_values,sizeof s->engine)&&!memcmp(s->seen,engine_seen,sizeof s->seen));
++ assert(!memcmp(&s->patterns,&seq_patternSet,sizeof s->patterns));
++ assert(s->calls==transfer_calls&&s->dispatch==sends&&s->fx==fx_preparations&&s->writes==api_writes&&s->sectors==physical_writes);
++}
++static void navigation_row(const char *expected,uint8_t cursor)
++{
++ assert(strlen(expected)==16);
++ memset(editDisplayBuffer,0x5a,sizeof editDisplayBuffer);
++ assert(menu_renderVoiceTransfer());
++ assert(!memcmp(editDisplayBuffer[0],"copy voice to:  ",16));
++ assert(!memcmp(editDisplayBuffer[1],expected,16)&&visibleCursor==cursor);
++ assert(editDisplayBuffer[0][16]==0x5a&&editDisplayBuffer[1][16]==0x5a);
++ assert(!memchr(editDisplayBuffer[0],0,16)&&!memchr(editDisplayBuffer[1],0,16));
++}
++static void navigation_stages(unsigned stage)
++{
++ if(stage==0)return; /* Entry chord still held. */
++ chord();
++ if(stage==2)data_click(); /* Kit editor. */
++ if(stage>=3){menu_parseEncoder(1,0);if(stage==4)data_click();}
++ if(stage==5)menu_parseEncoder(1,0); /* OK for a Drum source. */
++}
++static void navigation_entry_gates(void)
++{
++ for(unsigned source=0;source<7;source++)for(unsigned blocked=0;blocked<6;blocked++){
++  r22_reset(source);
++  if(blocked==0)running=1;
++  if(blocked==1)buttonHandler_setMode(SELECT_MODE_PERF);
++  if(blocked==2)host_shift=1;
++  if(blocked==3)menu_activePage=LOAD_PAGE;
++  if(blocked==4)screensaver_Active=1;
++  if(blocked!=5)panel_press(BUT_COPY);
++  unsigned count=transfer_calls;
++  menu_parseEncoder(0,1);menu_parseEncoder(0,0);
++  assert(!menu_voiceCopyActive&&transfer_calls==count);
++  screensaver_Active=0;
++ }
++ r22_reset(0);panel_press(BUT_COPY);menu_parseEncoder(0,1);
++ menu_parseEncoder(0,0);panel_release(BUT_COPY);menu_parseEncoder(0,0);
++ unsigned count=transfer_calls;
++ menu_parseEncoder(0,1); /* Chord release cannot immediately edit/confirm. */
++ assert(!menu_voiceCopyEditing&&menu_voiceCopyActive&&transfer_calls==count);
++ menu_parseEncoder(0,0);now+=39;menu_parseEncoder(0,1);assert(!menu_voiceCopyEditing);
++ menu_parseEncoder(0,0);now+=40;menu_parseEncoder(0,1);assert(menu_voiceCopyEditing&&transfer_calls==count);
++ puts("PASS TEST02 all seven source entry gates: stopped/VOICE/unshifted/COPY/Voice-page/screensaver; initial chord and sub-40ms DATA bounce never edit or transfer");
++}
++static void navigation_fields(void)
++{
++ for(unsigned source=0;source<7;source++){
++  r22_reset(source);NavigationSnapshot *s=navigation_snapshot();chord();
++  unsigned voice=source<6?source:5;
++  assert(menu_voiceCopyFocus==VOICE_COPY_KIT&&!menu_voiceCopyEditing&&menu_voiceCopyTarget==9&&menu_voiceCopyTargetVoice==voice);
++  for(unsigned n=0;n<4;n++)menu_parseEncoder(-1,0);
++  assert(menu_voiceCopyFocus==VOICE_COPY_KIT);
++  char row[17];snprintf(row,sizeof row,source<3?"D%u > K10 D%u  OK ":"V%u > K10     OK ",voice+1,voice+1);
++  navigation_row(row,VIS_CURS(1,5,1));
++  data_click();assert(menu_voiceCopyEditing);
++  snprintf(row,sizeof row,source<3?"D%u > [K10] D%u OK":"V%u > [K10]   OK ",voice+1,voice+1);
++  navigation_row(row,0);
++  for(unsigned n=0;n<70;n++)menu_parseEncoder(-1,0);
++  assert(menu_voiceCopyTarget==0);
++  snprintf(row,sizeof row,source<3?"D%u > [K01] D%u OK":"V%u > [K01]   OK ",voice+1,voice+1);navigation_row(row,0);
++  for(unsigned n=0;n<70;n++)menu_parseEncoder(1,0);
++  assert(menu_voiceCopyTarget==63);
++  snprintf(row,sizeof row,source<3?"D%u > [K64] D%u OK":"V%u > [K64]   OK ",voice+1,voice+1);navigation_row(row,0);
++  data_click();assert(!menu_voiceCopyEditing&&menu_voiceCopyFocus==VOICE_COPY_KIT);
++  menu_parseEncoder(1,0);
++  if(source<3){
++   assert(menu_voiceCopyFocus==VOICE_COPY_DRUM);
++   snprintf(row,sizeof row,"D%u > K64 D%u  OK ",voice+1,voice+1);navigation_row(row,VIS_CURS(1,9,1));
++   data_click();assert(menu_voiceCopyEditing);
++   for(unsigned n=0;n<5;n++)menu_parseEncoder(-1,0);
++   assert(menu_voiceCopyTargetVoice==0);
++   snprintf(row,sizeof row,"D%u > K64 [D1] OK",voice+1);navigation_row(row,0);
++   for(unsigned n=0;n<5;n++)menu_parseEncoder(1,0);
++   assert(menu_voiceCopyTargetVoice==2);
++   snprintf(row,sizeof row,"D%u > K64 [D3] OK",voice+1);navigation_row(row,0);
++   data_click();assert(!menu_voiceCopyEditing);menu_parseEncoder(1,0);
++  }
++  assert(menu_voiceCopyFocus==VOICE_COPY_OK);
++  for(unsigned n=0;n<4;n++)menu_parseEncoder(1,0);
++  assert(menu_voiceCopyFocus==VOICE_COPY_OK);
++  snprintf(row,sizeof row,source<3?"D%u > K64 D3 >OK ":"V%u > K64    >OK ",voice+1);navigation_row(row,0);
++  menu_parseEncoder(-1,0);assert(menu_voiceCopyFocus==(source<3?VOICE_COPY_DRUM:VOICE_COPY_KIT));
++  if(source<3)menu_parseEncoder(-1,0);
++  assert(menu_voiceCopyFocus==VOICE_COPY_KIT&&menu_activeVoice==source&&menu_activePage==source);
++  navigation_unchanged(s);free(s);
++ }
++ puts("PASS TEST02 seven source pages: exact 16-cell rows/guards/cursor, immutable source, bounded bidirectional Kit/Drum/OK navigation/editing, K01/K64/D1/D3, non-Drum omission, no premature transaction or data/engine/SD effects");
++}
++static void navigation_mode_cancel(void)
++{
++ for(unsigned source=0;source<7;source++)for(unsigned stage=0;stage<6;stage++){
++  if(source>=3&&(stage==3||stage==4))continue;
++  r22_reset(source);unsigned modes=mode_calls,voices=voice_calls;
++  if(stage==0){panel_press(BUT_COPY);menu_parseEncoder(0,1);}
++  else if(source<3)navigation_stages(stage);
++  else {chord();if(stage==2)data_click();if(stage==5)menu_parseEncoder(1,0);}
++  NavigationSnapshot *s=navigation_snapshot();
++  panel_press(BUT_MODE1);
++  assert(!menu_voiceCopyActive&&!menu_voiceCopyNotice&&!editModeActive&&menu_voiceCopyDrain);
++  assert(buttonHandler_getMode()==SELECT_MODE_VOICE&&menu_activePage==source&&menu_activeVoice==source&&mode_calls==modes&&voice_calls==voices);
++  /* Held/repeated mode and DATA, long holds then falling-edge/bounce. */
++  panel_press(BUT_MODE1);now+=100;menu_parseEncoder(1,1);panel_release(BUT_MODE1);
++  now+=1;panel_press(BUT_MODE1);panel_release(BUT_MODE1);
++  now+=100;menu_parseEncoder(1,1);assert(menu_voiceCopyDrain&&!editModeActive);
++  panel_release(BUT_COPY);menu_parseEncoder(0,0);now+=39;menu_parseEncoder(0,0);
++  assert(menu_voiceCopyDrain&&!editModeActive);now+=1;menu_parseEncoder(0,0);
++  assert(!menu_voiceCopyDrain&&!editModeActive&&mode_calls==modes&&menu_activePage==source);
++  navigation_unchanged(s);free(s);
++  /* A fresh normal DATA click works after the guard; fresh normal VOICE
++   * exercises the actual production Voice case, whose STEP toggle is intact. */
++  menu_parseEncoder(0,1);assert(editModeActive);menu_parseEncoder(0,0);
++  panel_press(BUT_MODE1);assert(mode_calls==modes+1&&menu_activePage==SEQ_PAGE);
++  panel_release(BUT_MODE1);
++ }
++ puts("PASS TEST02 VOICE cancels every stage/source (including held entry/open HH), actual mode setter/normal Voice-to-STEP positive control, held/repeated/bounced mode and DATA drained, exact RAM/engine/pattern/SD preservation");
++}
++static void navigation_copy_and_instruments(void)
++{
++ for(unsigned stage=1;stage<6;stage++){
++  r22_reset(0);navigation_stages(stage);NavigationSnapshot *s=navigation_snapshot();
++  uint8_t focus=menu_voiceCopyFocus,editing=menu_voiceCopyEditing;
++  unsigned copies=track_copies,voices=voice_calls;
++  for(unsigned n=0;n<3;n++){
++   panel_press(BUT_COPY);panel_press(BUT_COPY);panel_release(BUT_COPY);
++   assert(menu_voiceCopyActive&&menu_voiceCopyFocus==focus&&menu_voiceCopyEditing==editing);
++   assert(!blink_leds&&copyClear_Mode==MODE_NONE&&track_copies==copies&&voice_calls==voices);
++  }
++  panel_press(BUT_COPY);panel_press(BUT_MODE1);panel_release(BUT_MODE1);
++  now+=100;menu_parseEncoder(0,0);assert(menu_voiceCopyDrain);
++  panel_release(BUT_COPY);now+=39;menu_parseEncoder(0,0);assert(menu_voiceCopyDrain);
++  now+=1;menu_parseEncoder(0,0);assert(!menu_voiceCopyDrain);
++  navigation_unchanged(s);free(s);
++  panel_press(BUT_COPY);assert(copyClear_Mode==MODE_COPY_TRACK);
++  panel_release(BUT_COPY);assert(copyClear_Mode==MODE_NONE&&!blink_leds);
++ }
++ for(unsigned key=BUT_VOICE_1;key<=BUT_VOICE_7;key++)for(unsigned stage=1;stage<6;stage++){
++  r22_reset(0);navigation_stages(stage);NavigationSnapshot *s=navigation_snapshot();
++  unsigned voices=voice_calls,copies=track_copies;uint8_t target=menu_voiceCopyTargetVoice;
++  panel_press(key);panel_press(key);assert(!menu_voiceCopyActive&&menu_voiceCopyNotice==3);
++  now+=100;menu_parseEncoder(0,0);assert(menu_voiceCopyDrain);
++  panel_release(key);menu_parseEncoder(0,0);now+=40;menu_parseEncoder(0,0);
++  assert(!menu_voiceCopyDrain&&!editModeActive&&menu_activeVoice==0&&menu_voiceCopyTargetVoice==target&&voice_calls==voices&&track_copies==copies);
++  navigation_unchanged(s);free(s);
++ }
++ puts("PASS TEST02 COPY ignored in every editor/focus, held COPY drained at cancel, actual copy reset clears blink state and normal COPY restored; all seven instrument buttons cancel/consume across stages without retarget/track copy");
++}
++static void navigation_ok_and_outside(void)
++{
++ r22_reset(0);chord();
++ data_click();for(unsigned n=0;n<8;n++)menu_parseEncoder(-1,0);data_click(); /* Kit2. */
++ menu_parseEncoder(1,0);data_click();menu_parseEncoder(1,0);menu_parseEncoder(1,0);data_click(); /* D3. */
++ menu_parseEncoder(1,0);assert(menu_voiceCopyFocus==VOICE_COPY_OK&&menu_voiceCopyTarget==1&&menu_voiceCopyTargetVoice==2);
++ unsigned count=transfer_calls,writes=api_writes,dispatch=sends,fx=fx_preparations;
++ panel_press(BUT_COPY); /* COPY is ignored even at explicit OK. */
++ menu_parseEncoder(0,1);assert(menu_voiceCopyNotice==1&&transfer_calls==count+1);
++ assert(mainParameters[1][PAR_COARSE3]==activeParameters[PAR_COARSE1]);
++ for(unsigned n=0;n<5;n++){menu_parseEncoder(1,1);now++;menu_parseEncoder(0,0);now++;}
++ assert(transfer_calls==count+1&&menu_voiceCopyDrain&&!editModeActive);
++ now+=100;menu_parseEncoder(0,0);assert(menu_voiceCopyDrain);panel_release(BUT_COPY);
++ now+=40;menu_parseEncoder(0,0);assert(!menu_voiceCopyDrain);
++ assert(api_writes==writes&&sends==dispatch&&fx_preparations==fx);
++ /* The unchanged public encoder still routes save/load editing to its own
++  * handler. This boundary assertion does not emulate the name editor. */
++ for(unsigned page=LOAD_PAGE;page<=SAVE_PAGE;page++){
++  menu_activePage=page;unsigned calls=load_save_calls;
++  menu_parseEncoder(1,0);assert(load_save_calls==calls+1&&load_save_inc==1&&!load_save_button);
++  menu_parseEncoder(0,1);assert(load_save_button==1);menu_parseEncoder(0,0);
++ }
++ unsigned modes=mode_calls;panel_press(BUT_MODE2);panel_release(BUT_MODE2);
++ assert(mode_calls==modes+1&&buttonHandler_getMode()==SELECT_MODE_PERF);
++ puts("PASS TEST02 explicit OK commits selected Kit2/Drum3 once even with ignored COPY held; DATA hold/bounce cannot repeat, no FX/MIDI/SD transfer dispatch; unchanged generic save/load DATA routing");
++}
++static void navigation_suite(void)
++{
++ navigation_entry_gates();navigation_fields();navigation_mode_cancel();navigation_copy_and_instruments();navigation_ok_and_outside();
++}
+diff --git a/tests/r22_drum_copy/validate_arm.py b/tests/r22_drum_copy/validate_arm.py
+index bee04a3..79fa54c 100644
+--- a/tests/r22_drum_copy/validate_arm.py
++++ b/tests/r22_drum_copy/validate_arm.py
+@@ -30,22 +30,22 @@ headers=[struct.unpack_from('<10I',elf,shoff+i*shsize) for i in range(shcount)]
+ strings=elf[headers[shstr][4]:headers[shstr][4]+headers[shstr][5]]
+ sections={strings[h[0]:strings.index(0,h[0])].decode():{'address':h[3],'bytes':h[5]} for h in headers if h[0]}
+ def end_span(names,origin):return max(sections[n]['address']+sections[n]['bytes'] for n in names)-origin
+-current={'.text':sections['.text']['bytes'], 'ITCM':end_span(['.itcm_text'],0),
++current={'.text':sections['.text']['bytes'], '.rodata':sections['.rodata']['bytes'], 'ITCM':end_span(['.itcm_text'],0),
+  'DTCM':end_span(['.dtcm','.dtcmz'],0x20000000),
+  'SRAM':end_span(['.data','.bss','._user_heap'],0x20020000), 'FLASH_payload':len(img)-16}
+-# Matched ARM GNU14.3.Rel1 Release, exact R21 SOURCE 861c643...
+-base={'.text':159440,'ITCM':15304,'DTCM':107424,'SRAM':275156,'FLASH_payload':296152}
++# Matched ARM GNU14.3.Rel1 Release, exact R22 TEST01 SOURCE ace7ad9...
++base={'.text':159856,'.rodata':83168,'ITCM':15304,'DTCM':107424,'SRAM':275156,'FLASH_payload':296704}
+ capacity={'ITCM':16384,'DTCM':131072,'SRAM':393216,'FLASH_payload':1015808}
+-regions={k:{'R21':base[k],'R22':v,'delta':v-base[k],**({'headroom':capacity[k]-v} if k in capacity else {})} for k,v in current.items()}
++regions={k:{'TEST01':base[k],'TEST02':v,'delta':v-base[k],**({'headroom':capacity[k]-v} if k in capacity else {})} for k,v in current.items()}
+ assert all(v['headroom']>0 for v in regions.values() if 'headroom' in v)
+-image=O/'LXR_V2_R22_TEST01.img';image.write_bytes(img)
+-archive=O/'LXR_V2_R22_TEST01.zip'
++image=O/'LXR_V2_R22_TEST02.img';image.write_bytes(img)
++archive=O/'LXR_V2_R22_TEST02.zip'
+ with zipfile.ZipFile(archive,'w',compression=zipfile.ZIP_DEFLATED) as z:z.write(image,image.name)
+ with zipfile.ZipFile(archive) as z:assert z.namelist()==[image.name] and z.testzip() is None and z.read(image.name)==img
+ files=[image,archive,O/'LXR_V2_STM32F765.elf',O/'LXR_V2_STM32F765.map']
+ records={p.name:{'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in files}
+ result={'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=R,text=True).strip(),
+- 'base_sha':'861c643632e0a88bdc7d60d9410befb3971489fc','files':records,'regions':regions,
++ 'base_sha':'ace7ad95081aac6a015f11b87b6c540ce100b344','files':records,'regions':regions,
+  'sections':sections,'segments':segments,'boot_string':'LXR LAB R22','checksum_byte':img[12],
+  'CPU_WCET':'UNMEASURED','IRQ_DMA':'UNMEASURED','stack_high_water':'UNMEASURED','reliability':'UNMEASURED'}
+ (O/'validation.json').write_text(json.dumps(result,indent=2)+'\n')

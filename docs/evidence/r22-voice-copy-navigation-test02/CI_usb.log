@@ -1,0 +1,16 @@
+PASS original normal exit 0
+PASS original rx-normal exit 0
+PASS original rx-alias exit 0
+REPRODUCED original busy exit -6
+REPRODUCED original wrap exit -6
+REPRODUCED original rx-full exit -6
+PASS candidate normal exit 0
+PASS candidate rx-normal exit 0
+PASS candidate busy exit 0
+PASS candidate external-busy exit 0
+PASS candidate inflight exit 0
+PASS candidate wrap exit 0
+PASS candidate disconnect exit 0
+PASS candidate rx-full exit 0
+PASS candidate rx-short exit 0
+PASS: original three USB faults, normal TX/RX byte identity, candidate TX/RX lifetime/overflow/wrap/short-packet cases

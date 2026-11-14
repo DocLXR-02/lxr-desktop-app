@@ -1,0 +1,12 @@
+PASS original-normal exit=0
+PASS candidate-normal exit=0
+PASS original-positive exit=1
+PASS original-negative exit=1
+PASS candidate-positive exit=0
+PASS candidate-negative exit=0
+PASS original-stereo-positive exit=0
+PASS original-stereo-negative exit=0
+PASS candidate-stereo-positive exit=0
+PASS candidate-stereo-negative exit=0
+PASS normal-domain raw-sample parity across 144 channel/ratio/gain/wet cases
+PASS all cases, precise original sanitizer reproductions and 144 exact sample comparisons
