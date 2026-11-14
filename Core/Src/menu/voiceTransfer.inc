@@ -47,9 +47,10 @@ static uint8_t menu_voiceTransferEncoder(int8_t inc, uint8_t button)
                 if(target >= 0 && target < NUM_KIT_SLOTS) menu_voiceCopyTarget = target;
             }
             if(click && (uint32_t)(now - menu_voiceCopyReleased) >= 40u) {
-                uint8_t ok = !buttonHandler_getShift() && !buttonHandler_getCopy() &&
-                    preset_transferVoice(&menu_voiceCopy, menu_voiceCopyTarget);
-                menu_finishVoiceCopy(ok ? 1 : 2);
+                uint8_t result = buttonHandler_getShift() || buttonHandler_getCopy() ?
+                    PRESET_VOICE_REJECTED : preset_transferVoice(&menu_voiceCopy, menu_voiceCopyTarget);
+                menu_finishVoiceCopy(result == PRESET_VOICE_OK ? 1 :
+                    result == PRESET_VOICE_MORPH_ACTIVE ? 4 : 2);
             }
             if(!button && previous) menu_voiceCopyReleased = now;
         }
@@ -100,7 +101,8 @@ static uint8_t menu_renderVoiceTransfer(void)
     } else {
         memcpy(editDisplayBuffer[0], "Voice transfer  ", 16);
         const char *message = menu_voiceCopyNotice == 1 ? "success!        " :
-                              menu_voiceCopyNotice == 2 ? "rejected        " : "cancelled       ";
+                              menu_voiceCopyNotice == 2 ? "rejected        " :
+                              menu_voiceCopyNotice == 4 ? "Morph active    " : "cancelled       ";
         memcpy(editDisplayBuffer[1], message, 16);
     }
     display_needs_refresh = 1;

@@ -18,7 +18,7 @@ static uint32_t now, irq_mask;
 static void (*before_commit)(void);
 uint32_t HAL_GetTick(void){return now;}
 uint8_t seq_isRunning(void);
-static uint8_t running,seq_loadPendigFlag;
+static uint8_t running,seq_loadPendigFlag,morph_state,morph_index;
 #include "pending.inc"
 uint8_t seq_isRunning(void){return running;}
 static uint32_t host_getMask(void){return irq_mask;}
@@ -67,7 +67,7 @@ static void reset_r21(void)
  menu_voiceCopyActive=menu_voiceCopyDrain=menu_voiceCopyNotice=menu_voiceCopyCopyHeld=0;
  memset(&buttonHandler_stateMemory,0,sizeof buttonHandler_stateMemory);
  buttonHandler_stateMemory.selectButtonMode=SELECT_MODE_VOICE;
- seq_loadPendigFlag=0;armed_step=NO_STEP_SELECTED;buttonHandler_resetLock1=buttonHandler_resetLock2=0;
+ seq_loadPendigFlag=0;morph_state=morph_index=0;armed_step=NO_STEP_SELECTED;buttonHandler_resetLock1=buttonHandler_resetLock2=0;
  now=100;irq_mask=0;before_commit=0;
  for(unsigned p=0;p<END_OF_SOUND_PARAMETERS;p++){
   activeParameters[p]=(p*7+11)%128;
@@ -278,17 +278,48 @@ static void legacy_and_load(void)
  assert(!engine_seen[PAR_BANK_CHANGE]&&!engine_seen[PAR_NRPN_FINE]&&!engine_seen[PAR_NRPN_COARSE]&&!engine_seen[PAR_NRPN_DATA_ENTRY_COARSE]);
  puts("PASS short compatible kit, zero tail preservation, actual pattern-linked auto-load block, destination decoding and normal/immediate low CC127/CC2 boundary without reserved transport sends");
 }
+
+static void begin_morph_at_commit(void){preset_morph(0);}
 static void morph_alias(void)
 {
- reset_r21();morphParameters=mainParameters[1];
- unsigned before=mainParameters[1][PAR_COARSE5];
- activeParameters[PAR_MORPH]=127;preset_morph(127);
- chord();choose_two();confirm();assert(menu_voiceCopyNotice==1);
+ for(unsigned mode=0;mode<6;mode++){
+  reset_r21();morphParameters=mainParameters[1];
+  assert(mainParameters[1][PAR_COARSE5]==57 && activeParameters[PAR_COARSE5]==123);
+  activeParameters[PAR_MORPH]=mode==1||mode==3||mode==5?0:127;
+  morph_state=mode<2||mode==4?1:0;morph_index=3;
+  uint8_t before[64][END_OF_SOUND_PARAMETERS],source[NUM_PARAMS];
+  memcpy(before,mainParameters,sizeof before);memcpy(source,activeParameters,sizeof source);
+  uint8_t state_before=morph_state,index_before=morph_index;
+  unsigned io=api_writes,sectors=physical_writes,dispatches=sends,fx=fx_preparations;
+  unsigned values_before[END_OF_SOUND_PARAMETERS];memcpy(values_before,engine_seen,sizeof values_before);
+  chord();choose_two();if(mode==4)menu_voiceCopyTarget=2;
+  if(mode==5)before_commit=begin_morph_at_commit;
+  confirm();
+  if(mode==3||mode==4){
+   assert(menu_voiceCopyNotice==1);
+   assert(mainParameters[mode==4?2:1][PAR_COARSE5]==123);
+  }else{
+   assert(menu_voiceCopyNotice==4);menu_renderVoiceTransfer();
+   assert(!memcmp(editDisplayBuffer[1],"Morph active",12));
+   assert(!memcmp(before,mainParameters,sizeof before));
+  }
+  assert(!memcmp(source,activeParameters,sizeof source));
+  if(mode!=5)assert(morph_state==state_before&&morph_index==index_before);
+  assert(io==api_writes&&sectors==physical_writes&&dispatches==sends&&fx==fx_preparations);
+  assert(!memcmp(values_before,engine_seen,sizeof values_before));
+  assert(morphParameters==mainParameters[1]);
+  printf("PASS Morph57/123 mode%u: amount%u pending%u, %s, zero transfer side effects\n",mode,
+    activeParameters[PAR_MORPH],morph_state,mode==3||mode==4?"allowed":"Morph active rejection");
+ }
+ /* Let the zero-amount pending sweep complete through its production path. */
+ reset_r21();morphParameters=mainParameters[1];preset_morph(0);
+ chord();choose_two();confirm();assert(menu_voiceCopyNotice==4);
  while(morph_state)preset_morph_tick();
- printf("Morph destination alias: prior=%u after-transfer-dispatch=%u source=%u\n",before,engine_values[PAR_COARSE5],activeParameters[PAR_COARSE5]);fflush(stdout);
- assert(engine_values[PAR_COARSE5]==before);
+ now+=100;menu_parseEncoder(0,0);now+=100;menu_parseEncoder(0,0);
+ chord();choose_two();confirm();assert(menu_voiceCopyNotice==1&&mainParameters[1][PAR_COARSE5]==123);
+ puts("PASS zero-amount pending sweep rejected until actual completion, then transfer succeeds");
 }
-int main(int argc,char **argv){(void)argv;paramToModTargetInit();if(argc>1){morph_alias();return 0;}storage_roundtrip();all_engines();lfo_cases();rejection_cases();button_edges();legacy_and_load();
+int main(int argc,char **argv){(void)argv;paramToModTargetInit();if(argc>1){morph_alias();return 0;}storage_roundtrip();all_engines();lfo_cases();rejection_cases();button_edges();legacy_and_load();morph_alias();
  reset_r21();armed_step=1;buttonHandler_resetLock1=1;buttonHandler_originalParameter[0]=PAR_COARSE5;
  buttonHandler_originalValue[0]=32;activeParameters[PAR_COARSE5]=111;
  chord();choose_two();confirm();assert(mainParameters[1][PAR_COARSE5]==32&&activeParameters[PAR_COARSE5]==111);

@@ -42,10 +42,10 @@
 //FIL SDFile;		/* place to hold 1 file*/
 /* R21 context revision: invalidates a selector even after A/B/A loads. */
 static volatile uint32_t preset_kitRevision;
-#include "voiceTransfer.inc"
 
 static uint8_t morph_state = 0; //flag for non blocking morph
 static uint8_t morph_index = 0;
+#include "voiceTransfer.inc"
 char savefileNames[NUM_KIT_SLOTS][NUM_SAVEFILE_NAMES][8];
 
 char currentFolder[13];

@@ -5,7 +5,6 @@
 static struct {uint8_t fxType;} fxBus;
 #define FX_OFF 0
 void preset_touchTimer(PresetTimer type){(void)type;}
-static uint8_t morph_state,morph_index;
 static uint8_t engine_values[END_OF_SOUND_PARAMETERS];
 static unsigned engine_seen[END_OF_SOUND_PARAMETERS],fx_preparations;
 static struct {Lfo lfo;} voiceArray[3],snareVoice,cymbalVoice,hatVoice;

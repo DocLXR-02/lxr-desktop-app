@@ -8,11 +8,11 @@ HAL, LCD, unrelated button helpers and parameter-application adapters. The actua
 menu table supplies an independent parameter ownership oracle. No hardware runs.
 
 `python3 tests/r21_voice_copy/run.py --morph-alias` is the focused source-sound
-preservation gate. At the initial draft it intentionally fails: the stored target
+preservation gate. The retained initial draft reproduction failed because the stored target
 also backs the loaded Morph pointer, and an in-progress sweep reads transferred
-bytes. Owner disposition of preserving the current Morph target in separate RAM
-versus rejecting that destination is pending. Do not deliver this draft as a
-firmware candidate while that gate fails.
+bytes. Owner-approved Variant A rejects this destination while the Morph amount is
+nonzero or an interpolation sweep is pending. It permits zero amount with an
+idle sweep, and unrelated targets. The guard is checked again at commit.
 
 The normal fixture checks Kit 10 unsaved Voice 5 edits, a distinct Kit 2,
 different Load/Save cursor, exact kit byte ownership for six engines/seven panel

@@ -48,11 +48,17 @@ uint8_t preset_captureVoice(PresetVoiceCopy *copy, uint8_t track)
     buttonHandler_copyEditableBase(copy->values, sizeof(copy->values));
     return preset_voiceCopyContextValid(copy);
 }
+static uint8_t preset_voiceMorphConflict(uint8_t target)
+{
+    return morphParameters == mainParameters[target] &&
+           (activeParameters[PAR_MORPH] != 0 || morph_state != 0);
+}
 uint8_t preset_transferVoice(const PresetVoiceCopy *copy, uint8_t target)
 {
     uint8_t staged[END_OF_SOUND_PARAMETERS];
     if(!preset_voiceCopyContextValid(copy) || target >= NUM_KIT_SLOTS || target == copy->kit)
         return 0;
+    if(preset_voiceMorphConflict(target)) return PRESET_VOICE_MORPH_ACTIVE;
     memcpy(staged, mainParameters[target], sizeof(staged));
     uint8_t voice = copy->voice;
     for(unsigned i = 0; preset_voiceBaseIds[voice][i] != PAR_NONE; ++i) {
@@ -78,8 +84,14 @@ uint8_t preset_transferVoice(const PresetVoiceCopy *copy, uint8_t target)
      * final context check and bounded RAM commit, never staging or IO. */
     uint32_t mask = __get_PRIMASK();
     __disable_irq();
-    uint8_t valid = preset_voiceCopyContextValid(copy);
-    if(valid) memcpy(mainParameters[target], staged, sizeof(staged));
+    uint8_t result = PRESET_VOICE_REJECTED;
+    if(preset_voiceCopyContextValid(copy)) {
+        if(preset_voiceMorphConflict(target)) result = PRESET_VOICE_MORPH_ACTIVE;
+        else {
+            memcpy(mainParameters[target], staged, sizeof(staged));
+            result = PRESET_VOICE_OK;
+        }
+    }
     __set_PRIMASK(mask);
-    return valid;
+    return result;
 }
