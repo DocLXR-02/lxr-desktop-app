@@ -1,0 +1,1 @@
+PASS18 R22 prior non-OFF own-LFO overrides: former destination receives saved base or retains another LFO assignment after real project roundtrip/target load; no transfer-time dispatch/SD

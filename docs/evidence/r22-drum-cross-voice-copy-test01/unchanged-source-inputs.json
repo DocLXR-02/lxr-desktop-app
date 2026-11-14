@@ -1,0 +1,12 @@
+{
+  "Core/Src/Preset/presetManager.c": "c94a2a47ee5af6754a6db70c71a07cbca35a9e97021dd6572f93e819dc101aed",
+  "Core/Src/buttonHandler.c": "2195d88a724d98cab542450587c8cf91f6c0ba2a2e59b0c450b7dee2e722b0ef",
+  "Core/Src/encoder.c": "8a733b0f3e08d4b989d07708a08ff45b3ca00e523768151583616e6869907d40",
+  "Core/Inc/Parameters.h": "e4880e2094db7bba5ff9722c004e12cb24913f72f3adbd1c4274cc522153aebc",
+  "Core/Inc/menu/menuPages.h": "e65ca4d6dd01d29384c8a919f42dd8a6284e19233026f99351aab52ed4f141d9",
+  "Core/Src/menu/Cc2Text.c": "31dfa6579989b49b727a1b49ef8600be7fd8b1371c6f260b1ba63f1694568a90",
+  "Core/Src/Soundengine/MIDI/CortexParser.c": "040b7155c2e19a2439421a18997c1916cd679a86ed208e8a1612b538a2105c9d",
+  "Core/Src/Soundengine/MIDI/MidiParser.c": "076c8129e7d159f5e80f70584e78c2c745e15c457907539df691fb0d5ed04fab",
+  "Core/Src/Soundengine/DSPAudio/modulationNode.c": "960400002d7ce7359170fa6a96e6761d10296b3abba2194a28a93e360afdd8a6",
+  "Core/Src/Soundengine/DSPAudio/FX/Distortion.c": "dd939bdfd7ab57bdc6efcb1232b757214275facfa7a533357dcdf281d2ff1244"
+}

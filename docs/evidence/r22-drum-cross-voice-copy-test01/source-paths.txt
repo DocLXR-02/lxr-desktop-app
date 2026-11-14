@@ -1,0 +1,12 @@
+.github/workflows/r22-drum-copy-validation.yml
+Core/Inc/Preset/PresetManager.h
+Core/Src/Preset/voiceTransfer.inc
+Core/Src/main.c
+Core/Src/menu/voiceTransfer.inc
+tests/r20_ui/run.py
+tests/r21_voice_copy/host.c
+tests/r21_voice_copy/run.py
+tests/r22_drum_copy/README.md
+tests/r22_drum_copy/cases.c
+tests/r22_drum_copy/run.py
+tests/r22_drum_copy/validate_arm.py

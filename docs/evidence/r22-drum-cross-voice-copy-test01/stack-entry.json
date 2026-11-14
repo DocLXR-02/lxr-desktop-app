@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "release": "r21",
+      "symbol": "preset_transferVoice",
+      "address": "0x801f2f0",
+      "symbol_bytes": 900,
+      "entry_hex": "2de9f04fc5b0",
+      "saved_register_mask": "0x4ff0",
+      "saved_register_bytes": 36,
+      "fixed_sp_subtract_bytes": 276,
+      "fixed_entry_frame_bytes": 312,
+      "elf_sha256": "d2f69ec54102f1e83acb5a1f9bc757c804eb87bdababf75e0da7d2827cdb6af0"
+    },
+    {
+      "release": "r22",
+      "symbol": "preset_transferVoiceTo",
+      "address": "0x801f380",
+      "symbol_bytes": 1172,
+      "entry_hex": "2de9f04fc7b0",
+      "saved_register_mask": "0x4ff0",
+      "saved_register_bytes": 36,
+      "fixed_sp_subtract_bytes": 284,
+      "fixed_entry_frame_bytes": 320,
+      "elf_sha256": "32e7cb2d2cd2b5942061077134cf6cc700d1c0ce72b45fafbab49892619bd177"
+    }
+  ],
+  "fixed_entry_delta": 8,
+  "scope": "Thumb PUSH.W register save plus immediate SUB SP at function entry; excludes caller/callee/interrupt stack and runtime high-water"
+}
