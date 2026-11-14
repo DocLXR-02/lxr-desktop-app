@@ -1,0 +1,51 @@
+{
+  "source_sha": "861c643632e0a88bdc7d60d9410befb3971489fc",
+  "runs": [
+    {
+      "argv": [
+        "cc",
+        "-std=gnu11",
+        "-O1",
+        "-g",
+        "-DSTM32F765xx",
+        "-DUSE_HAL_DRIVER",
+        "-D__fp16=_Float16",
+        "-Wno-pointer-to-int-cast",
+        "-Wno-int-to-pointer-cast",
+        "-Wno-implicit-function-declaration",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-fno-pie",
+        "-no-pie",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-I/workspace/lxr-desktop-app",
+        "-I/workspace/lxr-desktop-app/Core/Inc",
+        "-I/workspace/lxr-desktop-app/Drivers/CMSIS/Include",
+        "-I/workspace/lxr-desktop-app/Drivers/CMSIS/Device/ST/STM32F7xx/Include",
+        "-I/workspace/lxr-desktop-app/Drivers/STM32F7xx_HAL_Driver/Inc",
+        "-I/workspace/lxr-desktop-app/Middlewares/Third_Party/FatFs/src",
+        "-I/workspace/lxr-desktop-app/Middlewares/JS/STM32_USB_Device_Library/Core/Inc",
+        "-I/workspace/lxr-desktop-app/Middlewares/JS/STM32_USB_Device_Library/Class/CDC/Inc",
+        "-I/workspace/lxr-desktop-app/USB_DEVICE_MIDI/Target",
+        "-I/workspace/r22-preflight",
+        "/workspace/r22-preflight/probe.c",
+        "/workspace/r22-preflight/stubs.c",
+        "-Wl,--gc-sections",
+        "-lm",
+        "-o",
+        "/workspace/r22-preflight/probe"
+      ],
+      "exit_code": 0,
+      "host_elapsed_seconds": 0.7356853680012136
+    },
+    {
+      "argv": [
+        "/workspace/r22-preflight/probe"
+      ],
+      "exit_code": 0,
+      "host_elapsed_seconds": 0.005844288998559932
+    }
+  ]
+}

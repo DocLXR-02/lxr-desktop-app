@@ -1,0 +1,63 @@
+{
+  "task": "R22 Drum 1\u20133 Cross-Voice Copy and Same-Kit Transfer",
+  "firmware_base_and_unchanged_head": "861c643632e0a88bdc7d60d9410befb3971489fc",
+  "production_changes": [],
+  "feature_branch": "release/r22 NOT CREATED",
+  "outcome": "STOP before implementation/candidate: existing LFO assignment path fails required live-state containment",
+  "host_environment": {
+    "compiler": "GCC14.2.0 Debian",
+    "python": "3.12.14",
+    "instrumentation": "ASan/UBSan; detect_leaks=0"
+  },
+  "executed": {
+    "live_path": {
+      "command": "python3 run.py",
+      "result": "Expected containment violation reproduced; negative control passed",
+      "ledger": "results.json",
+      "log": "probe.log",
+      "observed": {
+        "reset_attempts": 12,
+        "valid_reset_dispatches": 3,
+        "distortion_leaf_calls": 4,
+        "source_volume_before": 0.755905509,
+        "source_volume_after": 0.251968503,
+        "unrelated_D3_volume_before": 0.629921257,
+        "unrelated_D3_volume_after": 0.125984251,
+        "unrelated_FX_P1_before": 0.700787425,
+        "unrelated_FX_P1_after": 0.196850389
+      }
+    },
+    "persistence": {
+      "command": "python3 persistence.py",
+      "result": "Naive stored-only strategy loses123->77 on save/reload; active+stored control retains123",
+      "ledger": "persistence-results.json",
+      "log": "persistence.log"
+    }
+  },
+  "not_run": [
+    "R22 feature implementation",
+    "R22 mandatory feature/regression matrix",
+    "R22 CI/ARM Release build",
+    "hardware",
+    "flash",
+    "merge",
+    "release"
+  ],
+  "unmeasured": [
+    "M7 CPU/WCET",
+    "IRQ/DMA deadlines",
+    "stack high-water",
+    "long-term reliability",
+    "physical sound"
+  ],
+  "inherited_R21": {
+    "run": 43621319613,
+    "attempt": 1,
+    "job": 132527438779,
+    "artifact": 14123628907,
+    "source": "861c643632e0a88bdc7d60d9410befb3971489fc",
+    "status": "success",
+    "artifact_expires": "2026-12-14T17:29:43Z",
+    "owner_statement": "R21 TEST01 successfully tested; functional acceptance, no stable release implied"
+  }
+}

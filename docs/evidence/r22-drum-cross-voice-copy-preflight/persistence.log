@@ -1,0 +1,3 @@
+stored-only expected failure: stored source=123 stored target=77 (wanted123), saved kit bytes=247
+active+stored negative control: stored source=123 stored target=123 (wanted123), saved kit bytes=247
+Storage-only strategy rejected; updating active+stored can preserve RAM persistence but does not resolve live LFO assignment containment.

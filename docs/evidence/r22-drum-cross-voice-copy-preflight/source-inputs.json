@@ -1,0 +1,22 @@
+{
+  "source_sha": "861c643632e0a88bdc7d60d9410befb3971489fc",
+  "sha256": {
+    "AGENTS.md": "7091fc9e4b3a62bed28050cea1f5ecefc8f7ac67804cc23e184348571d359fb4",
+    "Core/Inc/Parameters.h": "e4880e2094db7bba5ff9722c004e12cb24913f72f3adbd1c4274cc522153aebc",
+    "Core/Inc/menu/menuPages.h": "e65ca4d6dd01d29384c8a919f42dd8a6284e19233026f99351aab52ed4f141d9",
+    "Core/Src/Preset/voiceTransfer.inc": "9736fd0ff2884eb3d91bb11474c1fa42775c86bc971a1e35bee7fcfe16a95b2d",
+    "Core/Src/Preset/presetManager.c": "c94a2a47ee5af6754a6db70c71a07cbca35a9e97021dd6572f93e819dc101aed",
+    "Core/Src/menu/voiceTransfer.inc": "38267f3c8ceaabf8a2317889e03565e1e7fd1982a7b82c1a21917eb5c94265ca",
+    "Core/Src/Soundengine/DSPAudio/modulationNode.c": "960400002d7ce7359170fa6a96e6761d10296b3abba2194a28a93e360afdd8a6",
+    "Core/Src/Soundengine/MIDI/ParameterArray.c": "9c8740fa199e48fe8d9d7c26879147b062eead4e276507dd2e03a54140428da2",
+    "Core/Src/Soundengine/MIDI/MidiParser.c": "076c8129e7d159f5e80f70584e78c2c745e15c457907539df691fb0d5ed04fab",
+    "Core/Src/Soundengine/MIDI/CortexParser.c": "040b7155c2e19a2439421a18997c1916cd679a86ed208e8a1612b538a2105c9d",
+    "Core/Src/Soundengine/FxBus.c": "f0e15245dcd05a5208b6f5428aa9c09bebdbeb4530846da66915b7345d002d08",
+    "Core/Src/Soundengine/DSPAudio/mixer.c": "4498762d54cbf71c3fdfd34357a636910230a4cb88aa6fd1e4a177501c88cfed",
+    "Core/Src/menu/Cc2Text.c": "31dfa6579989b49b727a1b49ef8600be7fd8b1371c6f260b1ba63f1694568a90",
+    "tests/bug001/run.py": "3fa50d94e04cbf44c82146831c76f50e4d14a9f598cf899f61c0b586385c7e8e",
+    "tests/bug001/trap_stubs.c": "ef8d444b079087949190ee3baa1966d032672ddb385eb6019673b8e41ae7f78d",
+    "tests/project_storage/run.py": "a90506600efc7d8077e06f8ec8bf7c41013e592c88413ee6912b6b9b9c2d8230",
+    "tests/project_transaction/whole.c": "ee09c7a6af237807720e38769134bd3d22a8cd167f3fd8b26f86e677227b3d6b"
+  }
+}

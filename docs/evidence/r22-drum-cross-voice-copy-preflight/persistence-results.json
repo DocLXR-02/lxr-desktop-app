@@ -1,0 +1,48 @@
+{
+  "source_sha": "861c643632e0a88bdc7d60d9410befb3971489fc",
+  "runs": [
+    {
+      "argv": [
+        "cc",
+        "-std=gnu11",
+        "-O1",
+        "-g",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-fno-pie",
+        "-no-pie",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-Wl,--gc-sections",
+        "-DSTM32F765xx",
+        "-DUSE_HAL_DRIVER",
+        "-Wno-int-to-pointer-cast",
+        "-Wno-pointer-to-int-cast",
+        "-Werror=implicit-function-declaration",
+        "-I/workspace/lxr-desktop-app",
+        "-I/workspace/lxr-desktop-app/Core/Inc",
+        "-I/workspace/lxr-desktop-app/Drivers/CMSIS/Include",
+        "-I/workspace/lxr-desktop-app/Drivers/CMSIS/Device/ST/STM32F7xx/Include",
+        "-I/workspace/lxr-desktop-app/Drivers/STM32F7xx_HAL_Driver/Inc",
+        "-I/workspace/lxr-desktop-app/Middlewares/Third_Party/FatFs/src",
+        "-I/workspace/lxr-desktop-app/FATFS/App",
+        "-I/workspace/lxr-desktop-app/FATFS/Target",
+        "-I/workspace/r22-preflight",
+        "/workspace/r22-preflight/persistence.c",
+        "/workspace/lxr-desktop-app/Core/Src/Preset/initKit.c",
+        "-o",
+        "/workspace/r22-preflight/persistence"
+      ],
+      "exit_code": 0,
+      "host_elapsed_seconds": 2.0982268800016755
+    },
+    {
+      "argv": [
+        "/workspace/r22-preflight/persistence"
+      ],
+      "exit_code": 0,
+      "host_elapsed_seconds": 0.03219795000040904
+    }
+  ]
+}

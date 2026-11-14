@@ -1,0 +1,8 @@
+/usr/bin/ld: /tmp/ccvo6wQm.o: in function `r22_real_ccHandler':
+/workspace/lxr-desktop-app/Core/Src/Soundengine/MIDI/MidiParser.c:1104:(.text.r22_real_ccHandler+0x191b): undefined reference to `SVF_setDrive'
+/usr/bin/ld: /workspace/lxr-desktop-app/Core/Src/Soundengine/MIDI/MidiParser.c:1111:(.text.r22_real_ccHandler+0x194b): undefined reference to `SVF_setDrive'
+/usr/bin/ld: /workspace/lxr-desktop-app/Core/Src/Soundengine/MIDI/MidiParser.c:1119:(.text.r22_real_ccHandler+0x195f): undefined reference to `SVF_setDrive'
+/usr/bin/ld: /workspace/lxr-desktop-app/Core/Src/Soundengine/MIDI/MidiParser.c:1127:(.text.r22_real_ccHandler+0x1973): undefined reference to `SVF_setDrive'
+/usr/bin/ld: /workspace/lxr-desktop-app/Core/Src/Soundengine/MIDI/MidiParser.c:1347:(.text.r22_real_ccHandler+0x243e): undefined reference to `seq_setMute'
+/usr/bin/ld: /workspace/lxr-desktop-app/Core/Src/Soundengine/MIDI/MidiParser.c:1351:(.text.r22_real_ccHandler+0x2451): undefined reference to `seq_setMute'
+collect2: error: ld returned 1 exit status

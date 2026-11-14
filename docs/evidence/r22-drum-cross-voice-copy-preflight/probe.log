@@ -1,0 +1,6 @@
+PASS negative control: targeted D2 base parameter application leaves source/D3/FX unchanged.
+SOURCE D1 volume: before 0.755905509 after 0.251968503
+UNRELATED D3 volume: before 0.629921257 after 0.125984251
+UNRELATED shared FX P1: before 0.700787425 after 0.196850389
+Assignment: reset_attempts=12 reset_valid=3 cc_dispatches=3 distortion_leaf_calls=4
+EXPECTED containment failure reproduced in unchanged production assignment path; next modulation replay restores values; physical audibility UNMEASURED.
