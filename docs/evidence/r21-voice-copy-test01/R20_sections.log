@@ -1,0 +1,23 @@
+build/release/LXR_V2_STM32F765.elf  :
+section             size        addr
+.isr_vector          504   134250496
+.text             157064   134251008
+.rodata            82744   134408072
+.ARM.extab             0   134490816
+.ARM                   8   134490816
+.preinit_array         0   134490824
+.init_array            4   134490824
+.fini_array            4   134490828
+.data                852   537001984
+.bss              273516   537002840
+._user_heap          512   537276356
+.dtcm              36996   536870912
+.dtcmz             70424   536907912
+.itcm_text         15304           0
+.ARM.attributes       48           0
+.comment              70           0
+.debug_frame        2532           0
+.debug_line_str      461           0
+Total             641043
+
+

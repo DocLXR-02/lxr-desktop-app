@@ -1,0 +1,40 @@
+{
+  "source_sha": "b01537282047bda5299cdb1bedeab5e5d5b9bcca",
+  "runs": [
+    {
+      "argv": [
+        "cc",
+        "-std=gnu11",
+        "-O1",
+        "-g",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-fno-pie",
+        "-no-pie",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-Wl,--gc-sections",
+        "-DSTM32F765xx",
+        "-DUSE_HAL_DRIVER",
+        "-Wno-int-to-pointer-cast",
+        "-Wno-pointer-to-int-cast",
+        "-Werror=implicit-function-declaration",
+        "-I/workspace/lxr-desktop-app",
+        "-I/workspace/lxr-desktop-app/Core/Inc",
+        "-I/workspace/lxr-desktop-app/Drivers/CMSIS/Include",
+        "-I/workspace/lxr-desktop-app/Drivers/CMSIS/Device/ST/STM32F7xx/Include",
+        "-I/workspace/lxr-desktop-app/Drivers/STM32F7xx_HAL_Driver/Inc",
+        "-I/workspace/lxr-desktop-app/Middlewares/Third_Party/FatFs/src",
+        "-I/workspace/lxr-desktop-app/FATFS/App",
+        "-I/workspace/lxr-desktop-app/FATFS/Target",
+        "-I/workspace/r21-preflight",
+        "/workspace/r21-preflight/probe.c",
+        "/workspace/lxr-desktop-app/Core/Src/Preset/initKit.c",
+        "-o",
+        "/workspace/r21-preflight/probe"
+      ],
+      "exit_code": 1
+    }
+  ]
+}

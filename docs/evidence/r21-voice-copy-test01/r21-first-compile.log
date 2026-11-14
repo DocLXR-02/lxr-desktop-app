@@ -1,0 +1,63 @@
+In file included from /tmp/lxr-r21-54b_lic9/whole.inc:151,
+                 from /workspace/lxr-desktop-app/tests/r21_voice_copy/host.c:1:
+/tmp/lxr-r21-54b_lic9/functions.inc: In function ‘preset_init’:
+/tmp/lxr-r21-54b_lic9/functions.inc:515:27: error: implicit declaration of function ‘getNumModTargets’ [-Wimplicit-function-declaration]
+  515 |         const uint8_t nmt=getNumModTargets();
+      |                           ^~~~~~~~~~~~~~~~
+In file included from /workspace/lxr-desktop-app/tests/r21_voice_copy/host.c:4:
+/workspace/lxr-desktop-app/Core/Inc/menu/CcNr2Text.h: At top level:
+/workspace/lxr-desktop-app/Core/Inc/menu/CcNr2Text.h:31:9: error: conflicting types for ‘getNumModTargets’; have ‘uint8_t()’ {aka ‘unsigned char()’}
+   31 | uint8_t getNumModTargets();
+      |         ^~~~~~~~~~~~~~~~
+/tmp/lxr-r21-54b_lic9/functions.inc:515:27: note: previous implicit declaration of ‘getNumModTargets’ with type ‘int()’
+  515 |         const uint8_t nmt=getNumModTargets();
+      |                           ^~~~~~~~~~~~~~~~
+/workspace/lxr-desktop-app/tests/r21_voice_copy/host.c:10:9: error: conflicting type qualifiers for ‘screensaver_Active’
+   10 | uint8_t screensaver_Active;
+      |         ^~~~~~~~~~~~~~~~~~
+In file included from /workspace/lxr-desktop-app/tests/r21_voice_copy/host.c:5:
+/workspace/lxr-desktop-app/Core/Inc/menu/screensaver.h:25:25: note: previous declaration of ‘screensaver_Active’ with type ‘uint8_t’ {aka ‘volatile unsigned char’}
+   25 | extern volatile uint8_t screensaver_Active;
+      |                         ^~~~~~~~~~~~~~~~~~
+In file included from /workspace/lxr-desktop-app/tests/r21_voice_copy/panel.c:1,
+                 from /workspace/lxr-desktop-app/tests/r21_voice_copy/host.c:48:
+/tmp/lxr-r21-54b_lic9/buttons.inc: In function ‘buttonHandler_buttonPressed’:
+/tmp/lxr-r21-54b_lic9/buttons.inc:19:17: error: implicit declaration of function ‘buttonHandler_voiceButtonPressed’; did you mean ‘buttonHandler_buttonPressed’? [-Wimplicit-function-declaration]
+   19 |                 buttonHandler_voiceButtonPressed(buttonNr-BUT_VOICE_1);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                 buttonHandler_buttonPressed
+/tmp/lxr-r21-54b_lic9/buttons.inc:23:21: error: ‘buttonHandler_stateMemory’ undeclared (first use in this function); did you mean ‘buttonHandler_setMode’?
+   23 |                 if((buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_PATTERN) || (buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_SONG))
+      |                     ^~~~~~~~~~~~~~~~~~~~~~~~~
+      |                     buttonHandler_setMode
+/tmp/lxr-r21-54b_lic9/buttons.inc:23:21: note: each undeclared identifier is reported only once for each function it appears in
+/tmp/lxr-r21-54b_lic9/buttons.inc:160:17: error: implicit declaration of function ‘buttonHandler_selectButtonPressed’; did you mean ‘buttonHandler_buttonPressed’? [-Wimplicit-function-declaration]
+  160 |                 buttonHandler_selectButtonPressed(4);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                 buttonHandler_buttonPressed
+/tmp/lxr-r21-54b_lic9/buttons.inc:173:17: error: implicit declaration of function ‘buttonHandler_seqButtonPressed’; did you mean ‘buttonHandler_buttonPressed’? [-Wimplicit-function-declaration]
+  173 |                 buttonHandler_seqButtonPressed(15);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                 buttonHandler_buttonPressed
+/tmp/lxr-r21-54b_lic9/buttons.inc:225:17: error: implicit declaration of function ‘buttonHandler_handleModeButtons’ [-Wimplicit-function-declaration]
+  225 |                 buttonHandler_handleModeButtons((uint8_t) (buttonNr - BUT_MODE1));
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/tmp/lxr-r21-54b_lic9/buttons.inc: In function ‘buttonHandler_buttonReleased’:
+/tmp/lxr-r21-54b_lic9/buttons.inc:456:17: error: implicit declaration of function ‘buttonHandler_partButtonReleased’; did you mean ‘buttonHandler_buttonReleased’? [-Wimplicit-function-declaration]
+  456 |                 buttonHandler_partButtonReleased(0);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                 buttonHandler_buttonReleased
+/tmp/lxr-r21-54b_lic9/buttons.inc:481:17: error: implicit declaration of function ‘buttonHandler_seqButtonReleased’; did you mean ‘buttonHandler_buttonReleased’? [-Wimplicit-function-declaration]
+  481 |                 buttonHandler_seqButtonReleased(0);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                 buttonHandler_buttonReleased
+/tmp/lxr-r21-54b_lic9/buttons.inc:530:20: error: ‘buttonHandler_stateMemory’ undeclared (first use in this function); did you mean ‘buttonHandler_setMode’?
+  530 |                 if(buttonHandler_stateMemory.selectButtonMode != SELECT_MODE_LOAD)
+      |                    ^~~~~~~~~~~~~~~~~~~~~~~~~
+      |                    buttonHandler_setMode
+Traceback (most recent call last):
+  File "/workspace/lxr-desktop-app/tests/r21_voice_copy/run.py", line 33, in <module>
+    subprocess.run(cmd,cwd=R,env=env,check=True)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['cc', '-std=gnu11', '-O1', '-g', '-fsanitize=address,undefined', '-fno-sanitize-recover=all', '-fno-omit-frame-pointer', '-fno-pie', '-no-pie', '-ffunction-sections', '-fdata-sections', '-Wl,--gc-sections', '-DSTM32F765xx', '-DUSE_HAL_DRIVER', '-Wno-int-to-pointer-cast', '-Wno-pointer-to-int-cast', '-Werror=implicit-function-declaration', '-I/workspace/lxr-desktop-app', '-I/workspace/lxr-desktop-app/Core/Inc', '-I/workspace/lxr-desktop-app/Drivers/CMSIS/Include', '-I/workspace/lxr-desktop-app/Drivers/CMSIS/Device/ST/STM32F7xx/Include', '-I/workspace/lxr-desktop-app/Drivers/STM32F7xx_HAL_Driver/Inc', '-I/workspace/lxr-desktop-app/Middlewares/Third_Party/FatFs/src', '-I/workspace/lxr-desktop-app/FATFS/App', '-I/workspace/lxr-desktop-app/FATFS/Target', '-I/tmp/lxr-r21-54b_lic9', '-I/workspace/lxr-desktop-app/tests/r21_voice_copy', '/workspace/lxr-desktop-app/tests/r21_voice_copy/host.c', '/workspace/lxr-desktop-app/Core/Src/menu/Cc2Text.c', '/workspace/lxr-desktop-app/Core/Src/Preset/initKit.c', '-o', '/tmp/lxr-r21-54b_lic9/host']' returned non-zero exit status 1.

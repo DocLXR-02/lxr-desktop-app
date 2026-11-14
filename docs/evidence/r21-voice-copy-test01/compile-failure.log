@@ -1,0 +1,7 @@
+In file included from /workspace/r21-preflight/probe.c:150:
+/workspace/r21-preflight/functions.inc:2323:9: error: redefinition of ‘preset_saveTmpKit’
+ 2323 | FRESULT preset_saveTmpKit()
+      |         ^~~~~~~~~~~~~~~~~
+/workspace/r21-preflight/functions.inc:1673:9: note: previous definition of ‘preset_saveTmpKit’ with type ‘FRESULT()’
+ 1673 | FRESULT preset_saveTmpKit()
+      |         ^~~~~~~~~~~~~~~~~

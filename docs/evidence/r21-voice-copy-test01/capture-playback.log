@@ -1,0 +1,2 @@
+BUG008 capture: core scenarios PASS
+FIX8: PASS exhaustive 16384 start/end pairs, identical intermediate events; 106792 changes

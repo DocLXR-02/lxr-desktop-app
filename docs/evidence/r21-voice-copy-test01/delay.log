@@ -1,0 +1,2 @@
+PASS: original R18 mono-right alignment failure reproduced; candidate normal/ping-pong mono-left/right pass; 144 byte-level comparisons
+PASS: original R18 stereo and mono-left output remain bit-identical in tested cases

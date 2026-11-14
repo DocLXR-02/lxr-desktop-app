@@ -1,0 +1,87 @@
+[
+  {
+    "name": "project-transaction",
+    "argv": [
+      "python3",
+      "tests/project_transaction/run.py"
+    ],
+    "exit_code": 0,
+    "seconds": 9.05340416699994,
+    "log": "project-transaction.log"
+  },
+  {
+    "name": "r20-ui",
+    "argv": [
+      "python3",
+      "tests/r20_ui/run.py"
+    ],
+    "exit_code": 1,
+    "seconds": 0.04915709199997309,
+    "log": "r20-ui.log"
+  },
+  {
+    "name": "r20-integration",
+    "argv": [
+      "python3",
+      "tests/r20_ui/integration/probe.py",
+      ".",
+      "/workspace/r21-preflight/r20-integration"
+    ],
+    "exit_code": 0,
+    "seconds": 1.341134638000085,
+    "log": "r20-integration.log"
+  },
+  {
+    "name": "delay",
+    "argv": [
+      "python3",
+      "tests/r18_delay_mono/run.py",
+      "/workspace/r21-preflight/delay"
+    ],
+    "exit_code": 0,
+    "seconds": 3.011581381000042,
+    "log": "delay.log"
+  },
+  {
+    "name": "usb",
+    "argv": [
+      "python3",
+      "tests/r18_usb_midi/run.py",
+      "/workspace/r21-preflight/usb"
+    ],
+    "exit_code": 0,
+    "seconds": 1.096608964999973,
+    "log": "usb.log"
+  },
+  {
+    "name": "compressor",
+    "argv": [
+      "python3",
+      "tests/r18_compressor_mono/run.py",
+      "/workspace/r21-preflight/compressor"
+    ],
+    "exit_code": 0,
+    "seconds": 0.7123096880000048,
+    "log": "compressor.log"
+  },
+  {
+    "name": "clp",
+    "argv": [
+      "python3",
+      "tests/fx_clip_r18/compare.py"
+    ],
+    "exit_code": 0,
+    "seconds": 2.8424641889999975,
+    "log": "clp.log"
+  },
+  {
+    "name": "parameter-sweeps",
+    "argv": [
+      "python3",
+      "tests/bug001/run.py"
+    ],
+    "exit_code": 0,
+    "seconds": 1.1947236170000224,
+    "log": "parameter-sweeps.log"
+  }
+]

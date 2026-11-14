@@ -1,0 +1,4 @@
+TMP identity: loaded=9 cursor=1 serialized=1 (expected loaded=9)
+SAVE identity: loaded source RAM=11 target RAM=77 active edit=77
+ROUNDTRIP: source stored=11 (wanted77), target stored=77 (wanted99)
+EXPECTED BASELINE DEFECT REPRODUCED: cursor redirects source capture and overwrites target; no R21 implementation under test.

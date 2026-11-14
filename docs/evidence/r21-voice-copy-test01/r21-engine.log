@@ -1,0 +1,20 @@
+In file included from /tmp/lxr-r21-3usb1rxu/whole.inc:151,
+                 from /workspace/lxr-desktop-app/tests/r21_voice_copy/host.c:4:
+/tmp/lxr-r21-3usb1rxu/functions.inc: In function ‘preset_loadDrumsetRam’:
+/tmp/lxr-r21-3usb1rxu/functions.inc:534:9: error: implicit declaration of function ‘soundengine_process’ [-Wimplicit-function-declaration]
+  534 |         soundengine_process();
+      |         ^~~~~~~~~~~~~~~~~~~
+In file included from /workspace/lxr-desktop-app/tests/r21_voice_copy/host.c:49:
+/workspace/lxr-desktop-app/tests/r21_voice_copy/engine.c: At top level:
+/workspace/lxr-desktop-app/tests/r21_voice_copy/engine.c:27:6: warning: conflicting types for ‘soundengine_process’; have ‘void(void)’
+   27 | void soundengine_process(void){}
+      |      ^~~~~~~~~~~~~~~~~~~
+/tmp/lxr-r21-3usb1rxu/functions.inc:534:9: note: previous implicit declaration of ‘soundengine_process’ with type ‘void(void)’
+  534 |         soundengine_process();
+      |         ^~~~~~~~~~~~~~~~~~~
+Traceback (most recent call last):
+  File "/workspace/lxr-desktop-app/tests/r21_voice_copy/run.py", line 46, in <module>
+    subprocess.run(cmd,cwd=R,env=env,check=True)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['cc', '-std=gnu11', '-O1', '-g', '-fsanitize=address,undefined', '-fno-sanitize-recover=all', '-fno-omit-frame-pointer', '-fno-pie', '-no-pie', '-ffunction-sections', '-fdata-sections', '-Wl,--gc-sections', '-DSTM32F765xx', '-DUSE_HAL_DRIVER', '-Wno-int-to-pointer-cast', '-Wno-pointer-to-int-cast', '-Werror=implicit-function-declaration', '-I/workspace/lxr-desktop-app', '-I/workspace/lxr-desktop-app/Core/Inc', '-I/workspace/lxr-desktop-app/Drivers/CMSIS/Include', '-I/workspace/lxr-desktop-app/Drivers/CMSIS/Device/ST/STM32F7xx/Include', '-I/workspace/lxr-desktop-app/Drivers/STM32F7xx_HAL_Driver/Inc', '-I/workspace/lxr-desktop-app/Middlewares/Third_Party/FatFs/src', '-I/workspace/lxr-desktop-app/FATFS/App', '-I/workspace/lxr-desktop-app/FATFS/Target', '-I/tmp/lxr-r21-3usb1rxu', '-I/workspace/lxr-desktop-app/tests/r21_voice_copy', '/workspace/lxr-desktop-app/tests/r21_voice_copy/host.c', '/workspace/lxr-desktop-app/Core/Src/menu/Cc2Text.c', '/workspace/lxr-desktop-app/Core/Src/Preset/initKit.c', '/workspace/lxr-desktop-app/Core/Src/Parameters.c', '-o', '/tmp/lxr-r21-3usb1rxu/host']' returned non-zero exit status 1.

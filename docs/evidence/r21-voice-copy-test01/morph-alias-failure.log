@@ -1,0 +1,8 @@
+Morph destination alias: prior=57 after-transfer-dispatch=123 source=123
+host: /workspace/lxr-desktop-app/tests/r21_voice_copy/host.c:254: morph_alias: Assertion `engine_values[PAR_COARSE5]==before' failed.
+Traceback (most recent call last):
+  File "/workspace/lxr-desktop-app/tests/r21_voice_copy/run.py", line 47, in <module>
+    subprocess.run([str(tmp/'host'),*sys.argv[1:]],cwd=R,env=env,check=True,timeout=90)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/tmp/lxr-r21-90pvt918/host', '--morph-alias']' died with <Signals.SIGABRT: 6>.

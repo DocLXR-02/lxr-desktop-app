@@ -1,0 +1,1176 @@
+diff --git a/.github/workflows/r21-voice-copy-validation.yml b/.github/workflows/r21-voice-copy-validation.yml
+new file mode 100644
+index 0000000..b6395a4
+--- /dev/null
++++ b/.github/workflows/r21-voice-copy-validation.yml
+@@ -0,0 +1,103 @@
++name: R21 voice transfer ARM/host validation
++on:
++  push:
++    branches:
++      - release/r21
++permissions:
++  contents: read
++jobs:
++  r21-voice-copy-validation:
++    runs-on: ubuntu-24.04
++    timeout-minutes: 40
++    steps:
++      - uses: actions/checkout@v4
++        with:
++          fetch-depth: 0
++      - name: Record source identity
++        run: |
++          mkdir -p build/r21-voice-copy-evidence
++          git rev-parse HEAD | tee build/r21-voice-copy-evidence/SOURCE_SHA.txt
++          git -c core.whitespace=cr-at-eol diff --check HEAD^ HEAD
++      - name: R21 direct transfer, selector and project round trips
++        shell: bash
++        run: |
++          set -euo pipefail
++          python3 tests/r21_voice_copy/run.py 2>&1 | tee build/r21-voice-copy-evidence/r21-host.log
++          python3 tests/bug001/run.py 2>&1 | tee build/r21-voice-copy-evidence/parameter-sweeps.log
++      - name: Compile and exercise standalone capture state machine
++        shell: bash
++        run: |
++          set -euo pipefail
++          cc -std=c11 -O2 -Wall -Wextra -Werror -fsanitize=undefined,bounds -fno-sanitize-recover=all \
++            -ICore/Inc Core/Src/Soundengine/Sequencer/automationCapture.c tests/bug008/host.c \
++            -o build/r21-voice-copy-evidence/bug008-host
++          build/r21-voice-copy-evidence/bug008-host 2>&1 | tee build/r21-voice-copy-evidence/bug008-host.log
++      - name: Playback numerical regression (exhaustive fixed-8 equivalence)
++        shell: bash
++        run: |
++          set -euo pipefail
++          cc -std=c11 -O2 -Wall -Wextra -Werror -fsanitize=undefined,bounds -fno-sanitize-recover=all \
++            -ICore/Inc Core/Src/Soundengine/Sequencer/automationPlayback.c tests/automation_playback/host.c \
++            -o build/r21-voice-copy-evidence/playback-host
++          build/r21-voice-copy-evidence/playback-host 2>&1 | tee build/r21-voice-copy-evidence/playback-host.log
++      - name: R20 host conflict and LCD timing regression
++        shell: bash
++        run: |
++          set -euo pipefail
++          python3 tests/r20_ui/run.py 2>&1 | tee build/r21-voice-copy-evidence/r20-ui-host.log
++          python3 tests/r20_ui/integration/probe.py . build/r20-ui-host 2>&1 | tee build/r21-voice-copy-evidence/r20-ui-integration.log
++      - name: Verify adaptive source and extra menu choices removed
++        shell: bash
++        run: |
++          set -euo pipefail
++          ! grep -R -E 'PAR_AUTO_RES|PAR_AUTO_ALG|MENU_AUTO_RES|MENU_AUTO_ALG|SEQ_SET_AUTO_RES|SEQ_SET_AUTO_ALG|chooseDivisions|seq_playbackAdaptive|seq_playbackResolution|autoAlgNames|autoResNames' \
++            Core/Inc Core/Src || exit 1
++          grep -q 'lane->divisions = 8u;' Core/Src/Soundengine/Sequencer/automationPlayback.c
++          grep -q 'PAR_AUTOM_TRACK.*PAR_REC_MODE.*PAR_NONE.*PAR_NONE' Core/Inc/menu/menuPages.h
++          grep -q 'PAR_REC_MODE - PAR_BEGINNING_OF_GLOBALS' Core/Src/Preset/presetManager.c
++      - name: Existing globals and project storage regressions
++        shell: bash
++        run: |
++          set -euo pipefail
++          python3 tests/project_storage/run.py 2>&1 | tee build/r21-voice-copy-evidence/project-storage.log
++          python3 tests/project_transaction/run.py 2>&1 | tee build/r21-voice-copy-evidence/project-transaction.log
++      - name: Reuse R19 regressions for USB-MIDI, Delay and Compressor
++        shell: bash
++        run: |
++          set -euo pipefail
++          python3 tests/r18_delay_mono/run.py build/f8-delay 2>&1 | tee build/r21-voice-copy-evidence/delay.log
++          python3 tests/r18_usb_midi/run.py build/f8-usb 2>&1 | tee build/r21-voice-copy-evidence/usb.log
++          python3 tests/r18_compressor_mono/run.py build/f8-compressor 2>&1 | tee build/r21-voice-copy-evidence/compressor.log
++          python3 tests/fx_clip_r18/compare.py 2>&1 | tee build/r21-voice-copy-evidence/clp-compare.log
++      - name: Install R19-matched ARM GNU Toolchain 14.3.rel1
++        shell: bash
++        run: |
++          set -euo pipefail
++          URL=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz
++          curl -fL --retry 3 "$URL" -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
++          echo "8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd  $RUNNER_TEMP/arm-toolchain.tar.xz" | sha256sum --check
++          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
++          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
++      - name: Build candidate firmware (validation only)
++        shell: bash
++        run: |
++          set -euo pipefail
++          cmake --preset release 2>&1 | tee build/r21-voice-copy-evidence/configure.log
++          cmake --build --preset release --parallel 2 2>&1 | tee build/r21-voice-copy-evidence/build.log
++          arm-none-eabi-size -A build/release/LXR_V2_STM32F765.elf 2>&1 | tee build/r21-voice-copy-evidence/sections.log
++          arm-none-eabi-gcc --version > build/r21-voice-copy-evidence/COMPILER.txt
++          cp build/release/LXR_V2_STM32F765.map build/r21-voice-copy-evidence/
++          cp build/release/LXR_V2_STM32F765.elf build/r21-voice-copy-evidence/
++          cp build/release/LXR_V2_V1.7.img build/r21-voice-copy-evidence/LXR_V2_R21_TEST01.img
++          (cd build/r21-voice-copy-evidence && sha256sum LXR_V2_R21_TEST01.img LXR_V2_STM32F765.elf LXR_V2_STM32F765.map > OUTPUT_SHA256SUMS.txt)
++          echo "R21 VOICE TRANSFER TEST CANDIDATE; OWNER DEVICE TEST PENDING; R18/R19/R20/FIX8 PROTECTED; NO STABLE RELEASE." > build/r21-voice-copy-evidence/NOT_FOR_FLASHING.txt
++      - name: Validate R21 image, ZIP and static resources
++        run: python3 tests/r21_voice_copy/validate_arm.py
++      - name: Preserve evidence also on failure
++        if: always()
++        uses: actions/upload-artifact@v4
++        with:
++          name: r21-voice-copy-build-evidence
++          path: build/r21-voice-copy-evidence/
++          retention-days: 30
++          if-no-files-found: error
+diff --git a/Core/Inc/Preset/PresetManager.h b/Core/Inc/Preset/PresetManager.h
+index 296636b..cffaf6a 100644
+--- a/Core/Inc/Preset/PresetManager.h
++++ b/Core/Inc/Preset/PresetManager.h
+@@ -125,4 +125,16 @@ uint8_t preset_isNameEmpty(char* name);
+ FRESULT preset_storageError(void);
+ uint8_t preset_autosaveIsPaused(void);
+ 
++
++/* A single selector session owns this snapshot; never a persistent clipboard. */
++typedef struct {
++    uint32_t revision;
++    uint8_t kit, project, pattern, voice;
++    uint8_t values[END_OF_SOUND_PARAMETERS];
++} PresetVoiceCopy;
++uint8_t preset_captureVoice(PresetVoiceCopy *copy, uint8_t track);
++uint8_t preset_voiceCopyContextValid(const PresetVoiceCopy *copy);
++enum { PRESET_VOICE_REJECTED, PRESET_VOICE_OK, PRESET_VOICE_MORPH_ACTIVE };
++uint8_t preset_transferVoice(const PresetVoiceCopy *copy, uint8_t target);
++
+ #endif /* PRESETMANAGER_H_ */
+diff --git a/Core/Inc/Soundengine/Sequencer/sequencer.h b/Core/Inc/Soundengine/Sequencer/sequencer.h
+index 118dc31..5f6de6e 100644
+--- a/Core/Inc/Soundengine/Sequencer/sequencer.h
++++ b/Core/Inc/Soundengine/Sequencer/sequencer.h
+@@ -244,6 +244,7 @@ void seq_deleteRow();
+ void seq_insertRow();
+ //------------------------------------------------------------------------------
+ uint8_t seq_isRunning();
++uint8_t seq_hasPendingKitChange(void);
+ //------------------------------------------------------------------------------
+ uint8_t seq_isStepActive(uint8_t voice, uint8_t stepNr, uint8_t patternNr);
+ //------------------------------------------------------------------------------
+diff --git a/Core/Inc/buttonHandler.h b/Core/Inc/buttonHandler.h
+index cd8521f..bf9834c 100644
+--- a/Core/Inc/buttonHandler.h
++++ b/Core/Inc/buttonHandler.h
+@@ -156,6 +156,7 @@ void buttonHandler_init();
+ //--------------------------------------------------------
+ void buttonHandler_tick();
+ //--------------------------------------------------------
++void buttonHandler_copyEditableBase(uint8_t *out, uint16_t count);
+ void buttonHandler_buttonPressed(uint8_t buttonNr);
+ //--------------------------------------------------------
+ //uint8_t buttonHandler_getMutedVoices();
+diff --git a/Core/Inc/menu/menu.h b/Core/Inc/menu/menu.h
+index dc8389f..6e5f227 100644
+--- a/Core/Inc/menu/menu.h
++++ b/Core/Inc/menu/menu.h
+@@ -677,6 +677,7 @@ void menu_setLoadSaveCategory(uint8_t cat);
+ void menu_init();
+ //-----------------------------------------------------------------
+ /** takes the values received from the encoder and translates it to menu changes*/
++uint8_t menu_voiceTransferButton(uint8_t button, uint8_t pressed);
+ void menu_parseEncoder(int8_t inc, uint8_t button);
+ //-----------------------------------------------------------------
+ void menu_switchPage(uint8_t pageNr);
+diff --git a/Core/Src/Preset/presetManager.c b/Core/Src/Preset/presetManager.c
+index 5550002..256922d 100644
+--- a/Core/Src/Preset/presetManager.c
++++ b/Core/Src/Preset/presetManager.c
+@@ -21,6 +21,7 @@
+ #include "menu/menu.h"
+ //#include <util/delay.h>
+ #include "lcd.h"
++#include "buttonHandler.h"
+ //#include <avr/pgmspace.h>
+ #include <stdlib.h>
+ //#include <util/atomic.h>
+@@ -39,8 +40,12 @@
+ 
+ //FATFS SDFatFS;		/* File system object for the logical drive */
+ //FIL SDFile;		/* place to hold 1 file*/
++/* R21 context revision: invalidates a selector even after A/B/A loads. */
++static volatile uint32_t preset_kitRevision;
++
+ static uint8_t morph_state = 0; //flag for non blocking morph
+ static uint8_t morph_index = 0;
++#include "voiceTransfer.inc"
+ char savefileNames[NUM_KIT_SLOTS][NUM_SAVEFILE_NAMES][8];
+ 
+ char currentFolder[13];
+@@ -367,14 +372,14 @@ void preset_touchTimer(PresetTimer type)
+ 
+ FRESULT preset_saveTmpKit()
+ {
+-    if(menu_selectedPresetNr[SAVE_TYPE_KIT] >= NUM_KIT_SLOTS) return FR_INVALID_PARAMETER;
++    if(menu_loadedPresetNr[CURRENT_KIT] >= NUM_KIT_SLOTS) return FR_INVALID_PARAMETER;
+     FRESULT res;
+ #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
+     HAL_TIM_Base_Start_IT(&htim2);
+ #endif
+     res = preset_openShared((FIL*)&SDFile, "/tmp/tmp.snd", FA_CREATE_ALWAYS | FA_WRITE);
+     if(res == FR_OK) {
+-        res = preset_writeChecked(&menu_selectedPresetNr[SAVE_TYPE_KIT], 1);
++        res = preset_writeChecked(&menu_loadedPresetNr[CURRENT_KIT], 1);
+         if(res == FR_OK) res = preset_writeChecked(activeParameters, END_OF_SOUND_PARAMETERS);
+         res = preset_finishSave(res);
+     }
+@@ -403,7 +408,8 @@ FRESULT preset_LoadTmpKit(void)
+         if(data[PAR_TARGET_LFO1+i] >= nmt) data[PAR_TARGET_LFO1+i] = 0;
+     }
+     memcpy(activeParameters, data, sizeof(data));
+-    menu_selectedPresetNr[SAVE_TYPE_KIT] = slot;
++    menu_selectedPresetNr[SAVE_TYPE_KIT] = menu_loadedPresetNr[CURRENT_KIT] = slot;
++    ++preset_kitRevision;
+     preset_sendDrumsetParameters();
+     return FR_OK;
+ }
+@@ -816,6 +822,8 @@ void preset_loadDrumsetRam(uint8_t presetNr, uint8_t isMorph, uint8_t sendImmedi
+ 	}
+ 	else
+ 	{
++		++preset_kitRevision;
++        menu_loadedPresetNr[CURRENT_KIT] = presetNr;
+ 		//copy parameters to edit buffer
+ 		memcpy(activeParameters, mainParameters[presetNr], sizeof(uint8_t) * END_OF_SOUND_PARAMETERS);
+ 		//if(activeParameters[PAR_PATTERN_MODE] = 1)
+@@ -2182,7 +2190,7 @@ FRESULT preset_createProject(uint8_t presetNr)
+ /* Existing serializers, unchanged payloads; project metadata is written last. */
+ static FRESULT preset_writeProjectData(uint8_t presetNr)
+ {
+-    preset_saveDrumsetRam(menu_selectedPresetNr[SAVE_TYPE_KIT], 0);
++    preset_saveDrumsetRam(menu_loadedPresetNr[CURRENT_KIT], 0);
+     FRESULT res = preset_savePatternRAM(seq_activePattern);
+     if(res != FR_OK) return res;
+     res = preset_saveGlobals();
+@@ -2212,7 +2220,8 @@ FRESULT preset_saveProject(uint8_t presetNr)
+     if(res != FR_OK) return res;
+     res = preset_projectPath(folder, sizeof(folder), presetNr);
+     if(res != FR_OK) return res;
+-    if(menu_selectedPresetNr[SAVE_TYPE_KIT] >= NUM_KIT_SLOTS || seq_activePattern >= NUM_PATTERN)
++    if(menu_selectedPresetNr[SAVE_TYPE_KIT] >= NUM_KIT_SLOTS ||
++       menu_loadedPresetNr[CURRENT_KIT] >= NUM_KIT_SLOTS || seq_activePattern >= NUM_PATTERN)
+         return FR_INVALID_PARAMETER;
+     for(uint8_t i = 0; i < NUM_PATTERN; i++)
+         if(seq_patternSet.kitNr[i] >= NUM_KIT_SLOTS) return FR_INT_ERR;
+diff --git a/Core/Src/Preset/voiceTransfer.inc b/Core/Src/Preset/voiceTransfer.inc
+new file mode 100644
+index 0000000..2a1b0d0
+--- /dev/null
++++ b/Core/Src/Preset/voiceTransfer.inc
+@@ -0,0 +1,97 @@
++/* R21 saved parameter transfer. Included by presetManager.c; no engine or SD calls. */
++static const uint8_t preset_voiceBaseIds[6][27] = {
++    { PAR_COARSE1, PAR_FINE1, PAR_VELOA1, PAR_VELOD1, PAR_VOL_SLOPE1, PAR_FILTER_FREQ_1, PAR_RESO_1, PAR_FILTER_TYPE_1, PAR_FILTER_DRIVE_1, PAR_TRANS1_VOL, PAR_TRANS1_WAVE, PAR_TRANS1_FREQ, PAR_VOL1, PAR_PAN1, PAR_VOICE_DECIMATION1, PAR_PWM_1, PAR_OSC_WAVE_DRUM1, PAR_MOD_WAVE_DRUM1, PAR_MOD_EG1, PAR_MODAMNT1, PAR_PITCH_SLOPE1, PAR_FMAMNT1, PAR_FM_FREQ1, PAR_MIX_MOD_1, PAR_DRIVE1, PAR_NONE },
++    { PAR_COARSE2, PAR_FINE2, PAR_VELOA2, PAR_VELOD2, PAR_VOL_SLOPE2, PAR_FILTER_FREQ_2, PAR_RESO_2, PAR_FILTER_TYPE_2, PAR_FILTER_DRIVE_2, PAR_TRANS2_VOL, PAR_TRANS2_WAVE, PAR_TRANS2_FREQ, PAR_VOL2, PAR_PAN2, PAR_VOICE_DECIMATION2, PAR_PWM_2, PAR_OSC_WAVE_DRUM2, PAR_MOD_WAVE_DRUM2, PAR_MOD_EG2, PAR_MODAMNT2, PAR_PITCH_SLOPE2, PAR_FMAMNT2, PAR_FM_FREQ2, PAR_MIX_MOD_2, PAR_DRIVE2, PAR_NONE },
++    { PAR_COARSE3, PAR_FINE3, PAR_VELOA3, PAR_VELOD3, PAR_VOL_SLOPE3, PAR_FILTER_FREQ_3, PAR_RESO_3, PAR_FILTER_TYPE_3, PAR_FILTER_DRIVE_3, PAR_TRANS3_VOL, PAR_TRANS3_WAVE, PAR_TRANS3_FREQ, PAR_VOL3, PAR_PAN3, PAR_VOICE_DECIMATION3, PAR_PWM_3, PAR_OSC_WAVE_DRUM3, PAR_MOD_WAVE_DRUM3, PAR_MOD_EG3, PAR_MODAMNT3, PAR_PITCH_SLOPE3, PAR_FMAMNT3, PAR_FM_FREQ3, PAR_MIX_MOD_3, PAR_DRIVE3, PAR_NONE },
++    { PAR_COARSE4, PAR_FINE4, PAR_VELOA4, PAR_VELOD4, PAR_VOL_SLOPE4, PAR_FILTER_FREQ_4, PAR_RESO_4, PAR_FILTER_TYPE_4, PAR_FILTER_DRIVE_4, PAR_TRANS4_VOL, PAR_TRANS4_WAVE, PAR_TRANS4_FREQ, PAR_VOL4, PAR_PAN4, PAR_VOICE_DECIMATION4, PAR_PWM_4, PAR_OSC_WAVE_SNARE, PAR_NOISE_FREQ1, PAR_MIX1, PAR_REPEAT4, PAR_MOD_EG4, PAR_MODAMNT4, PAR_PITCH_SLOPE4, PAR_SNARE_DISTORTION, PAR_NONE },
++    { PAR_COARSE5, PAR_FINE5, PAR_VELOA5, PAR_VELOD5, PAR_VOL_SLOPE5, PAR_FILTER_FREQ_5, PAR_RESO_5, PAR_FILTER_TYPE_5, PAR_FILTER_DRIVE_5, PAR_TRANS5_VOL, PAR_TRANS5_WAVE, PAR_TRANS5_FREQ, PAR_VOL5, PAR_PAN5, PAR_VOICE_DECIMATION5, PAR_PWM_5, PAR_WAVE1_CYM, PAR_WAVE2_CYM, PAR_WAVE3_CYM, PAR_MOD_OSC_F1_CYM, PAR_MOD_OSC_F2_CYM, PAR_MOD_OSC_GAIN1_CYM, PAR_MOD_OSC_GAIN2_CYM, PAR_REPEAT5, PAR_CYMBAL_DISTORTION, PAR_NONE },
++    { PAR_COARSE6, PAR_FINE6, PAR_VELOA6, PAR_VELOD6_CLOSED, PAR_VOL_SLOPE6, PAR_FILTER_FREQ_6, PAR_RESO_6, PAR_FILTER_TYPE_6, PAR_FILTER_DRIVE_6, PAR_TRANS6_VOL, PAR_TRANS6_WAVE, PAR_TRANS6_FREQ, PAR_VOL6, PAR_PAN6, PAR_VOICE_DECIMATION6, PAR_PWM_6, PAR_WAVE1_HH, PAR_WAVE2_HH, PAR_WAVE3_HH, PAR_MOD_OSC_F1, PAR_MOD_OSC_F2, PAR_MOD_OSC_GAIN1, PAR_MOD_OSC_GAIN2, PAR_VELOD6_OPEN, PAR_HAT_DISTORTION, PAR_NONE },
++};
++static const uint8_t preset_voiceLfoGroups[] = {
++    PAR_FREQ_LFO1, PAR_AMOUNT_LFO1, PAR_WAVE_LFO1, PAR_VOICE_LFO1,
++    PAR_TARGET_LFO1, PAR_RETRIGGER_LFO1, PAR_SYNC_LFO1, PAR_OFFSET_LFO1
++};
++static uint8_t preset_voiceOwnsParameter(uint8_t voice, uint16_t id)
++{
++    if(voice >= 6 || id == PAR_NONE) return 0;
++    for(unsigned i = 0; preset_voiceBaseIds[voice][i] != PAR_NONE; ++i)
++        if(preset_voiceBaseIds[voice][i] == id) return 1;
++    for(unsigned i = 0; i < sizeof(preset_voiceLfoGroups); ++i)
++        if(preset_voiceLfoGroups[i] + voice == id) return 1;
++    return id == PAR_VEL_DEST_1 + voice || id == PAR_VELO_MOD_AMT_1 + voice ||
++           id == PAR_VOLUME_MOD_ON_OFF1 + voice;
++}
++static uint16_t preset_voiceLfoDestination(const uint8_t *kit, uint8_t lfo)
++{
++    uint8_t index = kit[PAR_TARGET_LFO1 + lfo];
++    if(index >= getNumModTargets()) return PAR_NONE;
++    return pgm_read_word(&modTargets[index].param);
++}
++uint8_t preset_voiceCopyContextValid(const PresetVoiceCopy *copy)
++{
++    return copy && copy->voice < 6 && copy->kit < NUM_KIT_SLOTS &&
++        copy->project == menu_loadedPresetNr[CURRENT_PROJECT] &&
++        copy->kit == menu_loadedPresetNr[CURRENT_KIT] &&
++        copy->revision == preset_kitRevision && !seq_isRunning() &&
++        copy->pattern == seq_activePattern && !seq_hasPendingKitChange();
++}
++uint8_t preset_captureVoice(PresetVoiceCopy *copy, uint8_t track)
++{
++    if(!copy || track > 6 || seq_isRunning() || seq_hasPendingKitChange() ||
++       menu_loadedPresetNr[CURRENT_KIT] >= NUM_KIT_SLOTS ||
++       menu_loadedPresetNr[CURRENT_PROJECT] >= NUM_KIT_SLOTS) return 0;
++    copy->voice = track == 6 ? 5 : track;
++    copy->kit = menu_loadedPresetNr[CURRENT_KIT];
++    copy->project = menu_loadedPresetNr[CURRENT_PROJECT];
++    copy->pattern = seq_activePattern;
++    copy->revision = preset_kitRevision;
++    buttonHandler_copyEditableBase(copy->values, sizeof(copy->values));
++    return preset_voiceCopyContextValid(copy);
++}
++static uint8_t preset_voiceMorphConflict(uint8_t target)
++{
++    return morphParameters == mainParameters[target] &&
++           (activeParameters[PAR_MORPH] != 0 || morph_state != 0);
++}
++uint8_t preset_transferVoice(const PresetVoiceCopy *copy, uint8_t target)
++{
++    uint8_t staged[END_OF_SOUND_PARAMETERS];
++    if(!preset_voiceCopyContextValid(copy) || target >= NUM_KIT_SLOTS || target == copy->kit)
++        return 0;
++    if(preset_voiceMorphConflict(target)) return PRESET_VOICE_MORPH_ACTIVE;
++    memcpy(staged, mainParameters[target], sizeof(staged));
++    uint8_t voice = copy->voice;
++    for(unsigned i = 0; preset_voiceBaseIds[voice][i] != PAR_NONE; ++i) {
++        uint8_t id = preset_voiceBaseIds[voice][i];
++        if(copy->values[id] > 127) return 0;
++        staged[id] = copy->values[id];
++    }
++    uint16_t dest = preset_voiceLfoDestination(copy->values, voice);
++    if(copy->values[PAR_AMOUNT_LFO1 + voice] != 0 &&
++       copy->values[PAR_VOICE_LFO1 + voice] == voice + 1 &&
++       preset_voiceOwnsParameter(voice, dest)) {
++        for(unsigned i = 0; i < sizeof(preset_voiceLfoGroups); ++i) {
++            uint8_t id = preset_voiceLfoGroups[i] + voice;
++            /* Target-list indices legitimately exceed 127. */
++            if(preset_voiceLfoGroups[i] != PAR_TARGET_LFO1 && copy->values[id] > 127) return 0;
++            staged[id] = copy->values[id];
++        }
++        for(uint8_t i = 0; i < 6; ++i)
++            if(i != voice && preset_voiceLfoDestination(staged, i) == dest)
++                staged[PAR_TARGET_LFO1 + i] = 0; /* Existing OFF encoding. */
++    }
++    /* The sequencer/clock can change context in an interrupt. Guard only the
++     * final context check and bounded RAM commit, never staging or IO. */
++    uint32_t mask = __get_PRIMASK();
++    __disable_irq();
++    uint8_t result = PRESET_VOICE_REJECTED;
++    if(preset_voiceCopyContextValid(copy)) {
++        if(preset_voiceMorphConflict(target)) result = PRESET_VOICE_MORPH_ACTIVE;
++        else {
++            memcpy(mainParameters[target], staged, sizeof(staged));
++            result = PRESET_VOICE_OK;
++        }
++    }
++    __set_PRIMASK(mask);
++    return result;
++}
+diff --git a/Core/Src/Soundengine/Sequencer/sequencer.c b/Core/Src/Soundengine/Sequencer/sequencer.c
+index 42d80c4..0b224e7 100644
+--- a/Core/Src/Soundengine/Sequencer/sequencer.c
++++ b/Core/Src/Soundengine/Sequencer/sequencer.c
+@@ -1988,6 +1988,11 @@ void seq_setMainStep(uint8_t patternNr, uint8_t voice, uint8_t stepNr, uint8_t o
+ //	}
+ //}
+ //------------------------------------------------------------------------------
++/* Includes same-pattern reload requests, not just a different pattern index. */
++uint8_t seq_hasPendingKitChange(void)
++{
++    return seq_loadPendigFlag || seq_activePattern != seq_pendingPattern;
++}
+ uint8_t seq_isRunning() {
+ 	return seq_running;
+ }
+diff --git a/Core/Src/buttonHandler.c b/Core/Src/buttonHandler.c
+index fc7a77c..b466917 100644
+--- a/Core/Src/buttonHandler.c
++++ b/Core/Src/buttonHandler.c
+@@ -1579,7 +1579,21 @@ static void buttonHandler_voiceButtonPressed(uint8_t voiceNr)
+ }
+ 
+ //--------------------------------------------------------
++/* Snapshot editable base values without copying a held STEP's temporary locks. */
++void buttonHandler_copyEditableBase(uint8_t *out, uint16_t count)
++{
++    memcpy(out, activeParameters, count);
++    if(buttonHandler_getArmedAutomationStep() == NO_STEP_SELECTED) return;
++    /* Lane 1 holds the earliest base if both lanes temporarily lock one ID. */
++    for(int lane = 1; lane >= 0; --lane) {
++        uint16_t id = buttonHandler_originalParameter[lane];
++        uint8_t locked = lane ? buttonHandler_resetLock2 : buttonHandler_resetLock1;
++        if(locked && id < count) out[id] = buttonHandler_originalValue[lane];
++    }
++}
++
+ void buttonHandler_buttonPressed(uint8_t buttonNr) {
++    if(menu_voiceTransferButton(buttonNr, 1)) return;
+ 
+ 	screensaver_touch();
+ 
+@@ -2009,6 +2023,7 @@ void buttonHandler_buttonPressed(uint8_t buttonNr) {
+ 
+ //--------------------------------------------------------
+ void buttonHandler_buttonReleased(uint8_t buttonNr) {
++    if(menu_voiceTransferButton(buttonNr, 0)) return;
+ 
+ 
+ 
+diff --git a/Core/Src/main.c b/Core/Src/main.c
+index eeea271..eb41b21 100644
+--- a/Core/Src/main.c
++++ b/Core/Src/main.c
+@@ -351,7 +351,7 @@ int main(void)
+ #else
+ 	//print boot up message
+ lcd_clear();
+-lcd_string("LXR LAB R20");
++lcd_string("LXR LAB R21");
+ //goto 2nd line
+ lcd_setcursor(0,2);
+ /* Line 2 intentionally blank on LXR LAB firmware. */
+diff --git a/Core/Src/menu/menu.c b/Core/Src/menu/menu.c
+index 4013faf..ca7d3f2 100644
+--- a/Core/Src/menu/menu.c
++++ b/Core/Src/menu/menu.c
+@@ -714,6 +714,8 @@ uint8_t menu_activePatternBank = 0;
+ static uint8_t editModeActive = 0;			/**< when edit mode is active, only the currently active parameter is shown with full name*/
+ static uint8_t lastEncoderButton = 0;		/**< stores the state of the encoder button so the edit mode is only switched once when the button is pressed*/
+ 
++#include "voiceTransfer.inc"
++
+ /** array holding all the available parameter values*/
+ uint8_t mainParameters[NUM_KIT_SLOTS][END_OF_SOUND_PARAMETERS];
+ //uint8_t abs_pot_Parameter_position[NUM_PARAMS];
+@@ -1835,6 +1837,7 @@ void menu_repaintGeneric()
+ // repaint the screen
+ void menu_repaint()
+ {
++    if(menu_renderVoiceTransfer()) return;
+     if(menu_renderKitLoad()) return;
+     if(menu_renderSdError()) return;
+     if(menu_activePage != PATTERN_SAVE_PAGE_OK && menu_activePage != KIT_SAVE_PAGE_OK &&
+@@ -2103,6 +2106,7 @@ static uint8_t menu_renderKitLoad(void)
+ /* Rendered by the existing bounded display refresh, never by a wait loop. */
+ static void menu_expireSdError(void)
+ {
++    menu_expireVoiceTransfer();
+     if(menu_autoNotice &&
+        (uint32_t)(HAL_GetTick()-menu_autoSince) >= DISPLAY_NOTICE_DURATION_MS) {
+         menu_autoNotice = 0;
+@@ -2913,6 +2917,7 @@ static void getMenuItemNameForValue(const uint8_t menuId, const uint8_t curParmV
+ // button - 1 if the button is depressed, 0 if its not
+ void menu_parseEncoder(int8_t inc, uint8_t button)
+ {
++    if(menu_voiceTransferEncoder(inc, button)) return;
+ 	uint8_t btnClicked=0;
+ 	// handle the button being clicked or released
+ 	if(button != lastEncoderButton) { // was the button clicked?
+diff --git a/Core/Src/menu/voiceTransfer.inc b/Core/Src/menu/voiceTransfer.inc
+new file mode 100644
+index 0000000..33e6b36
+--- /dev/null
++++ b/Core/Src/menu/voiceTransfer.inc
+@@ -0,0 +1,110 @@
++/* R21 direct transfer selector. Its snapshot exists only during one session. */
++static PresetVoiceCopy menu_voiceCopy;
++static uint8_t menu_voiceCopyActive, menu_voiceCopyTarget, menu_voiceCopyCopyHeld;
++static uint8_t menu_voiceCopyDrain, menu_voiceCopyNotice;
++static uint32_t menu_voiceCopyReleased, menu_voiceCopySince;
++
++static void menu_finishVoiceCopy(uint8_t notice)
++{
++    menu_voiceCopyActive = 0;
++    memset(&menu_voiceCopy, 0, sizeof(menu_voiceCopy));
++    menu_voiceCopyNotice = notice;
++    menu_voiceCopySince = HAL_GetTick();
++    menu_voiceCopyDrain = 1;
++    menu_voiceCopyReleased = HAL_GetTick();
++    menu_repaintAll();
++}
++/* Called before the normal physical-button dispatcher. COPY cancels; other
++ * panel presses cancel and are consumed. START/STOP still operates normally. */
++uint8_t menu_voiceTransferButton(uint8_t button, uint8_t pressed)
++{
++    if(button == BUT_COPY && !pressed && menu_voiceCopyCopyHeld) {
++        menu_voiceCopyCopyHeld = 0;
++        return 1;
++    }
++    if(!menu_voiceCopyActive || !pressed) return 0;
++    if(button == BUT_START_STOP) return 0;
++    if(pressed && !(button == BUT_COPY && menu_voiceCopyCopyHeld))
++        menu_finishVoiceCopy(3);
++    return 1;
++}
++static uint8_t menu_voiceTransferEncoder(int8_t inc, uint8_t button)
++{
++    uint32_t now = HAL_GetTick();
++    uint8_t previous = lastEncoderButton;
++    uint8_t click = button && !previous;
++    if(menu_voiceCopyActive) {
++        lastEncoderButton = button;
++        if(menu_voiceCopyActive == 1) {
++            /* Both entry controls must be released before confirmation arms. */
++            if(!button && !buttonHandler_getCopy()) {
++                menu_voiceCopyActive = 2;
++                menu_voiceCopyReleased = now;
++            }
++        } else {
++            if(inc) {
++                int target = (int)menu_voiceCopyTarget + (inc > 0 ? 1 : -1);
++                if(target >= 0 && target < NUM_KIT_SLOTS) menu_voiceCopyTarget = target;
++            }
++            if(click && (uint32_t)(now - menu_voiceCopyReleased) >= 40u) {
++                uint8_t result = buttonHandler_getShift() || buttonHandler_getCopy() ?
++                    PRESET_VOICE_REJECTED : preset_transferVoice(&menu_voiceCopy, menu_voiceCopyTarget);
++                menu_finishVoiceCopy(result == PRESET_VOICE_OK ? 1 :
++                    result == PRESET_VOICE_MORPH_ACTIVE ? 4 : 2);
++            }
++            if(!button && previous) menu_voiceCopyReleased = now;
++        }
++        menu_repaintAll();
++        return 1;
++    }
++    if(menu_voiceCopyDrain) {
++        lastEncoderButton = button;
++        if(button) menu_voiceCopyReleased = now;
++        else if((uint32_t)(now - menu_voiceCopyReleased) >= 40u) menu_voiceCopyDrain = 0;
++        return 1;
++    }
++    if(click && buttonHandler_getCopy() && !buttonHandler_getShift() &&
++       buttonHandler_getMode() == SELECT_MODE_VOICE && menu_activePage < 7 &&
++       !screensaver_Active && !seq_isRunning()) {
++        lastEncoderButton = button;
++        menu_voiceCopyCopyHeld = 1;
++        copyClear_reset();
++        if(preset_captureVoice(&menu_voiceCopy, menu_getActiveVoice())) {
++            menu_voiceCopyTarget = menu_voiceCopy.kit;
++            menu_voiceCopyActive = 1;
++            menu_voiceCopyNotice = 0;
++            menu_repaintAll();
++        } else menu_finishVoiceCopy(2);
++        return 1;
++    }
++    return 0;
++}
++static void menu_expireVoiceTransfer(void)
++{
++    if(menu_voiceCopyNotice && (uint32_t)(HAL_GetTick() - menu_voiceCopySince) >= 1500u) {
++        menu_voiceCopyNotice = 0;
++        menu_repaintAll();
++    }
++}
++static uint8_t menu_renderVoiceTransfer(void)
++{
++    if(!menu_voiceCopyActive && !menu_voiceCopyNotice) return 0;
++    char line[17];
++    visibleCursor = 0;
++    memset(editDisplayBuffer[0], ' ', 16);
++    memset(editDisplayBuffer[1], ' ', 16);
++    if(menu_voiceCopyActive) {
++        snprintf(line, sizeof(line), "V%u > KIT %02u?", (unsigned)menu_voiceCopy.voice + 1u,
++                 (unsigned)menu_voiceCopyTarget + 1u);
++        memcpy(editDisplayBuffer[0], line, strlen(line));
++        memcpy(editDisplayBuffer[1], "DATA yes COPY no", 16);
++    } else {
++        memcpy(editDisplayBuffer[0], "Voice transfer  ", 16);
++        const char *message = menu_voiceCopyNotice == 1 ? "success!        " :
++                              menu_voiceCopyNotice == 2 ? "rejected        " :
++                              menu_voiceCopyNotice == 4 ? "Morph active    " : "cancelled       ";
++        memcpy(editDisplayBuffer[1], message, 16);
++    }
++    display_needs_refresh = 1;
++    return 1;
++}
+diff --git a/tests/live_storage/notifications.c b/tests/live_storage/notifications.c
+index 16fdd45..484296a 100644
+--- a/tests/live_storage/notifications.c
++++ b/tests/live_storage/notifications.c
+@@ -41,6 +41,9 @@ static void *interleaved_copy(void *to,const void *from,size_t count)
+  return result;
+ }
+ #define memcpy interleaved_copy
++/* This fixture exercises notifications outside an R21 selector session. */
++static uint8_t menu_renderVoiceTransfer(void){return 0;}
++static void menu_expireVoiceTransfer(void){}
+ #include "functions.inc"
+ #undef memcpy
+ static void reset(void)
+diff --git a/tests/project_storage/run.py b/tests/project_storage/run.py
+index 8bce93a..9f5f3e2 100644
+--- a/tests/project_storage/run.py
++++ b/tests/project_storage/run.py
+@@ -56,7 +56,7 @@ def production_source():
+         definition = h.extract(source, n)
+         prototypes.append(definition[:definition.index('{')].rstrip()+';\n')
+     prefix=transaction[:transaction.index('static FRESULT preset_txnMutation')]
+-    code = prefix + ''.join(prototypes) + ''.join(h.extract(source,n) for n in helpers)
++    code = 'static volatile uint32_t preset_kitRevision;\n' + prefix + ''.join(prototypes) + ''.join(h.extract(source,n) for n in helpers)
+     # RAM/sequence helpers are unchanged production bodies, not algorithm replicas.
+     seq = (ROOT/'Core/Src/Soundengine/Sequencer/sequencer.c').read_text()
+     names = ['seq_resetNote','seq_clearTrack','seq_clearPattern','seq_copyPatternToBackupBuffer']
+diff --git a/tests/r20_ui/integration/probe.py b/tests/r20_ui/integration/probe.py
+index 51f61a7..62c9c74 100644
+--- a/tests/r20_ui/integration/probe.py
++++ b/tests/r20_ui/integration/probe.py
+@@ -108,6 +108,7 @@ code = "\n\n".join([
+     *menu_enums, enum(menu_h, "MenuAutomationBlock"), *type_defs, *tables, menu_vars,
+     button_vars, (here / "state.h").read_text(),
+     *selected(cc, "getNumModTargets paramToModTargetInit"),
++    "static uint8_t menu_renderVoiceTransfer(void) { return 0; }\nstatic void menu_expireVoiceTransfer(void) {}",
+     save_renderer, *menu_functions, *selected(buttons, "buttonHandler_syncRecordingState"),
+     *seq_functions, baseline_guard, *selected(cortex, "frontParser_sendAutomationDestination"), front_dispatch, *selected(cortex, "frontParser_parseUartData"),
+     *selected(source("Core/Src/frontPanelParser.c"), "frontPanel_sendData"), rec_button, manual_menu, knob_send,
+diff --git a/tests/r20_ui/run.py b/tests/r20_ui/run.py
+index 6e4606f..a4130e3 100644
+--- a/tests/r20_ui/run.py
++++ b/tests/r20_ui/run.py
+@@ -33,7 +33,7 @@ assert "HAL_GetTick() - menu_saveSince" in menu
+ assert "menu_saveSince = HAL_GetTick();" in menu
+ assert "menu_showSaveSuccess(PATTERN_SAVE_PAGE_OK);" in button
+ assert ">= 750u" not in menu
+-assert 'lcd_string("LXR LAB R20");' in main
++assert 'lcd_string("LXR LAB R21");' in main
+ assert "menu_renderAutomationNotice()) return;" in menu
+ assert "buttonHandler_syncRecordingState(0);" in sequencer
+ assert "menu_showAutomationBlocked" in sequencer
+diff --git a/tests/r21_voice_copy/README.md b/tests/r21_voice_copy/README.md
+new file mode 100644
+index 0000000..2e449ba
+--- /dev/null
++++ b/tests/r21_voice_copy/README.md
+@@ -0,0 +1,29 @@
++# R21 voice copy/paste host fixtures
++
++Run `python3 tests/r21_voice_copy/run.py` from the repository root. A native C
++compiler and Python 3 are required. ASan/UBSan execute production transfer,
++selector, complete public panel dispatchers, load sweeps, Cortex LFO destination
++case, LFO retrigger, and project/FatFs bodies with RAM sectors and explicit
++HAL, LCD, unrelated button helpers and parameter-application adapters. The actual
++menu table supplies an independent parameter ownership oracle. No hardware runs.
++
++`python3 tests/r21_voice_copy/run.py --morph-alias` is the focused source-sound
++preservation gate. The retained initial draft reproduction failed because the stored target
++also backs the loaded Morph pointer, and an in-progress sweep reads transferred
++bytes. Owner-approved Variant A rejects this destination while the Morph amount is
++nonzero or an interpolation sweep is pending. It permits zero amount with an
++idle sweep, and unrelated targets. The guard is checked again at commit.
++
++The normal fixture checks Kit 10 unsaved Voice 5 edits, a distinct Kit 2,
++different Load/Save cursor, exact kit byte ownership for six engines/seven panel
++voices, both hi-hat decays, LFO self eligibility and exact-destination conflicts,
++project round trips, older short kit compatibility, held STEP base values,
++entry/release/bounce/cancel/rejection and commit-boundary clock injection. The
++R20 capture/playback/UI, storage/transaction, parser/sweep and FX suites remain
++separate regressions. The adapters observe dispatches; they do not establish
++physical sound, full engine render behavior, button electrical timing or WCET.
++
++`validate_arm.py` is prepared for the eventual matched CI build. It verifies
++ELF/IMG load-segment identity, boot string, updater fields, ZIP contents and
++static region spans relative to the exact R20 baseline. It has not been run on
++an R21 ARM build at this draft stage.
+diff --git a/tests/r21_voice_copy/engine.c b/tests/r21_voice_copy/engine.c
+new file mode 100644
+index 0000000..d82be1b
+--- /dev/null
++++ b/tests/r21_voice_copy/engine.c
+@@ -0,0 +1,31 @@
++/* Production load sweep and Cortex destination case. Parameter application and
++ * modulation nodes are observed adapters; no audio renderer runs in this fixture. */
++#include "Soundengine/MIDI/MidiParser.h"
++#include "Soundengine/DSPAudio/lfo.h"
++static struct {uint8_t fxType;} fxBus;
++#define FX_OFF 0
++void preset_touchTimer(PresetTimer type){(void)type;}
++static uint8_t engine_values[END_OF_SOUND_PARAMETERS];
++static unsigned engine_seen[END_OF_SOUND_PARAMETERS],fx_preparations;
++static struct {Lfo lfo;} voiceArray[3],snareVoice,cymbalVoice,hatVoice;
++static MidiMsg cortex_midiMsg;
++void modNode_setDestination(ModulationNode *node,uint16_t destination){node->destination=destination;}
++static void r21_frontSend(uint8_t status,uint8_t a,uint8_t b)
++{
++ if(status==CC_LFO_TARGET){
++  cortex_midiMsg.status=status;cortex_midiMsg.data1=a;cortex_midiMsg.data2=b;
++  #include "destination.inc"
++ }
++}
++void midiParser_ccHandler(MidiMsg msg,uint8_t original,uint8_t floating,float value)
++{
++ (void)value;assert(original==1&&!floating);
++ unsigned id=msg.status==MIDI_CC?msg.data1-1u:msg.data1+128u;
++ assert(id<END_OF_SOUND_PARAMETERS);
++ assert(id!=PAR_NRPN_DATA_ENTRY_COARSE && id!=PAR_NRPN_FINE && id!=PAR_NRPN_COARSE && id!=PAR_BANK_CHANGE);
++ engine_values[id]=msg.data2;engine_seen[id]++;
++}
++void FxBus_prepareFxChange(void){fx_preparations++;}
++void soundengine_process(void){}
++#include "load.inc"
++#include "retrigger.inc"
+diff --git a/tests/r21_voice_copy/host.c b/tests/r21_voice_copy/host.c
+new file mode 100644
+index 0000000..3c534d2
+--- /dev/null
++++ b/tests/r21_voice_copy/host.c
+@@ -0,0 +1,326 @@
++#include <stdint.h>
++uint8_t getNumModTargets(void);
++void soundengine_process(void);
++static void r21_frontSend(uint8_t,uint8_t,uint8_t);
++#include "whole.inc"
++#include "buttonHandler.h"
++#include "menu/copyClearTools.h"
++#include "menu/CcNr2Text.h"
++#include "menu/screensaver.h"
++#include "ledHandler.h"
++#include "front.h"
++uint8_t menu_activePage, menu_activeVoice, visibleCursor, display_needs_refresh;
++volatile uint8_t screensaver_Active;
++char editDisplayBuffer[2][17];
++static uint8_t editModeActive, lastEncoderButton, host_copy, host_shift, host_mode;
++static unsigned clear_actions, edit_actions, navigate_actions;
++static uint32_t now, irq_mask;
++static void (*before_commit)(void);
++uint32_t HAL_GetTick(void){return now;}
++uint8_t seq_isRunning(void);
++static uint8_t running,seq_loadPendigFlag,morph_state,morph_index;
++#include "pending.inc"
++uint8_t seq_isRunning(void){return running;}
++static uint32_t host_getMask(void){return irq_mask;}
++static void host_disable(void){if(before_commit){void (*fn)(void)=before_commit;before_commit=0;fn();}irq_mask=1;}
++static void host_setMask(uint32_t mask){irq_mask=mask;}
++#define __get_PRIMASK host_getMask
++#define __disable_irq host_disable
++#define __set_PRIMASK host_setMask
++volatile uint16_t buttonHandler_originalParameter[2];
++uint8_t buttonHandler_originalValue[2],buttonHandler_resetLock1,buttonHandler_resetLock2;
++static int8_t armed_step=NO_STEP_SELECTED;
++int8_t buttonHandler_getArmedAutomationStep(void){return armed_step;}
++#include "base.inc"
++#include "../../Core/Src/Preset/voiceTransfer.inc"
++uint8_t copyClear_Mode;
++uint8_t buttonHandler_getCopy(void){return host_copy;}
++uint8_t buttonHandler_getShift(void){return host_shift;}
++uint8_t buttonHandler_getMode(void){return host_mode;}
++uint8_t menu_getActiveVoice(void){return menu_activeVoice;}
++void copyClear_reset(void){copyClear_Mode=MODE_NONE;}
++void menu_repaintAll(void){}
++void screensaver_touch(void){}
++void copyClear_executeClear(void){clear_actions++;}
++uint8_t copyClear_isClearModeActive(void){return copyClear_Mode==MODE_CLEAR;}
++uint8_t copyClear_getClearTarget(void){return 0;}
++void copyClear_setClearTarget(uint8_t v){(void)v;}
++void menu_handleLoadSaveMenu(int8_t i,uint8_t b){(void)i;(void)b;}
++void menu_handleSongMenu(int8_t i,uint8_t b){(void)i;(void)b;}
++uint8_t seq_getTrackLength(uint8_t voice){return seq_patternSet.length[seq_activePattern][voice];}
++void seq_setTrackLength(uint8_t voice,uint8_t length){seq_patternSet.length[seq_activePattern][voice]=length;}
++static void menu_encoderChangeParameter(int8_t i){(void)i;edit_actions++;}
++static void menu_moveToMenuItem(int8_t i){(void)i;navigate_actions++;}
++void menu_repaint(void){}
++#include "../../Core/Src/menu/voiceTransfer.inc"
++#include "engine.c"
++#include "encoder.inc"
++#include "panel.c"
++#include "menu/menuPages.h"
++
++static void reset_r21(void)
++{
++ seed(0);memset(menu_loadedPresetNr,0,sizeof menu_loadedPresetNr);
++ menu_loadedPresetNr[CURRENT_KIT]=9;menu_selectedPresetNr[SAVE_TYPE_KIT]=23;
++ menu_activeVoice=4;menu_activePage=4;host_mode=SELECT_MODE_VOICE;
++ host_copy=host_shift=running=lastEncoderButton=editModeActive=0;
++ menu_voiceCopyActive=menu_voiceCopyDrain=menu_voiceCopyNotice=menu_voiceCopyCopyHeld=0;
++ memset(&buttonHandler_stateMemory,0,sizeof buttonHandler_stateMemory);
++ buttonHandler_stateMemory.selectButtonMode=SELECT_MODE_VOICE;
++ seq_loadPendigFlag=0;morph_state=morph_index=0;armed_step=NO_STEP_SELECTED;buttonHandler_resetLock1=buttonHandler_resetLock2=0;
++ now=100;irq_mask=0;before_commit=0;
++ for(unsigned p=0;p<END_OF_SOUND_PARAMETERS;p++){
++  activeParameters[p]=(p*7+11)%128;
++  mainParameters[1][p]=(p*3+9)%128;
++  mainParameters[9][p]=(p*5+7)%128;
++ }
++ for(unsigned i=0;i<6;i++){
++  activeParameters[PAR_TARGET_LFO1+i]=0;
++  activeParameters[PAR_VOICE_LFO1+i]=i+1;
++  mainParameters[1][PAR_TARGET_LFO1+i]=0;
++  mainParameters[1][PAR_VOICE_LFO1+i]=i+1;
++ }
++ sends=0;
++}
++static void chord(void)
++{
++ panel_press(BUT_COPY);assert(copyClear_Mode==MODE_COPY_TRACK);
++ menu_parseEncoder(0,1);assert(menu_voiceCopyActive==1 && !editModeActive && copyClear_Mode==MODE_NONE);
++ menu_parseEncoder(0,1);assert(menu_voiceCopyActive==1);
++ menu_parseEncoder(0,0);assert(menu_voiceCopyActive==1);
++ panel_release(BUT_COPY);menu_parseEncoder(0,0);assert(menu_voiceCopyActive==2);
++ now+=40;
++}
++static void choose_two(void){while(menu_voiceCopyTarget!=1)menu_parseEncoder(-1,0);}
++static void confirm(void){menu_parseEncoder(0,1);}
++static void start_clock(void){running=1;}
++static void storage_roundtrip(void)
++{
++ reset_r21();uint8_t source[NUM_PARAMS],target[END_OF_SOUND_PARAMETERS],stored_source[END_OF_SOUND_PARAMETERS];
++ memcpy(source,activeParameters,sizeof source);memcpy(target,mainParameters[1],sizeof target);
++ memcpy(stored_source,mainParameters[9],sizeof stored_source);
++ PatternSet *patterns=malloc(sizeof *patterns);memcpy(patterns,&seq_patternSet,sizeof *patterns);
++ unsigned writes_before=physical_writes,apis=api_writes,send_before=sends,fx_before=fx_preparations;
++ char names_before[sizeof savefileNames];memcpy(names_before,savefileNames,sizeof names_before);
++ chord();choose_two();menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[0],"V5 > KIT 02?",12));confirm();
++ assert(menu_voiceCopyNotice==1 && !menu_voiceCopyActive);
++ assert(!memcmp(source,activeParameters,sizeof source));assert(!memcmp(stored_source,mainParameters[9],sizeof stored_source));
++ assert(!memcmp(patterns,&seq_patternSet,sizeof *patterns));free(patterns);
++ assert(physical_writes==writes_before && api_writes==apis && sends==send_before && fx_preparations==fx_before);
++ assert(!memcmp(names_before,savefileNames,sizeof names_before));
++ assert(menu_loadedPresetNr[CURRENT_KIT]==9 && menu_selectedPresetNr[SAVE_TYPE_KIT]==23);
++ assert(mainParameters[1][PAR_COARSE5]==source[PAR_COARSE5]);
++ assert(mainParameters[1][PAR_AUDIO_OUT5]==target[PAR_AUDIO_OUT5]);
++ uint8_t expected[END_OF_SOUND_PARAMETERS];memcpy(expected,mainParameters[1],sizeof expected);
++ assert(preset_saveTmpKit()==FR_OK);
++ FIL file={0};UINT count;uint8_t slot;
++ assert(f_open(&file,"/tmp/tmp.snd",FA_READ)==FR_OK);
++ assert(f_read(&file,&slot,1,&count)==FR_OK && count==1 && slot==9);assert(f_close(&file)==FR_OK);
++ assert(preset_saveProject(0)==FR_OK);assert(!memcmp(mainParameters[9],source,END_OF_SOUND_PARAMETERS));
++ assert(preset_loadProject(0,0)==FR_OK);
++ assert(!memcmp(mainParameters[1],expected,sizeof expected));assert(!memcmp(mainParameters[9],source,END_OF_SOUND_PARAMETERS));
++ preset_loadDrumsetRam(1,0,1);assert(!memcmp(activeParameters,expected,sizeof expected));
++ assert(menu_loadedPresetNr[CURRENT_KIT]==1);
++ puts("PASS Kit10 unsaved V5 -> Kit2: production COPY/DATA, exact active/cursor/pattern preservation, zero SD/dispatch at transfer, temp identity, real-FatFs SAVE PROJECT/reload/load");
++}
++
++static uint8_t is_excluded(unsigned id)
++{
++ return id==PAR_NONE || id>=END_OF_SOUND_PARAMETERS ||
++  (id>=PAR_FREQ_LFO1 && id<=PAR_AMOUNT_LFO6) ||
++  (id>=PAR_VOLUME_MOD_ON_OFF1 && id<=PAR_OFFSET_LFO6) ||
++  (id>=PAR_AUDIO_OUT1 && id<=PAR_AUDIO_OUT6);
++}
++static void all_engines(void)
++{
++ for(unsigned track=0;track<7;track++){
++  reset_r21();menu_activeVoice=menu_activePage=track;
++  uint8_t before[64][END_OF_SOUND_PARAMETERS],source[NUM_PARAMS],mask[END_OF_SOUND_PARAMETERS]={0};
++  memcpy(before,mainParameters,sizeof before);memcpy(source,activeParameters,sizeof source);
++  unsigned first=track<5?track:5,last=track<5?track:6;
++  for(unsigned page=first;page<=last;page++)for(unsigned sub=0;sub<8;sub++){
++   uint16_t ids[8];memcpy(ids,&menuPages[page][sub].bot1,sizeof ids);
++   for(unsigned j=0;j<8;j++)if(!is_excluded(ids[j]))mask[ids[j]]=1;
++  }
++  chord();choose_two();confirm();assert(menu_voiceCopyNotice==1);
++  for(unsigned kit=0;kit<64;kit++)for(unsigned id=0;id<END_OF_SOUND_PARAMETERS;id++)
++   assert(mainParameters[kit][id]==(kit==1&&mask[id]?source[id]:before[kit][id]));
++  assert(!memcmp(source,activeParameters,sizeof source));
++  if(track>=5)assert(mask[PAR_VELOD6_CLOSED]&&mask[PAR_VELOD6_OPEN]);
++ }
++ puts("PASS all six engines and both HH buttons: independent production menu-ID oracle, exact every-kit-byte mask, both decays, all other voice/FX/output/velocity/morph/placeholder/transport bytes preserved");
++}
++static uint8_t target_index(unsigned voice,unsigned id)
++{
++ for(unsigned i=0;i<getNumModTargets();i++)
++  if(pgm_read_word(&modTargets[i].param)==id && (voice==0||voiceFromModTargValue(i)==voice))return i;
++ assert(!"missing fixture target");return 0;
++}
++static void lfo_cases(void)
++{
++ for(unsigned kind=0;kind<8;kind++){
++  reset_r21();uint8_t index=target_index(5,PAR_COARSE5);
++  activeParameters[PAR_AMOUNT_LFO5]=29;
++  if(kind==0)index=0;else if(kind==1)activeParameters[PAR_AMOUNT_LFO5]=0;
++  else if(kind==2)index=target_index(1,PAR_COARSE1);
++  else if(kind==3)index=target_index(5,PAR_FX_P1);
++  else if(kind==4)index=1;else if(kind==5)index=255;
++  else if(kind==6)activeParameters[PAR_VOICE_LFO5]=2;
++  activeParameters[PAR_TARGET_LFO5]=index;
++  uint8_t previous[8];for(unsigned j=0;j<8;j++)previous[j]=mainParameters[1][preset_voiceLfoGroups[j]+4];
++  chord();choose_two();confirm();assert(menu_voiceCopyNotice==1);
++  for(unsigned j=0;j<8;j++)assert(mainParameters[1][preset_voiceLfoGroups[j]+4]==
++   (kind==7?activeParameters[preset_voiceLfoGroups[j]+4]:previous[j]));
++ }
++ reset_r21();
++ uint8_t dest=target_index(5,PAR_COARSE5),other=target_index(5,PAR_FINE5);
++ activeParameters[PAR_TARGET_LFO5]=dest;activeParameters[PAR_AMOUNT_LFO5]=37;
++ activeParameters[PAR_RETRIGGER_LFO5]=2;
++ mainParameters[1][PAR_TARGET_LFO1]=dest;mainParameters[1][PAR_AMOUNT_LFO1]=13;
++ mainParameters[1][PAR_TARGET_LFO6]=dest;mainParameters[1][PAR_AMOUNT_LFO6]=0;
++ mainParameters[1][PAR_TARGET_LFO2]=other;
++ mainParameters[1][PAR_TARGET_LFO5]=target_index(1,PAR_COARSE1);
++ uint8_t before[END_OF_SOUND_PARAMETERS];memcpy(before,mainParameters[1],sizeof before);
++ chord();choose_two();confirm();assert(menu_voiceCopyNotice==1);
++ assert(mainParameters[1][PAR_TARGET_LFO1]==0&&mainParameters[1][PAR_TARGET_LFO6]==0);
++ assert(mainParameters[1][PAR_TARGET_LFO2]==other);
++ for(unsigned lfo=0;lfo<6;lfo++)if(lfo!=4)for(unsigned j=0;j<8;j++){
++  unsigned id=preset_voiceLfoGroups[j]+lfo;
++  if(id!=PAR_TARGET_LFO1&&id!=PAR_TARGET_LFO6)assert(mainParameters[1][id]==before[id]);
++ }
++ assert(preset_saveProject(0)==FR_OK && preset_loadProject(0,0)==FR_OK);
++ assert(mainParameters[1][PAR_TARGET_LFO1]==0&&mainParameters[1][PAR_TARGET_LFO6]==0);
++ assert(mainParameters[1][PAR_TARGET_LFO2]==other&&mainParameters[1][PAR_TARGET_LFO5]==dest);
++ assert(mainParameters[1][PAR_RETRIGGER_LFO5]==2);
++ preset_loadDrumsetRam(1,0,1);
++ assert(voiceArray[0].lfo.modTarget.destination==PAR_NONE && hatVoice.lfo.modTarget.destination==PAR_NONE);
++ assert(voiceArray[1].lfo.modTarget.destination==PAR_FINE5 && cymbalVoice.lfo.modTarget.destination==PAR_COARSE5);
++ assert(engine_values[PAR_COARSE5]==activeParameters[PAR_COARSE5]);
++ assert(!engine_seen[PAR_NRPN_FINE]&&!engine_seen[PAR_NRPN_COARSE]&&!engine_seen[PAR_BANK_CHANGE]);
++ /* Observe the saved retrigger byte from the normal CC2 load sweep, then
++  * exercise the actual LFO retrigger function with target-pattern events. */
++ cymbalVoice.lfo.retrigger=engine_values[PAR_RETRIGGER_LFO5];
++ cymbalVoice.lfo.phase=345;cymbalVoice.lfo.phaseOffset=123;
++ lfo_retrigger(0);assert(cymbalVoice.lfo.phase==345);
++ lfo_retrigger(1);assert(cymbalVoice.lfo.phase==123);
++ puts("PASS LFO OFF/zero/other-voice/FX/global/invalid/voice-field mismatch skips, complete self LFO, exact-destination takeover from earlier/later zero-amount assignments, same-voice different destination retained, real project roundtrip and other-track retrigger bytes");
++}
++static void rejection_cases(void)
++{
++ for(unsigned kind=0;kind<10;kind++){
++  reset_r21();chord();choose_two();
++  uint8_t before[64][END_OF_SOUND_PARAMETERS];memcpy(before,mainParameters,sizeof before);
++  if(kind==0)menu_voiceCopyTarget=9;
++  if(kind==1)menu_voiceCopyTarget=255;
++  if(kind==2)menu_loadedPresetNr[CURRENT_PROJECT]=1;
++  if(kind==3){preset_loadDrumsetRam(2,0,0);preset_loadDrumsetRam(9,0,0);}
++  if(kind==4)running=1;
++  if(kind==5)seq_pendingPattern=1;
++  if(kind==6)before_commit=start_clock;
++  if(kind==7)menu_voiceCopy.values[PAR_COARSE5]=128;
++  if(kind==8)menu_loadedPresetNr[CURRENT_KIT]=2;
++  if(kind==9)seq_loadPendigFlag=1;
++  confirm();assert(menu_voiceCopyNotice==2&&!menu_voiceCopyActive);
++  assert(!memcmp(before,mainParameters,sizeof before));assert(irq_mask==0);
++  menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[1],"rejected",8));
++ }
++ reset_r21();seq_pendingPattern=1;panel_press(BUT_COPY);menu_parseEncoder(0,1);
++ assert(!menu_voiceCopyActive&&menu_voiceCopyNotice==2);
++ reset_r21();chord();choose_two();uint8_t target[END_OF_SOUND_PARAMETERS];memcpy(target,mainParameters[1],sizeof target);
++ panel_press(BUT_COPY);assert(menu_voiceCopyNotice==3&&!menu_voiceCopyActive);
++ panel_release(BUT_COPY);assert(!memcmp(target,mainParameters[1],sizeof target));
++ for(unsigned j=0;j<END_OF_SOUND_PARAMETERS;j++)assert(menu_voiceCopy.values[j]==0);
++ puts("PASS same/invalid kit, project/kit/pattern change, A/B/A reload, external transport and commit-boundary interrupt rejection, invalid source byte, cancel, truthful LCD, snapshot disposal and interrupt mask restore");
++}
++static void button_edges(void)
++{
++ reset_r21();uint8_t target[END_OF_SOUND_PARAMETERS];memcpy(target,mainParameters[1],sizeof target);
++ panel_press(BUT_COPY);menu_parseEncoder(0,1);
++ for(unsigned i=0;i<10;i++){now++;menu_parseEncoder(0,i%2);}
++ assert(menu_voiceCopyActive==1&&!memcmp(target,mainParameters[1],sizeof target));
++ menu_parseEncoder(0,0);panel_release(BUT_COPY);menu_parseEncoder(0,0);choose_two();
++ now+=1;menu_parseEncoder(0,1);assert(menu_voiceCopyActive==2);
++ menu_parseEncoder(0,0);now+=40;confirm();assert(menu_voiceCopyNotice==1);
++ for(unsigned i=0;i<20;i++){now++;menu_parseEncoder(0,i%2);}
++ assert(!editModeActive && menu_voiceCopyNotice==1);
++ now+=40;menu_parseEncoder(0,0);now+=40;menu_parseEncoder(0,0);
++ menu_parseEncoder(0,1);assert(editModeActive);menu_parseEncoder(1,1);assert(edit_actions);
++ menu_parseEncoder(0,0);menu_parseEncoder(0,1);assert(!editModeActive);menu_parseEncoder(1,1);assert(navigate_actions);
++ reset_r21();panel_press(BUT_COPY);unsigned copies=track_copies;panel_press(BUT_VOICE_3);assert(track_copies==copies+1);panel_release(BUT_COPY);assert(copyClear_Mode==MODE_NONE);
++ panel_press(BUT_SHIFT);panel_press(BUT_COPY);assert(copyClear_Mode==MODE_CLEAR);unsigned clears=clear_actions;menu_parseEncoder(0,1);assert(clear_actions==clears+1&&!menu_voiceCopyActive);panel_release(BUT_COPY);panel_release(BUT_SHIFT);
++ reset_r21();panel_press(BUT_REC);assert(buttonHandler_stateMemory.seqRecording);unsigned steps=step_calls;panel_press(BUT_SEQ1);assert(step_calls==steps+1);
++ reset_r21();chord();panel_press(BUT_START_STOP);assert(running);choose_two();confirm();assert(menu_voiceCopyNotice==2);
++ puts("PASS entry press/release and repeated/bouncing edges, held DATA, fresh confirmation, post-success bounce drain, normal DATA/edit/navigation, COPY/voice dispatch, SHIFT+CLEAR, REC/STEP dispatch, START/STOP rejection");
++}
++
++
++static void legacy_and_load(void)
++{
++ reset_r21();uint8_t legacy[100];memset(legacy,21,sizeof legacy);
++ FIL file={0};UINT count;
++ assert(f_open(&file,"/tmp/02-LEGCY.snd",FA_CREATE_NEW|FA_WRITE)==FR_OK);
++ assert(f_write(&file,"LEGACY!!",8,&count)==FR_OK&&count==8);
++ assert(f_write(&file,legacy,sizeof legacy,&count)==FR_OK&&count==sizeof legacy);
++ assert(f_close(&file)==FR_OK);
++ assert(preset_loadDrumsetSD(2,0)==FR_OK);
++ assert(mainParameters[2][PAR_FX_P1]==0 && mainParameters[2][PAR_FILTER_DRIVE_5]==0);
++ PresetVoiceCopy copy;assert(preset_captureVoice(&copy,4));assert(preset_transferVoice(&copy,2));
++ assert(mainParameters[2][PAR_COARSE5]==activeParameters[PAR_COARSE5] && mainParameters[2][PAR_FX_P1]==0);
++ seq_activePattern=1;seq_patternSet.kitNr[1]=2;activeParameters[PAR_PATTERN_MODE]=1;
++ #include "automatic.inc"
++ assert(menu_loadedPresetNr[CURRENT_KIT]==2&&menu_selectedPresetNr[SAVE_TYPE_KIT]==2);
++ assert(engine_values[PAR_COARSE5]==legacy[PAR_COARSE5] || engine_values[PAR_COARSE5]==copy.values[PAR_COARSE5]);
++ assert(engine_values[PAR_FILTER_DRIVE_5]==copy.values[PAR_FILTER_DRIVE_5]);
++ memset(engine_seen,0,sizeof engine_seen);
++ preset_loadDrumsetRam(2,0,0);while(morph_state)preset_morph_tick();
++ assert(engine_values[PAR_AMOUNT_LFO6]==activeParameters[PAR_AMOUNT_LFO6]);
++ assert(engine_values[PAR_FILTER_DRIVE_1]==activeParameters[PAR_FILTER_DRIVE_1]);
++ assert(!engine_seen[PAR_BANK_CHANGE]&&!engine_seen[PAR_NRPN_FINE]&&!engine_seen[PAR_NRPN_COARSE]&&!engine_seen[PAR_NRPN_DATA_ENTRY_COARSE]);
++ puts("PASS short compatible kit, zero tail preservation, actual pattern-linked auto-load block, destination decoding and normal/immediate low CC127/CC2 boundary without reserved transport sends");
++}
++
++static void begin_morph_at_commit(void){preset_morph(0);}
++static void morph_alias(void)
++{
++ for(unsigned mode=0;mode<6;mode++){
++  reset_r21();morphParameters=mainParameters[1];
++  assert(mainParameters[1][PAR_COARSE5]==57 && activeParameters[PAR_COARSE5]==123);
++  activeParameters[PAR_MORPH]=mode==1||mode==3||mode==5?0:127;
++  morph_state=mode<2||mode==4?1:0;morph_index=3;
++  uint8_t before[64][END_OF_SOUND_PARAMETERS],source[NUM_PARAMS];
++  memcpy(before,mainParameters,sizeof before);memcpy(source,activeParameters,sizeof source);
++  uint8_t state_before=morph_state,index_before=morph_index;
++  unsigned io=api_writes,sectors=physical_writes,dispatches=sends,fx=fx_preparations;
++  unsigned values_before[END_OF_SOUND_PARAMETERS];memcpy(values_before,engine_seen,sizeof values_before);
++  chord();choose_two();if(mode==4)menu_voiceCopyTarget=2;
++  if(mode==5)before_commit=begin_morph_at_commit;
++  confirm();
++  if(mode==3||mode==4){
++   assert(menu_voiceCopyNotice==1);
++   assert(mainParameters[mode==4?2:1][PAR_COARSE5]==123);
++  }else{
++   assert(menu_voiceCopyNotice==4);menu_renderVoiceTransfer();
++   assert(!memcmp(editDisplayBuffer[1],"Morph active",12));
++   assert(!memcmp(before,mainParameters,sizeof before));
++  }
++  assert(!memcmp(source,activeParameters,sizeof source));
++  if(mode!=5)assert(morph_state==state_before&&morph_index==index_before);
++  assert(io==api_writes&&sectors==physical_writes&&dispatches==sends&&fx==fx_preparations);
++  assert(!memcmp(values_before,engine_seen,sizeof values_before));
++  assert(morphParameters==mainParameters[1]);
++  printf("PASS Morph57/123 mode%u: amount%u pending%u, %s, zero transfer side effects\n",mode,
++    activeParameters[PAR_MORPH],morph_state,mode==3||mode==4?"allowed":"Morph active rejection");
++ }
++ /* Let the zero-amount pending sweep complete through its production path. */
++ reset_r21();morphParameters=mainParameters[1];preset_morph(0);
++ chord();choose_two();confirm();assert(menu_voiceCopyNotice==4);
++ while(morph_state)preset_morph_tick();
++ now+=100;menu_parseEncoder(0,0);now+=100;menu_parseEncoder(0,0);
++ chord();choose_two();confirm();assert(menu_voiceCopyNotice==1&&mainParameters[1][PAR_COARSE5]==123);
++ puts("PASS zero-amount pending sweep rejected until actual completion, then transfer succeeds");
++}
++int main(int argc,char **argv){(void)argv;paramToModTargetInit();if(argc>1){morph_alias();return 0;}storage_roundtrip();all_engines();lfo_cases();rejection_cases();button_edges();legacy_and_load();morph_alias();
++ reset_r21();armed_step=1;buttonHandler_resetLock1=1;buttonHandler_originalParameter[0]=PAR_COARSE5;
++ buttonHandler_originalValue[0]=32;activeParameters[PAR_COARSE5]=111;
++ chord();choose_two();confirm();assert(mainParameters[1][PAR_COARSE5]==32&&activeParameters[PAR_COARSE5]==111);
++ puts("PASS held STEP snapshot excludes temporary parameter locks without changing active buffer or recording automation");return 0;}
+diff --git a/tests/r21_voice_copy/panel.c b/tests/r21_voice_copy/panel.c
+new file mode 100644
+index 0000000..a1947d5
+--- /dev/null
++++ b/tests/r21_voice_copy/panel.c
+@@ -0,0 +1,33 @@
++/* Unchanged mode/voice/step helpers are adapters; public dispatchers are exact. */
++static struct {unsigned selectButtonMode:4,seqRunning:1,seqRecording:1,seqErasing:1;} buttonHandler_stateMemory;
++uint8_t menu_activePatternBank,menu_activeBar;
++static unsigned voice_calls,step_calls,part_calls,mode_calls,track_copies;
++static void buttonHandler_voiceButtonPressed(uint8_t v){voice_calls++;if(copyClear_Mode==MODE_COPY_TRACK)track_copies++;else menu_activeVoice=v;}
++static void buttonHandler_selectButtonPressed(uint8_t v){(void)v;part_calls++;}
++static void buttonHandler_seqButtonPressed(uint8_t v){(void)v;step_calls++;}
++static void buttonHandler_handleModeButtons(uint8_t v){(void)v;mode_calls++;}
++static void buttonHandler_partButtonReleased(uint8_t v){(void)v;}
++static void buttonHandler_seqButtonReleased(uint8_t v){(void)v;}
++void buttonHandler_setRunStopState(uint8_t v){buttonHandler_stateMemory.seqRunning=v;running=v;}
++void buttonHandler_showMuteLEDs(void){}
++void led_clearAllBlinkLeds(void){}
++void led_clearSelectLeds(void){}
++void led_clearVoiceLeds(void){}
++void led_setValue(uint8_t a,uint8_t b){(void)a;(void)b;}
++void led_setBlinkLed(uint8_t a,uint8_t b){(void)a;(void)b;}
++void led_setActiveVoice(uint8_t v){(void)v;}
++void led_setMode2(uint8_t v){(void)v;}
++void led_updateBarLeds(void){}
++void led_updateSeqLeds(void){}
++void led_updateStepLength(void){}
++uint8_t led_idx2StepLed(uint8_t v){return v;}
++void menu_switchSubPage(uint8_t a,uint8_t b){(void)a;(void)b;}
++void menu_switchPage(uint8_t p){menu_activePage=p;}
++void seq_setSongModeEnabled(uint8_t v){(void)v;}
++void seq_insertRow(void){}
++void seq_deleteRow(void){}
++void copyClear_armClearMenu(uint8_t v){(void)v;}
++void led_initPatternSelectLeds(void){}
++#include "buttons.inc"
++static void panel_press(uint8_t button){if(button==BUT_COPY)host_copy=1;if(button==BUT_SHIFT)host_shift=1;buttonHandler_buttonPressed(button);}
++static void panel_release(uint8_t button){if(button==BUT_COPY)host_copy=0;if(button==BUT_SHIFT)host_shift=0;buttonHandler_buttonReleased(button);}
+diff --git a/tests/r21_voice_copy/run.py b/tests/r21_voice_copy/run.py
+new file mode 100644
+index 0000000..bf97544
+--- /dev/null
++++ b/tests/r21_voice_copy/run.py
+@@ -0,0 +1,52 @@
++#!/usr/bin/env python3
++"""R21 production selector/transfer and real-FatFs project round trips, ASan/UBSan."""
++from pathlib import Path
++import importlib.util, json, os, subprocess, sys, tempfile
++sys.dont_write_bytecode = True
++R = Path(__file__).resolve().parents[2]
++H = Path(__file__).resolve().parent
++sp = importlib.util.spec_from_file_location('fixture', R/'tests/project_storage/run.py')
++f = importlib.util.module_from_spec(sp); sp.loader.exec_module(f)
++menu = (R/'Core/Src/menu/menu.c').read_text()
++seq = (R/'Core/Src/Soundengine/Sequencer/sequencer.c').read_text()
++buttons = (R/'Core/Src/buttonHandler.c').read_text()
++with tempfile.TemporaryDirectory(prefix='lxr-r21-') as tmp:
++    tmp = Path(tmp)
++    (tmp/'functions.inc').write_text(f.production_source())
++    whole = (R/'tests/project_transaction/whole.c').read_text()
++    whole = whole[:whole.index('int main(int argc,char **argv)')]
++    whole = whole.replace('uint8_t getNumModTargets(void){return 16;}', '')
++    whole = whole.replace('void menu_repaintAll(void){}', '')
++    whole = whole.replace('void preset_sendDrumsetParameters(void){}', '')
++    whole = whole.replace('void preset_sendDrumsetParametersImmediate(void){}', '')
++    whole = whole.replace('void soundengine_process(void){}', '')
++    preset = (R/'Core/Src/Preset/presetManager.c').read_text().replace('IN_ITCM_RAM ', '')
++    names = ['interpolate', 'preset_isTransportParameter', 'preset_morph', 'preset_morph_tick',
++             'preset_sendDrumsetParameters', 'preset_sendDrumsetParametersImmediate']
++    # interpolate is already present in the project fixture.
++    (tmp/'load.inc').write_text('\n'.join(f.h.extract(preset,n) for n in names if n!='interpolate'))
++    cortex = (R/'Core/Src/Soundengine/MIDI/CortexParser.c').read_text()
++    a=cortex.index('\tcase FRONT_CC_LFO_TARGET:'); b=cortex.index('    case FRONT_SET_P1_DEST:',a)
++    (tmp/'destination.inc').write_text('switch(cortex_midiMsg.status){'+cortex[a:b]+'default: assert(0);}')
++    lfo = (R/'Core/Src/Soundengine/DSPAudio/lfo.c').read_text()
++    (tmp/'retrigger.inc').write_text(f.h.extract(lfo,'lfo_retrigger'))
++    whole = whole.replace('void frontPanel_sendData(uint8_t a,uint8_t b,uint8_t c){(void)a;(void)b;(void)c;}',
++                         'static unsigned sends;\nvoid frontPanel_sendData(uint8_t a,uint8_t b,uint8_t c){sends++;r21_frontSend(a,b,c);}')
++    (tmp/'whole.inc').write_text(whole)
++    a=seq.index('if(activeParameters[PAR_PATTERN_MODE] == SKIP_NEXT_KIT_AUTOLOAD)'); b=seq.index('//use shuffle value from pattern',a)
++    (tmp/'automatic.inc').write_text(seq[a:b])
++    (tmp/'pending.inc').write_text(f.h.extract(seq, 'seq_hasPendingKitChange'))
++    (tmp/'encoder.inc').write_text(f.h.extract(menu, 'menu_parseEncoder'))
++    # The entire production public button dispatchers run, with unrelated actions
++    # adapted in panel.c. This catches hook placement and COPY release fallthrough.
++    (tmp/'base.inc').write_text(f.h.extract(buttons, 'buttonHandler_copyEditableBase'))
++    (tmp/'buttons.inc').write_text(f.h.extract(buttons, 'buttonHandler_buttonPressed') +
++                                   f.h.extract(buttons, 'buttonHandler_buttonReleased'))
++    cmd = f.flags + ['-DSTM32F765xx','-DUSE_HAL_DRIVER','-Wno-int-to-pointer-cast',
++                    '-Wno-pointer-to-int-cast','-Werror=implicit-function-declaration']
++    cmd += ['-I'+str(R/p) for p in f.includes] + ['-I'+str(tmp), '-I'+str(H)]
++    cmd += [str(H/'host.c'), str(R/'Core/Src/menu/Cc2Text.c'),
++            str(R/'Core/Src/Preset/initKit.c'), str(R/'Core/Src/Parameters.c'), '-o', str(tmp/'host')]
++    env = os.environ.copy(); env['ASAN_OPTIONS'] = 'detect_leaks=0'
++    subprocess.run(cmd,cwd=R,env=env,check=True)
++    subprocess.run([str(tmp/'host'),*sys.argv[1:]],cwd=R,env=env,check=True,timeout=90)
+diff --git a/tests/r21_voice_copy/validate_arm.py b/tests/r21_voice_copy/validate_arm.py
+new file mode 100644
+index 0000000..4d6c87d
+--- /dev/null
++++ b/tests/r21_voice_copy/validate_arm.py
+@@ -0,0 +1,52 @@
++#!/usr/bin/env python3
++"""Verify CI-produced R21 image/ELF identity, updater and static headroom."""
++from pathlib import Path
++import hashlib, json, struct, subprocess, zipfile
++R=Path(__file__).resolve().parents[2]
++B=R/'build/release';O=R/'build/r21-voice-copy-evidence'
++O.mkdir(parents=True,exist_ok=True)
++elf=(B/'LXR_V2_STM32F765.elf').read_bytes()
++img=(B/'LXR_V2_V1.7.img').read_bytes()
++assert elf[:7]==b'\x7fELF\x01\x01\x01' and struct.unpack_from('<H',elf,18)[0]==40
++assert img[:8]==b'LXRV2IMG' and len(img)-16==struct.unpack_from('<I',img,8)[0]
++assert img[12]==255-(sum(img[16:])&255) and img[13:16]==bytes(3)
++assert b'LXR LAB R21' in img and b'LXR LAB R20' not in img
++phoff=struct.unpack_from('<I',elf,28)[0]
++entry,count=struct.unpack_from('<HH',elf,42)
++segments=[]
++for i in range(count):
++ kind,offset,virt,phys,size,mem,flags,align=struct.unpack_from('<8I',elf,phoff+i*entry)
++ if kind!=1 or size==0:continue
++ assert 0x08008000<=phys and phys+size<=0x08100000
++ assert img[16+phys-0x08008000:16+phys-0x08008000+size]==elf[offset:offset+size]
++ segments.append({'address':phys,'bytes':size,'runtime_address':virt,'memory_bytes':mem})
++assert max(s['address']+s['bytes'] for s in segments)-0x08008000==len(img)-16
++sp,reset=struct.unpack_from('<II',img,16)
++assert sp%8==0 and 0x20000000<=sp<=0x20080000
++assert reset&1 and 0x08008000<=reset<0x08100000
++shoff=struct.unpack_from('<I',elf,32)[0]
++shsize,shcount,shstr=struct.unpack_from('<HHH',elf,46)
++headers=[struct.unpack_from('<10I',elf,shoff+i*shsize) for i in range(shcount)]
++strings=elf[headers[shstr][4]:headers[shstr][4]+headers[shstr][5]]
++sections={strings[h[0]:strings.index(0,h[0])].decode():{'address':h[3],'bytes':h[5]} for h in headers if h[0]}
++def end_span(names,origin):return max(sections[n]['address']+sections[n]['bytes'] for n in names)-origin
++current={'.text':sections['.text']['bytes'], 'ITCM':end_span(['.itcm_text'],0),
++ 'DTCM':end_span(['.dtcm','.dtcmz'],0x20000000),
++ 'SRAM':end_span(['.data','.bss','._user_heap'],0x20020000), 'FLASH_payload':len(img)-16}
++# Matched ARM GNU14.3.Rel1 Release, exact R20 SOURCE b015372...
++base={'.text':157064,'ITCM':15304,'DTCM':107424,'SRAM':274884,'FLASH_payload':293488}
++capacity={'ITCM':16384,'DTCM':131072,'SRAM':393216,'FLASH_payload':1015808}
++regions={k:{'R20':base[k],'R21':v,'delta':v-base[k],**({'headroom':capacity[k]-v} if k in capacity else {})} for k,v in current.items()}
++assert all(v['headroom']>0 for v in regions.values() if 'headroom' in v)
++image=O/'LXR_V2_R21_TEST01.img';image.write_bytes(img)
++archive=O/'LXR_V2_R21_TEST01.zip'
++with zipfile.ZipFile(archive,'w',compression=zipfile.ZIP_DEFLATED) as z:z.write(image,image.name)
++with zipfile.ZipFile(archive) as z:assert z.namelist()==[image.name] and z.testzip() is None and z.read(image.name)==img
++files=[image,archive,O/'LXR_V2_STM32F765.elf',O/'LXR_V2_STM32F765.map']
++records={p.name:{'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in files}
++result={'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=R,text=True).strip(),
++ 'base_sha':'b01537282047bda5299cdb1bedeab5e5d5b9bcca','files':records,'regions':regions,
++ 'sections':sections,'segments':segments,'boot_string':'LXR LAB R21','checksum_byte':img[12],
++ 'CPU_WCET':'UNMEASURED','IRQ_DMA':'UNMEASURED','stack_high_water':'UNMEASURED','reliability':'UNMEASURED'}
++(O/'validation.json').write_text(json.dumps(result,indent=2)+'\n')
++print(json.dumps({'files':records,'regions':regions,'status':'PASS'},indent=2))

@@ -1,0 +1,7 @@
+host: /workspace/lxr-desktop-app/tests/r21_voice_copy/host.c:256: legacy_and_load: Assertion `f_open(&file,"/tmp/02-LEGACY.snd",FA_CREATE_NEW|FA_WRITE)==FR_OK' failed.
+Traceback (most recent call last):
+  File "/workspace/lxr-desktop-app/tests/r21_voice_copy/run.py", line 51, in <module>
+    subprocess.run([str(tmp/'host'),*sys.argv[1:]],cwd=R,env=env,check=True,timeout=90)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/tmp/lxr-r21-gryn27lw/host']' died with <Signals.SIGABRT: 6>.

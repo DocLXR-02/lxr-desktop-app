@@ -1,0 +1,15 @@
+Menu header enums: MenuAutomationBlock PageNames NamesEnum WaveformNamesEnum shortNamesEnum catNamesEnum longNamesEnum loadSaveEnum Datatypes
+Compile: cc -std=c11 -g -O1 -Wall -Wextra -Werror -Wno-tautological-compare -Wno-unused-function -Wno-unused-parameter -fsanitize=undefined,bounds -fno-sanitize-recover=all -I/workspace/lxr-desktop-app/tests/r20_ui/integration/host_include -I/workspace/lxr-desktop-app/Core/Inc /workspace/r21-preflight/r20-integration/probe.c /workspace/lxr-desktop-app/Core/Src/Soundengine/Sequencer/automationCapture.c -o /workspace/r21-preflight/r20-integration/probe
+PASS target names: both tracks show actual stored destinations from panel REC and STEP
+PASS REC: both layouts, OFF/MUL, first assignment, local lock, retry, LED, commits, silence, transport STOP, clear
+PASS shared: all 12 IDs across both lanes and boundary voices, conflicts, free controls, existing duplicates and pattern isolation
+PASS 0sr STEP, sibling-track and cross-voice REC conflicts, and adjacent voice-local LFO control
+PASS context: voice/lane/pattern/length invalidates pending take; MIDI REC records a note without writing a lane
+OBSERVED context: REC LED remains on after context invalidation until REC is toggled off
+BASELINE FIX8 guard rejects a different target on an occupied lane and accepts P4 on a free lane despite a cross-voice owner
+PASS manual controls: accepted writes, rejected destination preserves stored bytes at rejection, clear/OFF, shared conflict, hold-STEP block
+PASS timer: all six REC variants and four save/load success display paths at 1499/1500 ms with and without wrap; kit-load/REC and SD/REC overlap controls restore without resurrection
+PASS display preemption: expired REC screen does not remain after foreground resumes
+PASS commit reservation: a competing manual STEP assignment is refused before the live take commits
+PASS commit reservation: retry after a simulated MIDI interrupt acquires a target during STEP validation
+R20 integration regressions: PASS

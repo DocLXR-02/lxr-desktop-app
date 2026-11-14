@@ -1,0 +1,146 @@
+[1/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal.c.obj
+[2/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_adc.c.obj
+[3/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_adc_ex.c.obj
+[4/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_cortex.c.obj
+[5/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_dma.c.obj
+[6/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_dma_ex.c.obj
+[7/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_exti.c.obj
+[8/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_flash.c.obj
+[9/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_flash_ex.c.obj
+[10/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_gpio.c.obj
+[11/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_i2c_ex.c.obj
+[12/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_i2s.c.obj
+[13/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_pcd.c.obj
+[14/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_pcd_ex.c.obj
+[15/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_pwr.c.obj
+[16/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_pwr_ex.c.obj
+[17/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_i2c.c.obj
+[18/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_rcc.c.obj
+[19/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_rcc_ex.c.obj
+[20/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_rng.c.obj
+[21/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_sd.c.obj
+[22/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_spi_ex.c.obj
+[23/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_spi.c.obj
+[24/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_tim_ex.c.obj
+[25/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_tim.c.obj
+[26/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_uart.c.obj
+[27/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_uart_ex.c.obj
+[28/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_ll_usb.c.obj
+[29/125] Building C object Drivers/CMakeFiles/stm32f7_hal.dir/STM32F7xx_HAL_Driver/Src/stm32f7xx_ll_sdmmc.c.obj
+[30/125] Building C object Middlewares/CMakeFiles/fatfs.dir/Third_Party/FatFs/src/diskio.c.obj
+[31/125] Building C object Middlewares/CMakeFiles/fatfs.dir/Third_Party/FatFs/src/ff_gen_drv.c.obj
+[32/125] Building C object Middlewares/CMakeFiles/fatfs.dir/Third_Party/FatFs/src/option/syscall.c.obj
+[33/125] Building C object Middlewares/CMakeFiles/fatfs.dir/__/FATFS/App/fatfs.c.obj
+[34/125] Building C object Middlewares/CMakeFiles/fatfs.dir/__/FATFS/Target/bsp_driver_sd.c.obj
+[35/125] Building C object Middlewares/CMakeFiles/fatfs.dir/__/FATFS/Target/fatfs_platform.c.obj
+[36/125] Building C object Middlewares/CMakeFiles/fatfs.dir/__/FATFS/Target/sd_diskio.c.obj
+[37/125] Building C object Middlewares/CMakeFiles/usb_midi.dir/JS/STM32_USB_Device_Library/Core/Src/usbd_core.c.obj
+[38/125] Building C object Middlewares/CMakeFiles/usb_midi.dir/JS/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c.obj
+[39/125] Building C object Middlewares/CMakeFiles/usb_midi.dir/JS/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c.obj
+[40/125] Building C object Middlewares/CMakeFiles/usb_midi.dir/JS/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c.obj
+[41/125] Building C object Middlewares/CMakeFiles/usb_midi.dir/__/USB_DEVICE_MIDI/App/usb_device.c.obj
+[42/125] Building C object Middlewares/CMakeFiles/usb_midi.dir/__/USB_DEVICE_MIDI/App/usbd_cdc_if.c.obj
+[43/125] Building C object Middlewares/CMakeFiles/fatfs.dir/Third_Party/FatFs/src/ff.c.obj
+[44/125] Building C object Middlewares/CMakeFiles/usb_midi.dir/__/USB_DEVICE_MIDI/App/usbd_desc.c.obj
+[45/125] Building ASM object Core/CMakeFiles/lxr_platform.dir/Startup/startup_stm32f765vgtx.s.obj
+[46/125] Building C object Middlewares/CMakeFiles/usb_midi.dir/__/USB_DEVICE_MIDI/Target/usbd_conf.c.obj
+[47/125] Building C object Core/CMakeFiles/lxr_platform.dir/Src/stm32f7xx_it.c.obj
+[48/125] Building C object Core/CMakeFiles/lxr_platform.dir/Src/main.c.obj
+[49/125] Building C object Core/CMakeFiles/lxr_platform.dir/Src/system_stm32f7xx.c.obj
+[50/125] Building C object Core/CMakeFiles/lxr_platform.dir/Src/syscalls.c.obj
+[51/125] Building C object Core/CMakeFiles/lxr_platform.dir/Src/stm32f7xx_hal_msp.c.obj
+[52/125] Building C object Core/CMakeFiles/lxr_platform.dir/Src/safety/runtimeDiagnostics.c.obj
+[53/125] Building C object Core/CMakeFiles/lxr_platform.dir/Src/sysmem.c.obj
+[54/125] Building C object Core/CMakeFiles/lxr_platform.dir/Src/delay.c.obj
+[55/125] Building C object Core/CMakeFiles/lxr_platform.dir/Src/flash_if.c.obj
+[56/125] Building C object Core/CMakeFiles/lxr_io.dir/Src/IO/DIO.c.obj
+[57/125] Building C object Core/CMakeFiles/lxr_io.dir/Src/IO/adcPots.c.obj
+[58/125] Building C object Core/CMakeFiles/lxr_io.dir/Src/IO/uart.c.obj
+[59/125] Building C object Core/CMakeFiles/lxr_ui.dir/Src/encoder.c.obj
+[60/125] Building C object Core/CMakeFiles/lxr_ui.dir/Src/lcd.c.obj
+[61/125] Building C object Core/CMakeFiles/lxr_ui.dir/Src/buttonHandler.c.obj
+[62/125] Building C object Core/CMakeFiles/lxr_ui.dir/Src/graphic.c.obj
+[63/125] Building C object Core/CMakeFiles/lxr_ui.dir/Src/frontPanelParser.c.obj
+[64/125] Building C object Core/CMakeFiles/lxr_ui.dir/Src/ledHandler.c.obj
+[65/125] Building C object Core/CMakeFiles/lxr_ui.dir/Src/Parameters.c.obj
+[66/125] Building C object Core/CMakeFiles/lxr_ui.dir/Src/menu/Cc2Text.c.obj
+[67/125] Building C object Core/CMakeFiles/lxr_ui.dir/Src/menu/copyClearTools.c.obj
+[68/125] Building C object Core/CMakeFiles/lxr_ui.dir/Src/menu/screensaver.c.obj
+[69/125] Building C object Core/CMakeFiles/lxr_preset.dir/Src/Preset/initKit.c.obj
+[70/125] Building C object Core/CMakeFiles/lxr_ui.dir/Src/menu/menu.c.obj
+[71/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/1PoleLp.c.obj
+[72/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/automationNode.c.obj
+[73/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/BufferTools.c.obj
+[74/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/CymbalVoice.c.obj
+[75/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/Decay.c.obj
+[76/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/distortion.c.obj
+[77/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/dither.c.obj
+[78/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/DrumVoice.c.obj
+[79/125] Building C object Core/CMakeFiles/lxr_preset.dir/Src/Preset/presetManager.c.obj
+[80/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/HiHat.c.obj
+[81/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/lfo.c.obj
+[82/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/modulationNode.c.obj
+[83/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/mixer.c.obj
+[84/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/random.c.obj
+[85/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/Oscillator.c.obj
+[86/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/Samples.c.obj
+[87/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/ResonantFilter.c.obj
+[88/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/snapEg.c.obj
+[89/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/SlopeEg2.c.obj
+[90/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/squareRootLut.c.obj
+[91/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/Snare.c.obj
+[92/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/TiltEq.c.obj
+[93/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/transientGenerator.c.obj
+[94/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/transientTables.c.obj
+[95/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/wavetable.c.obj
+[96/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/FX/Compressor.c.obj
+[97/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/FX/Delay.c.obj
+[98/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/FX/FxRamBuffer.c.obj
+[99/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/FX/Distortion.c.obj
+[100/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/FX/Ringmod.c.obj
+[101/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/FX/Reverb.c.obj
+[102/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/FX/VerbTools/AllpassDelay.c.obj
+[103/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/FX/VerbTools/sinCos.c.obj
+[104/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/FX/VerbTools/VerbDelay.c.obj
+[105/125] Building C object Core/CMakeFiles/lxr_dsp.dir/Src/Soundengine/DSPAudio/FX/VerbTools/VerbModDelay.c.obj
+[106/125] Building C object Core/CMakeFiles/lxr_engine.dir/Src/Soundengine/AudioCodecManager.c.obj
+[107/125] Building C object Core/CMakeFiles/lxr_engine.dir/Src/Soundengine/cs4344_cs5343.c.obj
+[108/125] Building C object Core/CMakeFiles/lxr_engine.dir/Src/Soundengine/FIFO.c.obj
+[109/125] Building C object Core/CMakeFiles/lxr_engine.dir/Src/Soundengine/FxBus.c.obj
+[110/125] Building C object Core/CMakeFiles/lxr_engine.dir/Src/Soundengine/Soundengine.c.obj
+[111/125] Building C object Core/CMakeFiles/lxr_engine.dir/Src/Soundengine/TriggerOut.c.obj
+[112/125] Building C object Core/CMakeFiles/lxr_midi.dir/Src/Soundengine/MIDI/MidiMessages.c.obj
+[113/125] Building C object Core/CMakeFiles/lxr_midi.dir/Src/Soundengine/MIDI/CortexParser.c.obj
+[114/125] Building C object Core/CMakeFiles/lxr_midi.dir/Src/Soundengine/MIDI/MidiVoiceControl.c.obj
+[115/125] Building C object Core/CMakeFiles/lxr_midi.dir/Src/Soundengine/MIDI/MidiParser.c.obj
+[116/125] Building C object Core/CMakeFiles/lxr_midi.dir/Src/Soundengine/MIDI/Uart.c.obj
+[117/125] Building C object Core/CMakeFiles/lxr_sequencer.dir/Src/Soundengine/Sequencer/clockSync.c.obj
+[118/125] Building C object Core/CMakeFiles/lxr_midi.dir/Src/Soundengine/MIDI/ParameterArray.c.obj
+[119/125] Building C object Core/CMakeFiles/lxr_sequencer.dir/Src/Soundengine/Sequencer/automationPlayback.c.obj
+[120/125] Building C object Core/CMakeFiles/lxr_sequencer.dir/Src/Soundengine/Sequencer/automationCapture.c.obj
+[121/125] Building C object Core/CMakeFiles/lxr_sequencer.dir/Src/Soundengine/Sequencer/EuklidGenerator.c.obj
+[122/125] Building C object Core/CMakeFiles/lxr_usb_app.dir/Src/Soundengine/USB/usb_manager.c.obj
+[123/125] Building C object Core/CMakeFiles/lxr_sequencer.dir/Src/Soundengine/Sequencer/sequencer.c.obj
+[124/125] Linking C executable LXR_V2_STM32F765.elf
+Memory region         Used Size  Region Size  %age Used
+        ITCM_RAM:       15304 B        16 KB     93.41%
+            DTCM:      107424 B       128 KB     81.96%
+             RAM:      275156 B       384 KB     69.98%
+           FLASH:      243852 B       992 KB     24.01%
+   text	   data	    bss	    dec	    hex	filename
+ 295292	    852	 344724	 640868	  9c764	/home/runner/work/lxr-desktop-app/lxr-desktop-app/build/release/LXR_V2_STM32F765.elf
+/home/runner/work/lxr-desktop-app/lxr-desktop-app/build/release/LXR_V2_V1.7.img: 296152 bytes, checksum 0x5E
+[125/125] Firmware update instructions
+
+======================================================================
+  Firmware update file:
+    /home/runner/work/lxr-desktop-app/lxr-desktop-app/build/release/LXR_V2_V1.7.img
+
+  To install it on the LXR:
+    1. Copy LXR_V2_V1.7.img to the top folder of the SD card and
+       delete any older LXR*.img files from the card.
+    2. Put the card in the LXR, hold down the encoder button and
+       switch the LXR on. Keep holding the button until
+       'LXR Updater' appears on the display.
+    3. Wait for 'Update OK!'. The LXR then restarts by itself.
+======================================================================

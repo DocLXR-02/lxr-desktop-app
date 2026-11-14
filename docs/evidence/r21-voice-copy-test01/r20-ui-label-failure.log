@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/workspace/lxr-desktop-app/tests/r20_ui/run.py", line 36, in <module>
+    assert 'lcd_string("LXR LAB R20");' in main
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

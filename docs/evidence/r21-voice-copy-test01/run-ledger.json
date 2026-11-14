@@ -1,0 +1,28 @@
+{
+  "final_source": "861c643632e0a88bdc7d60d9410befb3971489fc",
+  "pre_guard_source": "0fe5c8a730918d7ebce0a104abc22403ae59c749",
+  "CI": {
+    "run": 43621319613,
+    "attempt": 1,
+    "job": 132527438779,
+    "artifact": 14123628907,
+    "status": "success",
+    "toolchain": "ARM GNU14.3.Rel1 GCC14.3.1",
+    "configuration": "CMake Release",
+    "logs_prefix": "CI_"
+  },
+  "local_expected_failures": {
+    "R20_identity": "reproduction.log",
+    "Morph_alias": "morph-alias-head-failure.log"
+  },
+  "local_final_R21": {
+    "argv": [
+      "python3",
+      "tests/r21_voice_copy/run.py"
+    ],
+    "exit_code": 0,
+    "log": "r21-final-source-host.log"
+  },
+  "hardware": "NOT RUN",
+  "CPU_WCET_IRQ_DMA_stack_reliability": "UNMEASURED"
+}

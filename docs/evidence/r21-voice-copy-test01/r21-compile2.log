@@ -1,0 +1,12 @@
+/usr/bin/ld: /tmp/ccAgbVCd.o:/workspace/lxr-desktop-app/Core/Src/menu/Cc2Text.c:371: multiple definition of `paramToModTarget'; /tmp/ccGlocpG.o:/workspace/lxr-desktop-app/tests/r21_voice_copy/host.c:10: first defined here
+/usr/bin/ld: /tmp/ccAgbVCd.o:(.bss.__odr_asan.paramToModTarget+0x0): multiple definition of `__odr_asan.paramToModTarget'; /tmp/ccGlocpG.o:(.bss.__odr_asan.paramToModTarget+0x0): first defined here
+/usr/bin/ld: /tmp/ccGlocpG.o: in function `buttonHandler_buttonPressed':
+/tmp/lxr-r21-du5c_fhf/buttons.inc:35:(.text.buttonHandler_buttonPressed+0xdb): undefined reference to `led_initPatternSelectLeds'
+/usr/bin/ld: /tmp/lxr-r21-du5c_fhf/buttons.inc:117:(.text.buttonHandler_buttonPressed+0x12a0): undefined reference to `led_initPatternSelectLeds'
+collect2: error: ld returned 1 exit status
+Traceback (most recent call last):
+  File "/workspace/lxr-desktop-app/tests/r21_voice_copy/run.py", line 33, in <module>
+    subprocess.run(cmd,cwd=R,env=env,check=True)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['cc', '-std=gnu11', '-O1', '-g', '-fsanitize=address,undefined', '-fno-sanitize-recover=all', '-fno-omit-frame-pointer', '-fno-pie', '-no-pie', '-ffunction-sections', '-fdata-sections', '-Wl,--gc-sections', '-DSTM32F765xx', '-DUSE_HAL_DRIVER', '-Wno-int-to-pointer-cast', '-Wno-pointer-to-int-cast', '-Werror=implicit-function-declaration', '-I/workspace/lxr-desktop-app', '-I/workspace/lxr-desktop-app/Core/Inc', '-I/workspace/lxr-desktop-app/Drivers/CMSIS/Include', '-I/workspace/lxr-desktop-app/Drivers/CMSIS/Device/ST/STM32F7xx/Include', '-I/workspace/lxr-desktop-app/Drivers/STM32F7xx_HAL_Driver/Inc', '-I/workspace/lxr-desktop-app/Middlewares/Third_Party/FatFs/src', '-I/workspace/lxr-desktop-app/FATFS/App', '-I/workspace/lxr-desktop-app/FATFS/Target', '-I/tmp/lxr-r21-du5c_fhf', '-I/workspace/lxr-desktop-app/tests/r21_voice_copy', '/workspace/lxr-desktop-app/tests/r21_voice_copy/host.c', '/workspace/lxr-desktop-app/Core/Src/menu/Cc2Text.c', '/workspace/lxr-desktop-app/Core/Src/Preset/initKit.c', '-o', '/tmp/lxr-r21-du5c_fhf/host']' returned non-zero exit status 1.

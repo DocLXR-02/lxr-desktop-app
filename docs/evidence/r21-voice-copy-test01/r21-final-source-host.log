@@ -1,0 +1,14 @@
+PASS Kit10 unsaved V5 -> Kit2: production COPY/DATA, exact active/cursor/pattern preservation, zero SD/dispatch at transfer, temp identity, real-FatFs SAVE PROJECT/reload/load
+PASS all six engines and both HH buttons: independent production menu-ID oracle, exact every-kit-byte mask, both decays, all other voice/FX/output/velocity/morph/placeholder/transport bytes preserved
+PASS LFO OFF/zero/other-voice/FX/global/invalid/voice-field mismatch skips, complete self LFO, exact-destination takeover from earlier/later zero-amount assignments, same-voice different destination retained, real project roundtrip and other-track retrigger bytes
+PASS same/invalid kit, project/kit/pattern change, A/B/A reload, external transport and commit-boundary interrupt rejection, invalid source byte, cancel, truthful LCD, snapshot disposal and interrupt mask restore
+PASS entry press/release and repeated/bouncing edges, held DATA, fresh confirmation, post-success bounce drain, normal DATA/edit/navigation, COPY/voice dispatch, SHIFT+CLEAR, REC/STEP dispatch, START/STOP rejection
+PASS short compatible kit, zero tail preservation, actual pattern-linked auto-load block, destination decoding and normal/immediate low CC127/CC2 boundary without reserved transport sends
+PASS Morph57/123 mode0: amount127 pending1, Morph active rejection, zero transfer side effects
+PASS Morph57/123 mode1: amount0 pending1, Morph active rejection, zero transfer side effects
+PASS Morph57/123 mode2: amount127 pending0, Morph active rejection, zero transfer side effects
+PASS Morph57/123 mode3: amount0 pending0, allowed, zero transfer side effects
+PASS Morph57/123 mode4: amount127 pending1, allowed, zero transfer side effects
+PASS Morph57/123 mode5: amount0 pending1, Morph active rejection, zero transfer side effects
+PASS zero-amount pending sweep rejected until actual completion, then transfer succeeds
+PASS held STEP snapshot excludes temporary parameter locks without changing active buffer or recording automation
