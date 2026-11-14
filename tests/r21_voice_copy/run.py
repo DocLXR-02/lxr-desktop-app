@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """R21 production selector/transfer and real-FatFs project round trips, ASan/UBSan."""
 from pathlib import Path
-import importlib.util, json, os, subprocess, sys, tempfile
+import importlib.util, json, os, re, subprocess, sys, tempfile
 sys.dont_write_bytecode = True
 R = Path(__file__).resolve().parents[2]
 H = Path(__file__).resolve().parent
@@ -36,6 +36,11 @@ with tempfile.TemporaryDirectory(prefix='lxr-r21-') as tmp:
     a=seq.index('if(activeParameters[PAR_PATTERN_MODE] == SKIP_NEXT_KIT_AUTOLOAD)'); b=seq.index('//use shuffle value from pattern',a)
     (tmp/'automatic.inc').write_text(seq[a:b])
     (tmp/'pending.inc').write_text(f.h.extract(seq, 'seq_hasPendingKitChange'))
+    (tmp/'cursor.inc').write_text(re.search(r'^#define VIS_CURS[^\n]+',menu,re.M).group()+'\n')
+    (tmp/'mode.inc').write_text(f.h.extract(buttons,'buttonHandler_getMode')+f.h.extract(buttons,'buttonHandler_setMode'))
+    (tmp/'copy-reset.inc').write_text(f.h.extract((R/'Core/Src/menu/copyClearTools.c').read_text(),'copyClear_reset'))
+    a=buttons.index('case SELECT_MODE_VOICE:',buttons.index('static void buttonHandler_handleModeButtons'));b=buttons.index('case SELECT_MODE_LOAD:',a)
+    (tmp/'voice-mode.inc').write_text('switch(v){'+buttons[a:b]+'default: break;}')
     (tmp/'encoder.inc').write_text(f.h.extract(menu, 'menu_parseEncoder'))
     # The entire production public button dispatchers run, with unrelated actions
     # adapted in panel.c. This catches hook placement and COPY release fallthrough.

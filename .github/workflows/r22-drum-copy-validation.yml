@@ -1,4 +1,4 @@
-name: R22 cross-kit Drum copy ARM/host validation
+name: R22 TEST02 encoder navigation ARM/host validation
 on:
   push:
     branches:
@@ -89,8 +89,8 @@ jobs:
           arm-none-eabi-gcc --version > build/r22-voice-copy-evidence/COMPILER.txt
           cp build/release/LXR_V2_STM32F765.map build/r22-voice-copy-evidence/
           cp build/release/LXR_V2_STM32F765.elf build/r22-voice-copy-evidence/
-          cp build/release/LXR_V2_V1.7.img build/r22-voice-copy-evidence/LXR_V2_R22_TEST01.img
-          (cd build/r22-voice-copy-evidence && sha256sum LXR_V2_R22_TEST01.img LXR_V2_STM32F765.elf LXR_V2_STM32F765.map > OUTPUT_SHA256SUMS.txt)
+          cp build/release/LXR_V2_V1.7.img build/r22-voice-copy-evidence/LXR_V2_R22_TEST02.img
+          (cd build/r22-voice-copy-evidence && sha256sum LXR_V2_R22_TEST02.img LXR_V2_STM32F765.elf LXR_V2_STM32F765.map > OUTPUT_SHA256SUMS.txt)
           echo "R22 VOICE TRANSFER TEST CANDIDATE; OWNER DEVICE TEST PENDING; R18/R19/R20/R21/FIX8 PROTECTED; NO STABLE RELEASE." > build/r22-voice-copy-evidence/NOT_FOR_FLASHING.txt
       - name: Validate R22 image, ZIP and static resources
         run: python3 tests/r22_drum_copy/validate_arm.py
@@ -98,7 +98,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: r22-voice-copy-build-evidence
+          name: r22-test02-navigation-build-evidence
           path: build/r22-voice-copy-evidence/
           retention-days: 30
           if-no-files-found: error

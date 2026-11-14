@@ -32,26 +32,36 @@ uint8_t buttonHandler_originalValue[2],buttonHandler_resetLock1,buttonHandler_re
 static int8_t armed_step=NO_STEP_SELECTED;
 int8_t buttonHandler_getArmedAutomationStep(void){return armed_step;}
 #include "base.inc"
+#define preset_transferVoiceTo production_transferVoiceTo
 #include "../../Core/Src/Preset/voiceTransfer.inc"
+#undef preset_transferVoiceTo
+static unsigned transfer_calls;
+uint8_t preset_transferVoiceTo(const PresetVoiceCopy *copy,uint8_t kit,uint8_t voice)
+{transfer_calls++;return production_transferVoiceTo(copy,kit,voice);}
 uint8_t copyClear_Mode;
+#define SRC_DST_NONE -1
+int8_t buttonHandler_copySrc=SRC_DST_NONE,buttonHandler_copyDst=SRC_DST_NONE;
 uint8_t buttonHandler_getCopy(void){return host_copy;}
 uint8_t buttonHandler_getShift(void){return host_shift;}
-uint8_t buttonHandler_getMode(void){return host_mode;}
 uint8_t menu_getActiveVoice(void){return menu_activeVoice;}
-void copyClear_reset(void){copyClear_Mode=MODE_NONE;}
+#include "copy-reset.inc"
 void menu_repaintAll(void){}
 void screensaver_touch(void){}
 void copyClear_executeClear(void){clear_actions++;}
 uint8_t copyClear_isClearModeActive(void){return copyClear_Mode==MODE_CLEAR;}
 uint8_t copyClear_getClearTarget(void){return 0;}
 void copyClear_setClearTarget(uint8_t v){(void)v;}
-void menu_handleLoadSaveMenu(int8_t i,uint8_t b){(void)i;(void)b;}
+static unsigned load_save_calls;
+static int8_t load_save_inc;
+static uint8_t load_save_button;
+void menu_handleLoadSaveMenu(int8_t i,uint8_t b){load_save_calls++;load_save_inc=i;load_save_button=b;}
 void menu_handleSongMenu(int8_t i,uint8_t b){(void)i;(void)b;}
 uint8_t seq_getTrackLength(uint8_t voice){return seq_patternSet.length[seq_activePattern][voice];}
 void seq_setTrackLength(uint8_t voice,uint8_t length){seq_patternSet.length[seq_activePattern][voice]=length;}
 static void menu_encoderChangeParameter(int8_t i){(void)i;edit_actions++;}
 static void menu_moveToMenuItem(int8_t i){(void)i;navigate_actions++;}
 void menu_repaint(void){}
+#include "cursor.inc"
 #include "../../Core/Src/menu/voiceTransfer.inc"
 #include "engine.c"
 #include "encoder.inc"
@@ -68,6 +78,8 @@ static void reset_r21(void)
  memset(&buttonHandler_stateMemory,0,sizeof buttonHandler_stateMemory);
  buttonHandler_stateMemory.selectButtonMode=SELECT_MODE_VOICE;
  seq_loadPendigFlag=0;morph_state=morph_index=0;armed_step=NO_STEP_SELECTED;buttonHandler_resetLock1=buttonHandler_resetLock2=0;
+ menu_voiceCopyModeHeld=0;
+ menu_voiceCopyVoiceHeld=0;
  now=100;irq_mask=0;before_commit=0;
  for(unsigned p=0;p<END_OF_SOUND_PARAMETERS;p++){
   activeParameters[p]=(p*7+11)%128;
@@ -91,8 +103,18 @@ static void chord(void)
  panel_release(BUT_COPY);menu_parseEncoder(0,0);assert(menu_voiceCopyActive==2);
  now+=40;
 }
-static void choose_two(void){while(menu_voiceCopyTarget!=1)menu_parseEncoder(-1,0);}
-static void confirm(void){menu_parseEncoder(0,1);}
+static void data_click(void){menu_parseEncoder(0,0);now+=40;menu_parseEncoder(0,1);menu_parseEncoder(0,0);now+=40;}
+static void choose_two(void){
+ while(menu_voiceCopyFocus!=VOICE_COPY_KIT)menu_parseEncoder(-1,0);
+ if(!menu_voiceCopyEditing)data_click();
+ while(menu_voiceCopyTarget!=1)menu_parseEncoder(menu_voiceCopyTarget>1?-1:1,0);
+ data_click();
+}
+static void confirm(void){
+ if(menu_voiceCopyEditing)data_click();
+ while(menu_voiceCopyFocus!=VOICE_COPY_OK)menu_parseEncoder(1,0);
+ menu_parseEncoder(0,0);now+=40;menu_parseEncoder(0,1);
+}
 static void start_clock(void){running=1;}
 static void storage_roundtrip(void)
 {
@@ -102,7 +124,7 @@ static void storage_roundtrip(void)
  PatternSet *patterns=malloc(sizeof *patterns);memcpy(patterns,&seq_patternSet,sizeof *patterns);
  unsigned writes_before=physical_writes,apis=api_writes,send_before=sends,fx_before=fx_preparations;
  char names_before[sizeof savefileNames];memcpy(names_before,savefileNames,sizeof names_before);
- chord();choose_two();menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[0],"V5 > KIT 02?",12));confirm();
+ chord();choose_two();menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[1],"V5 > K02",8));confirm();
  assert(menu_voiceCopyNotice==1 && !menu_voiceCopyActive);
  assert(!memcmp(source,activeParameters,sizeof source));assert(!memcmp(stored_source,mainParameters[9],sizeof stored_source));
  assert(!memcmp(patterns,&seq_patternSet,sizeof *patterns));free(patterns);
@@ -227,33 +249,28 @@ static void rejection_cases(void)
  reset_r21();seq_pendingPattern=1;panel_press(BUT_COPY);menu_parseEncoder(0,1);
  assert(!menu_voiceCopyActive&&menu_voiceCopyNotice==2);
  reset_r21();chord();choose_two();uint8_t target[END_OF_SOUND_PARAMETERS];memcpy(target,mainParameters[1],sizeof target);
- panel_press(BUT_COPY);assert(menu_voiceCopyNotice==3&&!menu_voiceCopyActive);
- panel_release(BUT_COPY);assert(!memcmp(target,mainParameters[1],sizeof target));
+ panel_press(BUT_MODE1);assert(!menu_voiceCopyActive&&!menu_voiceCopyNotice);
+ panel_release(BUT_MODE1);assert(!memcmp(target,mainParameters[1],sizeof target));
  for(unsigned j=0;j<END_OF_SOUND_PARAMETERS;j++)assert(menu_voiceCopy.values[j]==0);
  puts("PASS same/invalid kit, project/kit/pattern change, A/B/A reload, external transport and commit-boundary interrupt rejection, invalid source byte, cancel, truthful LCD, snapshot disposal and interrupt mask restore");
 }
 static void button_edges(void)
 {
- reset_r21();uint8_t target[END_OF_SOUND_PARAMETERS];memcpy(target,mainParameters[1],sizeof target);
- panel_press(BUT_COPY);menu_parseEncoder(0,1);
- for(unsigned i=0;i<10;i++){now++;menu_parseEncoder(0,i%2);}
- assert(menu_voiceCopyActive==1&&!memcmp(target,mainParameters[1],sizeof target));
- menu_parseEncoder(0,0);panel_release(BUT_COPY);menu_parseEncoder(0,0);choose_two();
- now+=1;menu_parseEncoder(0,1);assert(menu_voiceCopyActive==2);
- menu_parseEncoder(0,0);now+=40;confirm();assert(menu_voiceCopyNotice==1);
- for(unsigned i=0;i<20;i++){now++;menu_parseEncoder(0,i%2);}
- assert(!editModeActive && menu_voiceCopyNotice==1);
- now+=40;menu_parseEncoder(0,0);now+=40;menu_parseEncoder(0,0);
- menu_parseEncoder(0,1);assert(editModeActive);menu_parseEncoder(1,1);assert(edit_actions);
- menu_parseEncoder(0,0);menu_parseEncoder(0,1);assert(!editModeActive);menu_parseEncoder(1,1);assert(navigate_actions);
- reset_r21();panel_press(BUT_COPY);unsigned copies=track_copies;panel_press(BUT_VOICE_3);assert(track_copies==copies+1);panel_release(BUT_COPY);assert(copyClear_Mode==MODE_NONE);
- panel_press(BUT_SHIFT);panel_press(BUT_COPY);assert(copyClear_Mode==MODE_CLEAR);unsigned clears=clear_actions;menu_parseEncoder(0,1);assert(clear_actions==clears+1&&!menu_voiceCopyActive);panel_release(BUT_COPY);panel_release(BUT_SHIFT);
- reset_r21();panel_press(BUT_REC);assert(buttonHandler_stateMemory.seqRecording);unsigned steps=step_calls;panel_press(BUT_SEQ1);assert(step_calls==steps+1);
+ reset_r21();chord();choose_two();data_click();assert(menu_voiceCopyEditing&&menu_voiceCopyActive);
+ data_click();assert(!menu_voiceCopyEditing&&menu_voiceCopyActive);confirm();assert(menu_voiceCopyNotice==1);
+ for(unsigned i=0;i<20;i++){now++;menu_parseEncoder(0,i%2);}assert(!editModeActive);
+ menu_parseEncoder(0,0);now+=40;menu_parseEncoder(0,0);menu_parseEncoder(0,1);assert(editModeActive);
+ menu_parseEncoder(1,1);assert(edit_actions);menu_parseEncoder(0,0);menu_parseEncoder(0,1);
+ assert(!editModeActive);menu_parseEncoder(1,1);assert(navigate_actions);
+ reset_r21();panel_press(BUT_COPY);unsigned copies=track_copies;panel_press(BUT_VOICE_3);
+ assert(track_copies==copies+1);panel_release(BUT_COPY);assert(copyClear_Mode==MODE_NONE);
+ panel_press(BUT_SHIFT);panel_press(BUT_COPY);assert(copyClear_Mode==MODE_CLEAR);unsigned clears=clear_actions;
+ menu_parseEncoder(0,1);assert(clear_actions==clears+1&&!menu_voiceCopyActive);panel_release(BUT_COPY);panel_release(BUT_SHIFT);
+ reset_r21();panel_press(BUT_REC);assert(buttonHandler_stateMemory.seqRecording);unsigned steps=step_calls;
+ panel_press(BUT_SEQ1);assert(step_calls==steps+1);
  reset_r21();chord();panel_press(BUT_START_STOP);assert(running);choose_two();confirm();assert(menu_voiceCopyNotice==2);
- puts("PASS entry press/release and repeated/bouncing edges, held DATA, fresh confirmation, post-success bounce drain, normal DATA/edit/navigation, COPY/voice dispatch, SHIFT+CLEAR, REC/STEP dispatch, START/STOP rejection");
+ puts("PASS navigation editor exits do not commit; post-success bounce drain, normal DATA/edit/navigation, COPY/voice, SHIFT+CLEAR, REC/STEP and START/STOP rejection");
 }
-
-
 static void legacy_and_load(void)
 {
  reset_r21();uint8_t legacy[100];memset(legacy,21,sizeof legacy);

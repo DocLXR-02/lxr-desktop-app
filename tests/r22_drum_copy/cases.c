@@ -4,15 +4,15 @@ static void r22_reset(unsigned source)
  reset_r21();menu_voiceCopyVoiceHeld=0;
  menu_activePage=menu_activeVoice=source;
 }
-static void target_button(unsigned target)
+static void target_drum(unsigned target)
 {
- unsigned calls=voice_calls,copies=track_copies;
- uint8_t source=menu_activeVoice,page=menu_activePage;
- panel_press(BUT_VOICE_1+target);panel_press(BUT_VOICE_1+target);
- assert(menu_voiceCopyActive&&menu_voiceCopyTargetVoice==target);
+ unsigned calls=voice_calls,copies=track_copies;uint8_t source=menu_activeVoice,page=menu_activePage;
+ while(menu_voiceCopyFocus!=VOICE_COPY_DRUM)menu_parseEncoder(menu_voiceCopyFocus<VOICE_COPY_DRUM?1:-1,0);
+ if(!menu_voiceCopyEditing)data_click();
+ while(menu_voiceCopyTargetVoice!=target)menu_parseEncoder(menu_voiceCopyTargetVoice<target?1:-1,0);
+ data_click();
+ assert(menu_voiceCopyActive&&menu_voiceCopyTargetVoice==target&&!menu_voiceCopyEditing);
  assert(menu_activeVoice==source&&menu_activePage==page&&voice_calls==calls&&track_copies==copies);
- panel_release(BUT_VOICE_1+target);
- assert(!menu_voiceCopyVoiceHeld);
 }
 static void menu_oracle(unsigned source,unsigned target,uint8_t *expected)
 {
@@ -42,9 +42,9 @@ static void r22_nine_pairs(void)
   char names[sizeof savefileNames];memcpy(names,savefileNames,sizeof names);
   uint8_t songs[sizeof seq_songData];memcpy(songs,seq_songData,sizeof songs);
   unsigned writes=api_writes,sectors=physical_writes,dispatch=sends,fx=fx_preparations;
-  chord();assert(menu_voiceCopyTargetVoice==source);choose_two();target_button(target);
-  menu_renderVoiceTransfer();char line[17];snprintf(line,sizeof line,"D%u > K02 D%u?",source+1,target+1);
-  assert(!memcmp(editDisplayBuffer[0],line,strlen(line)));
+  chord();assert(menu_voiceCopyTargetVoice==source);choose_two();target_drum(target);
+  menu_renderVoiceTransfer();char line[17];snprintf(line,sizeof line,"D%u > K02 D%u  OK ",source+1,target+1);
+  assert(!memcmp(editDisplayBuffer[1],line,strlen(line)));
   confirm();assert(menu_voiceCopyNotice==1);
   assert(!memcmp(mainParameters[1],expected,sizeof expected));
   memcpy(kits+sizeof expected,expected,sizeof expected);
@@ -63,7 +63,7 @@ static void r22_same_kit_and_invalid(void)
   r22_reset(source);uint8_t kits[sizeof mainParameters],active[NUM_PARAMS];
   memcpy(kits,mainParameters,sizeof kits);memcpy(active,activeParameters,sizeof active);
   unsigned io=api_writes,dispatch=sends,fx=fx_preparations;
-  chord();target_button(target);confirm();assert(menu_voiceCopyNotice==2);
+  chord();target_drum(target);confirm();assert(menu_voiceCopyNotice==2);
   assert(!memcmp(kits,mainParameters,sizeof kits)&&!memcmp(active,activeParameters,sizeof active));
   assert(io==api_writes&&dispatch==sends&&fx==fx_preparations);
  }
@@ -104,7 +104,7 @@ static void r22_lfo_cases(void)
   }
   expected[PAR_TARGET_LFO1+early]=expected[PAR_TARGET_LFO1+late]=0;
   unsigned io=api_writes,dispatch=sends,fx=fx_preparations;
-  chord();choose_two();target_button(target);confirm();assert(menu_voiceCopyNotice==1);
+  chord();choose_two();target_drum(target);confirm();assert(menu_voiceCopyNotice==1);
   assert(!memcmp(expected,mainParameters[1],sizeof expected));
   assert(io==api_writes&&dispatch==sends&&fx==fx_preparations);
   assert(preset_saveProject(0)==FR_OK&&preset_loadProject(0,0)==FR_OK);
@@ -126,7 +126,7 @@ static void r22_lfo_cases(void)
   if(kind==5)activeParameters[PAR_TARGET_LFO1]=255;
   if(kind==6)activeParameters[PAR_VOICE_LFO1]=2;
   uint8_t prior[8];for(unsigned i=0;i<8;i++)prior[i]=mainParameters[1][preset_voiceLfoGroups[i]+1];
-  chord();choose_two();target_button(1);confirm();assert(menu_voiceCopyNotice==1);
+  chord();choose_two();target_drum(1);confirm();assert(menu_voiceCopyNotice==1);
   for(unsigned i=0;i<8;i++)assert(mainParameters[1][preset_voiceLfoGroups[i]+1]==prior[i]);
  }
  puts("PASS R22 OFF/zero/other-voice/FX/global/invalid/voice-mismatch retain destination LFO");
@@ -168,7 +168,7 @@ static void r22_persistence(void)
   uint16_t target_id[3]={PAR_COARSE1,PAR_COARSE2,PAR_COARSE3};
   buttonHandler_originalParameter[0]=source_id[source];buttonHandler_originalValue[0]=113;
   activeParameters[source_id[source]]=7; /* Temporary held-STEP value. */
-  chord();choose_two();target_button(target);confirm();assert(menu_voiceCopyNotice==1);
+  chord();choose_two();target_drum(target);confirm();assert(menu_voiceCopyNotice==1);
   assert(mainParameters[1][target_id[target]]==113&&activeParameters[source_id[source]]==7);
   /* The unchanged release cleanup restores the editable source base before save. */
   activeParameters[source_id[source]]=buttonHandler_originalValue[0];armed_step=NO_STEP_SELECTED;buttonHandler_resetLock1=0;
@@ -191,11 +191,10 @@ static void r22_persistence(void)
 }
 static void r22_panel_and_morph(void)
 {
- r22_reset(2);chord();choose_two();target_button(0);menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[0],"D3 > K02 D1?",12));
- unsigned calls=voice_calls;panel_press(BUT_VOICE_2);confirm();assert(menu_voiceCopyNotice==1);
- panel_press(BUT_VOICE_2);panel_release(BUT_VOICE_2);menu_parseEncoder(0,0);
- assert(!menu_voiceCopyActive&&voice_calls==calls&&menu_activeVoice==2&&!editModeActive);
- r22_reset(0);chord();choose_two();target_button(2);panel_press(BUT_COPY);assert(menu_voiceCopyNotice==3);panel_release(BUT_COPY);
+ r22_reset(2);chord();choose_two();target_drum(0);menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[1],"D3 > K02 D1",10));
+ unsigned calls=voice_calls;panel_press(BUT_COPY);assert(menu_voiceCopyActive);panel_release(BUT_COPY);
+ confirm();assert(menu_voiceCopyNotice==1&&voice_calls==calls&&menu_activeVoice==2&&!editModeActive);
+ r22_reset(0);chord();choose_two();target_drum(2);panel_press(BUT_MODE1);assert(!menu_voiceCopyActive&&!menu_voiceCopyNotice);panel_release(BUT_MODE1);
  r22_reset(4);chord();choose_two();panel_press(BUT_VOICE_1);assert(!menu_voiceCopyActive&&menu_voiceCopyNotice==3&&menu_activeVoice==4);panel_release(BUT_VOICE_1);
  /* Existing 57->123 Morph case uses D5. This remapped case protects an alias
   * before/at commit while leaving an unrelated target permitted. */
@@ -205,7 +204,7 @@ static void r22_panel_and_morph(void)
   morph_state=mode<2?1:0;
   uint8_t before[sizeof mainParameters],active[NUM_PARAMS];memcpy(before,mainParameters,sizeof before);memcpy(active,activeParameters,sizeof active);
   unsigned dispatch=sends,fx=fx_preparations,writes=api_writes;
-  chord();choose_two();target_button(2);
+  chord();choose_two();target_drum(2);
   if(mode==4)menu_voiceCopyTarget=2;
   if(mode==5)before_commit=begin_morph_at_commit;
   confirm();
@@ -213,12 +212,14 @@ static void r22_panel_and_morph(void)
   else {assert(menu_voiceCopyNotice==4);assert(!memcmp(before,mainParameters,sizeof before));}
   assert(!memcmp(active,activeParameters,sizeof active)&&dispatch==sends&&fx==fx_preparations&&writes==api_writes);
  }
- r22_reset(0);chord();choose_two();target_button(1);seq_loadPendigFlag=1;confirm();assert(menu_voiceCopyNotice==2);
- r22_reset(0);chord();choose_two();target_button(1);before_commit=start_clock;confirm();assert(menu_voiceCopyNotice==2);
- puts("PASS R22 panel target interception/held edge/release cleanup, non-Drum cancellation, remapped Morph alias/zero/pending/unrelated/commit guard and pending-pattern/clock rejection");
+ r22_reset(0);chord();choose_two();target_drum(1);seq_loadPendigFlag=1;confirm();assert(menu_voiceCopyNotice==2);
+ r22_reset(0);chord();choose_two();target_drum(1);before_commit=start_clock;confirm();assert(menu_voiceCopyNotice==2);
+ puts("PASS R22 encoder destination editing, ignored COPY, VOICE cancellation, non-Drum cancellation, remapped Morph alias/zero/pending/unrelated/commit guard and pending-pattern/clock rejection");
 }
+#include "navigation_cases.c"
 int main(void)
 {
  r22_nine_pairs();r22_same_kit_and_invalid();r22_lfo_cases();r22_all_lfo_destinations();r22_persistence();r22_panel_and_morph();
+ navigation_suite();
  return 0;
 }
