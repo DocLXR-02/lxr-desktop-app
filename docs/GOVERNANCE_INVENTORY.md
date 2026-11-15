@@ -1,5 +1,8 @@
 # LXR Firmware Lab — Governance and Branch Inventory
 
+> **AGENTS resolution record (2026-11-15):** The owner approved a documentation-only correction to the source-root `AGENTS.md` on isolated branch `docs/agents-policy-reconcile-r22-2026-11-15`, commit `da8ef26b828697bab16dfc42760896ce1c881410`, based on accepted R22 source `0e37942250f79306627702061d851731bdfdbbc8`. The verified one-file diff replaces mandatory `lab-setup` ancestry with owner-approved exact-source-SHA branching, aligns CHAT/Codex selection and report-branch handling. **R22 source SHA and historical AGENTS remain unchanged.** D01 is **RESOLVED IN A NEW POLICY COMMIT, NOT RETROACTIVELY**; for future tasks explicitly provide this corrected instruction file and the current WORKFLOW, and STOP if the actual source SHA has conflicting inherited instructions. No firmware build, merge into R22, or firmware release is authorized by this record.
+
+
 > **M5/M6 update (2026-11-15):** The owner approved the bounded CHAT-first governance policy in WORKFLOW.md. The exact-source AGENTS.md conflict remains OPEN and blocks conflicting code edits. Private KnowledgeBase v1.6.0 is archived in Library as a ZIP; Project attachment sync remains PENDING. Historical v1.5.9 remains immutable. No Library deduplication was performed.
 
 
