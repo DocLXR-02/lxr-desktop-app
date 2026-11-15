@@ -1,9 +1,9 @@
 # LXR Firmware Lab — current project state
 
-> **M5/M6 governance (2026-11-15):** The current workflow is CHAT-first with conditional Codex delegation and an explicit source-AGENTS compatibility STOP gate. Private KnowledgeBase v1.6.0 is uploaded to owner Library as a verified ZIP; the older Project-attached copy remains SYNC_PENDING. No firmware, CI, sound or device test was changed by this documentation synchronization.
+> **M5/M6 governance (2026-11-15):** The current workflow is CHAT-first with conditional Codex delegation and an explicit source-AGENTS compatibility STOP gate. Private KnowledgeBase v1.6.0 is uploaded to owner Library as a verified ZIP; the older Project-attached copy remains SYNC_PENDING (not replaceable by a Library upload). No firmware, CI, sound or device test was changed by this documentation synchronization.
 
 
-> **M3/M4 governance index (2026-11-15):** [Pinned release identities](RELEASE_MANIFEST.json) · [Branch, archive and discrepancy inventory](GOVERNANCE_INVENTORY.md) · [Checkpoint lifecycle](WORKFLOW.md#intermediate-release-checkpoints-m4). This documentation index does not supersede the accepted R22 source, owner hardware record or per-build reports. M5/M6 remain separately gated.
+> **M3/M4 governance index (2026-11-15):** [Pinned release identities](RELEASE_MANIFEST.json) · [Branch, archive and discrepancy inventory](GOVERNANCE_INVENTORY.md) · [Checkpoint lifecycle](WORKFLOW.md#intermediate-release-checkpoints-m4). This documentation index does not supersede the accepted R22 source, owner hardware record or per-build reports. M3–M6 documentation implementation was approved and completed; see the closeout note below.
 
 
 Snapshot: 2026-11-15 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-15-R22-STABLE**. The R22 stable entry and currently approved workflow govern continuation; the dated R20/R19 and prior entries below are historical.
@@ -22,7 +22,7 @@ This documentation branch descends from historical lab-setup `5829398cea5d337200
 
 **Development handoff:** R21 Voice Copy/Paste [`861c643`](https://github.com/DocLXR-02/lxr-desktop-app/commit/861c643632e0a88bdc7d60d9410befb3971489fc) → R22 TEST01 [`ace7ad9`](https://github.com/DocLXR-02/lxr-desktop-app/commit/ace7ad95081aac6a015f11b87b6c540ce100b344) → TEST02 [`4372e60`](https://github.com/DocLXR-02/lxr-desktop-app/commit/4372e60337bf5ce35d67e8b5eb577baa3fffb962) → accepted TEST03 [`0e37942`](https://github.com/DocLXR-02/lxr-desktop-app/commit/0e37942250f79306627702061d851731bdfdbbc8). Earlier TEST03 **failed test fixture** remains in the [immutable STOP report](https://github.com/DocLXR-02/lxr-desktop-app/blob/bf9162ae0b131c97a12d3ea4ab472a45d96f4cc8/docs/codex-berichte/2026-11-15_r22-kit-index-display-test03-stop.md), later corrected in the accepted TEST03 without weakening assertions. Preserve original report refs, build logs and test candidates.
 
-**Next conceptual phase, not performed here:** reconcile the private KnowledgeBase and persistent Library, branch/evidence classification, intermediate release checkpoints, expiring CI artifact preservation, CHAT/Codex boundaries and cross-chat continuity. Do **not** launch a new code/change/build task or reinterpret historical snapshots as current. [Workflow](WORKFLOW.md) remains operative until separately revised.
+**Historical planning note (superseded by M3–M6 implementation):** the earlier proposal was to reconcile the private KnowledgeBase and persistent Library, branch/evidence classification, intermediate release checkpoints, expiring CI artifact preservation, CHAT/Codex boundaries and cross-chat continuity. Do **not** launch a new code/change/build task or reinterpret historical snapshots as current. [Workflow](WORKFLOW.md) remains operative until separately revised.
 
 ---
 
@@ -97,7 +97,7 @@ Physical USB-MIDI remains NOT TESTED and the owner **accepted this residual risk
 
 **PREPARED, NOT EXECUTED.** At that checkpoint the owner chose R19 as the stable functional baseline for subsequent improvements. Exact source SHA: `638b6eaae5b1624637d20cbc11a4a3e0175edca2`. R18 CLP remains a separate protected sonic reference. No build, flash, firmware edit, or hardware measurement is approved by this preparatory documentation.
 
-The [read-only investigation plan](https://github.com/DocLXR-02/lxr-desktop-app/blob/ee9bdfb80fec5d1625b997fcb4b59cc11744e387/docs/plans/2026-11-08_r19_performance_reliability_readonly_baseline_plan.md) fixes scope, evidence, source paths, stop conditions and expected deliverables. Use current private KnowledgeBase v1.5.4 in the next chat. `LXR_RUNTIME_DIAGNOSTICS` is OFF by default; CPU/WCET, IRQ/DMA deadline margins, actual stack high-water and sustained reliability remain UNMEASURED. No Codex, source changes, builds, device tests, stable-branch creation or native GitHub Release were started by this preparation.
+The [read-only investigation plan](https://github.com/DocLXR-02/lxr-desktop-app/blob/ee9bdfb80fec5d1625b997fcb4b59cc11744e387/docs/plans/2026-11-08_r19_performance_reliability_readonly_baseline_plan.md) fixes scope, evidence, source paths, stop conditions and expected deliverables. Historical instruction only: KB v1.5.4 was current for this older investigation; use the latest owner-confirmed KB v1.6.0 for new work. `LXR_RUNTIME_DIAGNOSTICS` is OFF by default; CPU/WCET, IRQ/DMA deadline margins, actual stack high-water and sustained reliability remain UNMEASURED. No Codex, source changes, builds, device tests, stable-branch creation or native GitHub Release were started by this preparation.
 
 ## Historical R19 candidate hardware addendum (2026-11-08, before final approval)
 
