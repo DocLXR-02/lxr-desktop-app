@@ -1,0 +1,11 @@
+--- stopped/navigation_cases.c
++++ resumed/navigation_cases.c
+@@ -213,6 +213,8 @@
+   /* Pick a distinct source identity for target9, never shift the target. */
+   if(kit==9)menu_loadedPresetNr[CURRENT_KIT]=8;
+   activeParameters[PAR_MORPH]=0; /* Idle alias target0 must remain permitted. */
++  /* Valid preset precondition: immediate load must not normalize zero IDs. */
++  for(unsigned lfo=0;lfo<6;lfo++)mainParameters[kit][PAR_VOICE_LFO1+lfo]=lfo+1;
+   NavigationSnapshot *s=navigation_snapshot();
+   uint8_t expected[END_OF_SOUND_PARAMETERS];memcpy(expected,mainParameters[kit],sizeof expected);
+   unsigned voice=source<6?source:5;

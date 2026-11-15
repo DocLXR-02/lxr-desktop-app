@@ -1,0 +1,181 @@
+{
+  "task": "R22 TEST03 kit-index display; authorized fixture-only resume",
+  "date": "2026-11-15 UTC",
+  "repository": "DocLXR-02/lxr-desktop-app",
+  "source_branch": "release/r22",
+  "base_and_direct_parent": "4372e60337bf5ce35d67e8b5eb577baa3fffb962",
+  "source_head": "0e37942250f79306627702061d851731bdfdbbc8",
+  "report_branch": "reports/r22-test03-2026-11-15",
+  "report_root": "5829398cea5d337200393757e39a37d4d8148256",
+  "historic_stop_report": "bf9162ae0b131c97a12d3ea4ab472a45d96f4cc8",
+  "historic_failure": {
+    "status": "FAIL retained, not rerun",
+    "raw_log": "HISTORIC_STOP_r22.log",
+    "sha256": "461648e3a6f0298195cfe3de10709432a0bb2a46fb4deda30eb0b21e37b01fdb",
+    "specific_fix": "Only new slot_label_oracle setup: destination PAR_VOICE_LFO1+lfo=lfo+1 for lfo0..5, before snapshot/expected arrays; full assertions retained"
+  },
+  "local_environment": {
+    "compiler": "cc (Debian 14.2.0-19) 14.2.0",
+    "python": "3.12.14",
+    "sanitizers": "existing host ASan/UBSan; ASAN_OPTIONS=detect_leaks=0",
+    "fixture": "existing R21 production paths and real FatFs RAM sectors; no hardware"
+  },
+  "first_resumed_gate": {
+    "argv": [
+      "python3",
+      "tests/r22_drum_copy/run.py"
+    ],
+    "exit_code": 0,
+    "log": "r22-focused.log",
+    "results": {
+      "literal_slot_rows_and_exact_RAM_cases": 448,
+      "project_file_roundtrips": 8,
+      "added_same_kit_rejections": 7
+    }
+  },
+  "then_local_regressions": [
+    {
+      "name": "r21",
+      "argv": [
+        "python3",
+        "tests/r21_voice_copy/run.py"
+      ],
+      "exit_code": 0,
+      "seconds": 5.671585210999183,
+      "log": "r21.log"
+    },
+    {
+      "name": "project-storage",
+      "argv": [
+        "python3",
+        "tests/project_storage/run.py"
+      ],
+      "exit_code": 0,
+      "seconds": 4.788002579000022,
+      "log": "project-storage.log"
+    },
+    {
+      "name": "project-transaction",
+      "argv": [
+        "python3",
+        "tests/project_transaction/run.py"
+      ],
+      "exit_code": 0,
+      "seconds": 10.712604745000135,
+      "log": "project-transaction.log"
+    },
+    {
+      "name": "r20-ui",
+      "argv": [
+        "python3",
+        "tests/r20_ui/run.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.23511073099871282,
+      "log": "r20-ui.log"
+    },
+    {
+      "name": "r20-integration",
+      "argv": [
+        "python3",
+        "tests/r20_ui/integration/probe.py",
+        ".",
+        "/workspace/r22-test03-resume/r20-integration"
+      ],
+      "exit_code": 0,
+      "seconds": 0.9569475459993555,
+      "log": "r20-integration.log"
+    },
+    {
+      "name": "delay",
+      "argv": [
+        "python3",
+        "tests/r18_delay_mono/run.py",
+        "/workspace/r22-test03-resume/delay"
+      ],
+      "exit_code": 0,
+      "seconds": 2.5213843239998823,
+      "log": "delay.log"
+    },
+    {
+      "name": "usb",
+      "argv": [
+        "python3",
+        "tests/r18_usb_midi/run.py",
+        "/workspace/r22-test03-resume/usb"
+      ],
+      "exit_code": 0,
+      "seconds": 0.8894609979997767,
+      "log": "usb.log"
+    },
+    {
+      "name": "compressor",
+      "argv": [
+        "python3",
+        "tests/r18_compressor_mono/run.py",
+        "/workspace/r22-test03-resume/compressor"
+      ],
+      "exit_code": 0,
+      "seconds": 0.5439261310002621,
+      "log": "compressor.log"
+    },
+    {
+      "name": "clp",
+      "argv": [
+        "python3",
+        "tests/fx_clip_r18/compare.py"
+      ],
+      "exit_code": 0,
+      "seconds": 2.926765329000773,
+      "log": "clp.log"
+    },
+    {
+      "name": "parameter-sweeps",
+      "argv": [
+        "python3",
+        "tests/bug001/run.py"
+      ],
+      "exit_code": 0,
+      "seconds": 1.1228215320006711,
+      "log": "parameter-sweeps.log"
+    }
+  ],
+  "source_scope_check": {
+    "changed_paths": 6,
+    "sole_production_change": "Core/Src/menu/voiceTransfer.inc removes +1 at kit-number rendering",
+    "all_other_production_bytes_match_TEST02": true
+  },
+  "CI": {
+    "run": 43707621969,
+    "attempt": 1,
+    "job": 132792019014,
+    "artifact": 14159486119,
+    "status": "success",
+    "ARM_build_count": 1,
+    "exact_source": "0e37942250f79306627702061d851731bdfdbbc8",
+    "all_workflow_gates": "PASS",
+    "retention_expiry": "2026-12-15T11:11:10Z"
+  },
+  "post_build_commands": [
+    {
+      "argv": [
+        "python3",
+        "/workspace/r22-test03-resume/verify-delivery.py"
+      ],
+      "exit_code": 0,
+      "result": "delivery-verification.json"
+    },
+    {
+      "argv": [
+        "python3",
+        "/workspace/r22-test03-resume/stack-entry.py"
+      ],
+      "exit_code": 0,
+      "result": "stack-entry.json"
+    }
+  ],
+  "hardware_flashing_merges_releases": "NOT DONE",
+  "runtime_timing_stack_high_water_audio": "UNMEASURED",
+  "permanent_binary_archive": "NOT ARCHIVED",
+  "no_subsequent_task_started": true
+}

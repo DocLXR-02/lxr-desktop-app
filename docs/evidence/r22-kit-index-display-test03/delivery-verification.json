@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "source_sha": "0e37942250f79306627702061d851731bdfdbbc8",
+  "ci_archive_sha256": "aa0d442a662d1720647ccae9b73f4d4367fc20e4eb0523ef385a6cab09692c69",
+  "boot_string_offset": 161536,
+  "boot_bytes_hex": "4c5852204c41422052323200",
+  "image_bytes": 297680,
+  "payload_bytes": 297664,
+  "checksum_byte": 45,
+  "zip_contents": [
+    "LXR_V2_R22_TEST03.img"
+  ],
+  "checks": [
+    "CI archive digest and CRC",
+    "exact source",
+    "IMG/ELF/MAP/ZIP hashes",
+    "updater header/length/checksum",
+    "R22 boot bytes",
+    "ELF load-segment identity",
+    "one-image ZIP CRC and byte identity"
+  ]
+}

@@ -1,0 +1,12 @@
+host: /workspace/lxr-desktop-app/tests/r22_drum_copy/navigation_cases.c:253: slot_label_oracle: Assertion `!memcmp(activeParameters,expected,sizeof expected)' failed.
+Traceback (most recent call last):
+  File "/workspace/lxr-desktop-app/tests/r22_drum_copy/run.py", line 6, in <module>
+    runpy.run_path(str(R/'tests/r21_voice_copy/run.py'),run_name='__main__',
+  File "<frozen runpy>", line 287, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/lxr-desktop-app/tests/r21_voice_copy/run.py", line 59, in <module>
+    subprocess.run([str(tmp/'host'),*sys.argv[1:]],cwd=R,env=env,check=True,timeout=90)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/tmp/lxr-r21-v04qcked/host']' died with <Signals.SIGABRT: 6>.

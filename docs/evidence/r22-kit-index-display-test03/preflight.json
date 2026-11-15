@@ -1,0 +1,15 @@
+{
+  "base": "4372e60337bf5ce35d67e8b5eb577baa3fffb962",
+  "local_draft_matches_preserved_patch": true,
+  "draft_sha256": "165ef278499c320914d9f979a6dc73efe5418116e4c1ec737a34d98c1d53d706",
+  "stop_report_commit": "bf9162ae0b131c97a12d3ea4ab472a45d96f4cc8",
+  "guidance_ref": "9b68be76d80de50cb84fa9882c5b9003bcb6faf8",
+  "report_base": "5829398cea5d337200393757e39a37d4d8148256",
+  "unchanged_guidance_files": {
+    "PROJECT_STATUS": "3d59fd5fa13bde38fba56a3c98dd0893d25c2471abc98da7827f764e5baaccb9",
+    "WORKFLOW": "7e6b25e16f61800d51cc5a2006b2d9c98eb51b72e69056b1dc476d989e96cab8",
+    "EVIDENCE_INDEX": "0e25ce7b66737ac8b15a39c1722050f7602a22ae988eb47a644c7b36afeb6526",
+    "RECORDKEEPING_STANDARD": "9d79bd750970b4f950fdda2adc64242edb584fa3d4251566bef88f8f33866982"
+  },
+  "private_KB_version": "1.5.8; same supplied active reference; not published"
+}

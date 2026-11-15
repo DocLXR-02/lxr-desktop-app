@@ -1,0 +1,26 @@
+{
+  "Core/Src/Preset/voiceTransfer.inc": {
+    "sha256": "f73d92b9923b357ecb1cce70fb753569ec6c42e301125607d2e63d9a6bb7e35d",
+    "byte_identical_to_TEST02": true
+  },
+  "Core/Src/Preset/presetManager.c": {
+    "sha256": "c94a2a47ee5af6754a6db70c71a07cbca35a9e97021dd6572f93e819dc101aed",
+    "byte_identical_to_TEST02": true
+  },
+  "Core/Src/menu/menu.c": {
+    "sha256": "3c034a602252cd0e0a68b533918dc43a597ac5617706e66e2f56c86e6a71ca33",
+    "byte_identical_to_TEST02": true
+  },
+  "Core/Src/buttonHandler.c": {
+    "sha256": "2195d88a724d98cab542450587c8cf91f6c0ba2a2e59b0c450b7dee2e722b0ef",
+    "byte_identical_to_TEST02": true
+  },
+  "Core/Src/main.c": {
+    "sha256": "d4c3525723527e56579ff9d5698f5265df97f6ef8e561512f75a3c19139cccec",
+    "byte_identical_to_TEST02": true
+  },
+  "Core/Inc/Parameters.h": {
+    "sha256": "e4880e2094db7bba5ff9722c004e12cb24913f72f3adbd1c4274cc522153aebc",
+    "byte_identical_to_TEST02": true
+  }
+}

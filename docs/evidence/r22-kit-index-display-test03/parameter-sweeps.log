@@ -1,0 +1,2 @@
+PASS: CC0, external bank forwarding, CC/NRPN Drive, NRPN mutes, invalid selectors and CC2 bounds
+PASS: all 256 Morph positions, unchanged tick/restart behavior, immediate kit sweep and audio service cadence

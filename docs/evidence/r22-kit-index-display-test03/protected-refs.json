@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "protected_existing_heads": 130,
+  "only_changed_existing_head": {
+    "refs/heads/release/r22": {
+      "before": "4372e60337bf5ce35d67e8b5eb577baa3fffb962",
+      "after": "0e37942250f79306627702061d851731bdfdbbc8"
+    }
+  },
+  "historic_stop_report": "bf9162ae0b131c97a12d3ea4ab472a45d96f4cc8",
+  "report_root": "5829398cea5d337200393757e39a37d4d8148256",
+  "docs_snapshot": "9b68be76d80de50cb84fa9882c5b9003bcb6faf8"
+}

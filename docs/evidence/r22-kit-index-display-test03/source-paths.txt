@@ -1,0 +1,6 @@
+M	.github/workflows/r22-drum-copy-validation.yml
+M	Core/Src/menu/voiceTransfer.inc
+M	tests/r21_voice_copy/host.c
+M	tests/r22_drum_copy/cases.c
+M	tests/r22_drum_copy/navigation_cases.c
+M	tests/r22_drum_copy/validate_arm.py
