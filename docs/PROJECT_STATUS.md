@@ -1,5 +1,8 @@
 # LXR Firmware Lab — current project state
 
+> **M5/M6 governance (2026-11-15):** The current workflow is CHAT-first with conditional Codex delegation and an explicit source-AGENTS compatibility STOP gate. Private KnowledgeBase v1.6.0 is uploaded to owner Library as a verified ZIP; the older Project-attached copy remains SYNC_PENDING. No firmware, CI, sound or device test was changed by this documentation synchronization.
+
+
 > **M3/M4 governance index (2026-11-15):** [Pinned release identities](RELEASE_MANIFEST.json) · [Branch, archive and discrepancy inventory](GOVERNANCE_INVENTORY.md) · [Checkpoint lifecycle](WORKFLOW.md#intermediate-release-checkpoints-m4). This documentation index does not supersede the accepted R22 source, owner hardware record or per-build reports. M5/M6 remain separately gated.
 
 
