@@ -33,19 +33,19 @@ def end_span(names,origin):return max(sections[n]['address']+sections[n]['bytes'
 current={'.text':sections['.text']['bytes'], '.rodata':sections['.rodata']['bytes'], 'ITCM':end_span(['.itcm_text'],0),
  'DTCM':end_span(['.dtcm','.dtcmz'],0x20000000),
  'SRAM':end_span(['.data','.bss','._user_heap'],0x20020000), 'FLASH_payload':len(img)-16}
-# Matched ARM GNU14.3.Rel1 Release, exact R22 TEST01 SOURCE ace7ad9...
-base={'.text':159856,'.rodata':83168,'ITCM':15304,'DTCM':107424,'SRAM':275156,'FLASH_payload':296704}
+# Matched ARM GNU14.3.Rel1 Release, exact R22 TEST02 SOURCE 4372e60...
+base={'.text':160728,'.rodata':83272,'ITCM':15304,'DTCM':107424,'SRAM':275164,'FLASH_payload':297680}
 capacity={'ITCM':16384,'DTCM':131072,'SRAM':393216,'FLASH_payload':1015808}
-regions={k:{'TEST01':base[k],'TEST02':v,'delta':v-base[k],**({'headroom':capacity[k]-v} if k in capacity else {})} for k,v in current.items()}
+regions={k:{'TEST02':base[k],'TEST03':v,'delta':v-base[k],**({'headroom':capacity[k]-v} if k in capacity else {})} for k,v in current.items()}
 assert all(v['headroom']>0 for v in regions.values() if 'headroom' in v)
-image=O/'LXR_V2_R22_TEST02.img';image.write_bytes(img)
-archive=O/'LXR_V2_R22_TEST02.zip'
+image=O/'LXR_V2_R22_TEST03.img';image.write_bytes(img)
+archive=O/'LXR_V2_R22_TEST03.zip'
 with zipfile.ZipFile(archive,'w',compression=zipfile.ZIP_DEFLATED) as z:z.write(image,image.name)
 with zipfile.ZipFile(archive) as z:assert z.namelist()==[image.name] and z.testzip() is None and z.read(image.name)==img
 files=[image,archive,O/'LXR_V2_STM32F765.elf',O/'LXR_V2_STM32F765.map']
 records={p.name:{'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in files}
 result={'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=R,text=True).strip(),
- 'base_sha':'ace7ad95081aac6a015f11b87b6c540ce100b344','files':records,'regions':regions,
+ 'base_sha':'4372e60337bf5ce35d67e8b5eb577baa3fffb962','files':records,'regions':regions,
  'sections':sections,'segments':segments,'boot_string':'LXR LAB R22','checksum_byte':img[12],
  'CPU_WCET':'UNMEASURED','IRQ_DMA':'UNMEASURED','stack_high_water':'UNMEASURED','reliability':'UNMEASURED'}
 (O/'validation.json').write_text(json.dumps(result,indent=2)+'\n')

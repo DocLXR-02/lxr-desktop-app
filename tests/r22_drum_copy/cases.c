@@ -43,7 +43,7 @@ static void r22_nine_pairs(void)
   uint8_t songs[sizeof seq_songData];memcpy(songs,seq_songData,sizeof songs);
   unsigned writes=api_writes,sectors=physical_writes,dispatch=sends,fx=fx_preparations;
   chord();assert(menu_voiceCopyTargetVoice==source);choose_two();target_drum(target);
-  menu_renderVoiceTransfer();char line[17];snprintf(line,sizeof line,"D%u > K02 D%u  OK ",source+1,target+1);
+  menu_renderVoiceTransfer();char line[17];snprintf(line,sizeof line,"D%u > K01 D%u  OK ",source+1,target+1);
   assert(!memcmp(editDisplayBuffer[1],line,strlen(line)));
   confirm();assert(menu_voiceCopyNotice==1);
   assert(!memcmp(mainParameters[1],expected,sizeof expected));
@@ -191,7 +191,7 @@ static void r22_persistence(void)
 }
 static void r22_panel_and_morph(void)
 {
- r22_reset(2);chord();choose_two();target_drum(0);menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[1],"D3 > K02 D1",10));
+ r22_reset(2);chord();choose_two();target_drum(0);menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[1],"D3 > K01 D1",10));
  unsigned calls=voice_calls;panel_press(BUT_COPY);assert(menu_voiceCopyActive);panel_release(BUT_COPY);
  confirm();assert(menu_voiceCopyNotice==1&&voice_calls==calls&&menu_activeVoice==2&&!editModeActive);
  r22_reset(0);chord();choose_two();target_drum(2);panel_press(BUT_MODE1);assert(!menu_voiceCopyActive&&!menu_voiceCopyNotice);panel_release(BUT_MODE1);

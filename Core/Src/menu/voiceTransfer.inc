@@ -173,7 +173,7 @@ static uint8_t menu_renderVoiceTransfer(void)
         memcpy(editDisplayBuffer[1], row, 16);
         editDisplayBuffer[1][1] = '1' + menu_voiceCopy.voice;
         uint8_t kitColumn = menu_voiceCopyEditing && menu_voiceCopyFocus == VOICE_COPY_KIT ? 7 : 6;
-        uint16_t kit = (uint16_t)menu_voiceCopyTarget + 1;
+        uint16_t kit = (uint16_t)menu_voiceCopyTarget;
         editDisplayBuffer[1][kitColumn] = '0' + kit / 10;
         editDisplayBuffer[1][kitColumn + 1] = '0' + kit % 10;
         if(drum) {

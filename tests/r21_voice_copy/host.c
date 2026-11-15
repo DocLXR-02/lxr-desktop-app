@@ -124,7 +124,7 @@ static void storage_roundtrip(void)
  PatternSet *patterns=malloc(sizeof *patterns);memcpy(patterns,&seq_patternSet,sizeof *patterns);
  unsigned writes_before=physical_writes,apis=api_writes,send_before=sends,fx_before=fx_preparations;
  char names_before[sizeof savefileNames];memcpy(names_before,savefileNames,sizeof names_before);
- chord();choose_two();menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[1],"V5 > K02",8));confirm();
+ chord();choose_two();menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[1],"V5 > K01",8));confirm();
  assert(menu_voiceCopyNotice==1 && !menu_voiceCopyActive);
  assert(!memcmp(source,activeParameters,sizeof source));assert(!memcmp(stored_source,mainParameters[9],sizeof stored_source));
  assert(!memcmp(patterns,&seq_patternSet,sizeof *patterns));free(patterns);

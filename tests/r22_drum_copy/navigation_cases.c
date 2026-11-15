@@ -74,41 +74,41 @@ static void navigation_fields(void)
   assert(menu_voiceCopyFocus==VOICE_COPY_KIT&&!menu_voiceCopyEditing&&menu_voiceCopyTarget==9&&menu_voiceCopyTargetVoice==voice);
   for(unsigned n=0;n<4;n++)menu_parseEncoder(-1,0);
   assert(menu_voiceCopyFocus==VOICE_COPY_KIT);
-  char row[17];snprintf(row,sizeof row,source<3?"D%u > K10 D%u  OK ":"V%u > K10     OK ",voice+1,voice+1);
+  char row[17];snprintf(row,sizeof row,source<3?"D%u > K09 D%u  OK ":"V%u > K09     OK ",voice+1,voice+1);
   navigation_row(row,VIS_CURS(1,5,1));
   data_click();assert(menu_voiceCopyEditing);
-  snprintf(row,sizeof row,source<3?"D%u > [K10] D%u OK":"V%u > [K10]   OK ",voice+1,voice+1);
+  snprintf(row,sizeof row,source<3?"D%u > [K09] D%u OK":"V%u > [K09]   OK ",voice+1,voice+1);
   navigation_row(row,0);
   for(unsigned n=0;n<70;n++)menu_parseEncoder(-1,0);
   assert(menu_voiceCopyTarget==0);
-  snprintf(row,sizeof row,source<3?"D%u > [K01] D%u OK":"V%u > [K01]   OK ",voice+1,voice+1);navigation_row(row,0);
+  snprintf(row,sizeof row,source<3?"D%u > [K00] D%u OK":"V%u > [K00]   OK ",voice+1,voice+1);navigation_row(row,0);
   for(unsigned n=0;n<70;n++)menu_parseEncoder(1,0);
   assert(menu_voiceCopyTarget==63);
-  snprintf(row,sizeof row,source<3?"D%u > [K64] D%u OK":"V%u > [K64]   OK ",voice+1,voice+1);navigation_row(row,0);
+  snprintf(row,sizeof row,source<3?"D%u > [K63] D%u OK":"V%u > [K63]   OK ",voice+1,voice+1);navigation_row(row,0);
   data_click();assert(!menu_voiceCopyEditing&&menu_voiceCopyFocus==VOICE_COPY_KIT);
   menu_parseEncoder(1,0);
   if(source<3){
    assert(menu_voiceCopyFocus==VOICE_COPY_DRUM);
-   snprintf(row,sizeof row,"D%u > K64 D%u  OK ",voice+1,voice+1);navigation_row(row,VIS_CURS(1,9,1));
+   snprintf(row,sizeof row,"D%u > K63 D%u  OK ",voice+1,voice+1);navigation_row(row,VIS_CURS(1,9,1));
    data_click();assert(menu_voiceCopyEditing);
    for(unsigned n=0;n<5;n++)menu_parseEncoder(-1,0);
    assert(menu_voiceCopyTargetVoice==0);
-   snprintf(row,sizeof row,"D%u > K64 [D1] OK",voice+1);navigation_row(row,0);
+   snprintf(row,sizeof row,"D%u > K63 [D1] OK",voice+1);navigation_row(row,0);
    for(unsigned n=0;n<5;n++)menu_parseEncoder(1,0);
    assert(menu_voiceCopyTargetVoice==2);
-   snprintf(row,sizeof row,"D%u > K64 [D3] OK",voice+1);navigation_row(row,0);
+   snprintf(row,sizeof row,"D%u > K63 [D3] OK",voice+1);navigation_row(row,0);
    data_click();assert(!menu_voiceCopyEditing);menu_parseEncoder(1,0);
   }
   assert(menu_voiceCopyFocus==VOICE_COPY_OK);
   for(unsigned n=0;n<4;n++)menu_parseEncoder(1,0);
   assert(menu_voiceCopyFocus==VOICE_COPY_OK);
-  snprintf(row,sizeof row,source<3?"D%u > K64 D3 >OK ":"V%u > K64    >OK ",voice+1);navigation_row(row,0);
+  snprintf(row,sizeof row,source<3?"D%u > K63 D3 >OK ":"V%u > K63    >OK ",voice+1);navigation_row(row,0);
   menu_parseEncoder(-1,0);assert(menu_voiceCopyFocus==(source<3?VOICE_COPY_DRUM:VOICE_COPY_KIT));
   if(source<3)menu_parseEncoder(-1,0);
   assert(menu_voiceCopyFocus==VOICE_COPY_KIT&&menu_activeVoice==source&&menu_activePage==source);
   navigation_unchanged(s);free(s);
  }
- puts("PASS TEST02 seven source pages: exact 16-cell rows/guards/cursor, immutable source, bounded bidirectional Kit/Drum/OK navigation/editing, K01/K64/D1/D3, non-Drum omission, no premature transaction or data/engine/SD effects");
+ puts("PASS TEST02 seven source pages: exact 16-cell rows/guards/cursor, immutable source, bounded bidirectional Kit/Drum/OK navigation/editing, K00/K63/D1/D3, non-Drum omission, no premature transaction or data/engine/SD effects");
 }
 static void navigation_mode_cancel(void)
 {
@@ -194,7 +194,80 @@ static void navigation_ok_and_outside(void)
  assert(mode_calls==modes+1&&buttonHandler_getMode()==SELECT_MODE_PERF);
  puts("PASS TEST02 explicit OK commits selected Kit2/Drum3 once even with ignored COPY held; DATA hold/bounce cannot repeat, no FX/MIDI/SD transfer dispatch; unchanged generic save/load DATA routing");
 }
+static void slot_label_oracle(void)
+{
+ /* Literal independent oracle: never reuse the renderer or its arithmetic. */
+ static const char labels[64][4]={
+  "K00","K01","K02","K03","K04","K05","K06","K07",
+  "K08","K09","K10","K11","K12","K13","K14","K15",
+  "K16","K17","K18","K19","K20","K21","K22","K23",
+  "K24","K25","K26","K27","K28","K29","K30","K31",
+  "K32","K33","K34","K35","K36","K37","K38","K39",
+  "K40","K41","K42","K43","K44","K45","K46","K47",
+  "K48","K49","K50","K51","K52","K53","K54","K55",
+  "K56","K57","K58","K59","K60","K61","K62","K63"
+ };
+ unsigned transfers=0,projects=0;
+ for(unsigned source=0;source<7;source++)for(unsigned kit=0;kit<64;kit++){
+  r22_reset(source);
+  /* Pick a distinct source identity for target9, never shift the target. */
+  if(kit==9)menu_loadedPresetNr[CURRENT_KIT]=8;
+  activeParameters[PAR_MORPH]=0; /* Idle alias target0 must remain permitted. */
+  /* Valid preset precondition: immediate load must not normalize zero IDs. */
+  for(unsigned lfo=0;lfo<6;lfo++)mainParameters[kit][PAR_VOICE_LFO1+lfo]=lfo+1;
+  NavigationSnapshot *s=navigation_snapshot();
+  uint8_t expected[END_OF_SOUND_PARAMETERS];memcpy(expected,mainParameters[kit],sizeof expected);
+  unsigned voice=source<6?source:5;
+  if(source<3)menu_oracle(source,source,expected);
+  else for(unsigned page=voice;page<=(source>=5?6:voice);page++)for(unsigned sub=0;sub<8;sub++){
+   uint16_t ids[8];memcpy(ids,&menuPages[page][sub].bot1,sizeof ids);
+   for(unsigned j=0;j<8;j++)if(!is_excluded(ids[j]))expected[ids[j]]=activeParameters[ids[j]];
+  }
+  chord();data_click();
+  while(menu_voiceCopyTarget!=kit)menu_parseEncoder(menu_voiceCopyTarget<kit?1:-1,0);
+  assert(menu_voiceCopyTarget==kit);
+  char row[17];snprintf(row,sizeof row,source<3?"D%u > [K00] D%u OK":"V%u > [K00]   OK ",voice+1,voice+1);
+  memcpy(row+6,labels[kit],3);navigation_row(row,0);
+  data_click();
+  snprintf(row,sizeof row,source<3?"D%u > K00 D%u  OK ":"V%u > K00     OK ",voice+1,voice+1);
+  memcpy(row+5,labels[kit],3);navigation_row(row,VIS_CURS(1,5,1));
+  while(menu_voiceCopyFocus!=VOICE_COPY_OK)menu_parseEncoder(1,0);
+  snprintf(row,sizeof row,source<3?"D%u > K00 D%u >OK ":"V%u > K00    >OK ",voice+1,voice+1);
+  memcpy(row+5,labels[kit],3);navigation_row(row,0);
+  navigation_unchanged(s);data_click();assert(menu_voiceCopyNotice==1&&transfer_calls==s->calls+1);
+  for(unsigned k=0;k<64;k++)assert(!memcmp(mainParameters[k],k==kit?expected:s->kits+k*sizeof expected,sizeof expected));
+  assert(!memcmp(s->active,activeParameters,sizeof s->active)&&!memcmp(&s->patterns,&seq_patternSet,sizeof s->patterns));
+  assert(!memcmp(s->engine,engine_values,sizeof s->engine)&&!memcmp(s->seen,engine_seen,sizeof s->seen));
+  assert(s->dispatch==sends&&s->fx==fx_preparations&&s->writes==api_writes&&s->sectors==physical_writes);
+  free(s);transfers++;
+  if((source==0||source==4)&&(kit==0||kit==1||kit==9||kit==63)){
+   /* Real project writer, filename formatter and FatFs. Construct the file
+    * path from the literal oracle, not preset_makeFileNameSave(). */
+   assert(preset_saveProject(0)==FR_OK);
+   char path[]="/proj00/00-KITNA.snd";memcpy(path+8,labels[kit]+1,2);
+   FIL file={0};UINT count;uint8_t data[8+END_OF_SOUND_PARAMETERS];
+   assert(f_open(&file,path,FA_READ)==FR_OK&&f_size(&file)==sizeof data);
+   assert(f_read(&file,data,sizeof data,&count)==FR_OK&&count==sizeof data&&f_close(&file)==FR_OK);
+   assert(!memcmp(data,"KITNAME!",8)&&!memcmp(data+8,expected,sizeof expected));
+   memset(mainParameters[kit],0,sizeof expected);
+   assert(preset_loadProject(0,0)==FR_OK&&!memcmp(mainParameters[kit],expected,sizeof expected));
+   preset_loadDrumsetRam(kit,0,1);assert(menu_loadedPresetNr[CURRENT_KIT]==kit);
+   assert(!memcmp(activeParameters,expected,sizeof expected));projects++;
+   printf("PASS TEST03 source V%u label %s -> RAM index %u -> %s -> real project reload/kit load\n",source+1,labels[kit],kit,path);
+  }
+ }
+ for(unsigned source=0;source<7;source++){
+  r22_reset(source);NavigationSnapshot *s=navigation_snapshot();chord();
+  assert(menu_voiceCopyTarget==9);menu_renderVoiceTransfer();assert(!memcmp(editDisplayBuffer[1]+5,"K09",3));
+  confirm();assert(menu_voiceCopyNotice==2&&transfer_calls==s->calls+1);
+  s->calls++; /* One rejected API attempt, no committed transaction. */
+  navigation_unchanged(s);free(s);
+ }
+ assert(transfers==448&&projects==8);
+ puts("PASS TEST03 independent literal K00-K63 oracle: 448 seven-source label/editor/OK and exact RAM-slot cases; eight real FatFs project/.snd roundtrips for 00/01/09/63, no shifted kit; seven same-kit K09 rejects without side effects");
+}
 static void navigation_suite(void)
 {
  navigation_entry_gates();navigation_fields();navigation_mode_cancel();navigation_copy_and_instruments();navigation_ok_and_outside();
+ slot_label_oracle();
 }
