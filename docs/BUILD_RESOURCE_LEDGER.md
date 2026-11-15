@@ -1,8 +1,26 @@
 # LXR build evidence and effect cost ledger
 
-Snapshot: 2026-11-14 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-14-R20**. The new R20 entry uses matched ARM Release MAP and section results. Earlier observations are retained.
+Snapshot: 2026-11-15 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-15-R22-STABLE**. R22 TEST03 is owner-approved current stable. Historical R20 and R19 resource entries are retained below.
 
-## R20 automation test lineage (2026-11-13)
+## Current stable R22 — matched ARM static resources (2026-11-15)
+
+Exact accepted R22 TEST03 source [`0e37942250f79306627702061d851731bdfdbbc8`](https://github.com/DocLXR-02/lxr-desktop-app/commit/0e37942250f79306627702061d851731bdfdbbc8), [ARM/host build report](https://github.com/DocLXR-02/lxr-desktop-app/blob/2dfe56d8eb71b29a1931a04345c3421f9e12ac4f/docs/codex-berichte/2026-11-15_r22-kit-index-display-test03.md), [CI 43707621969](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/43707621969). Compiler Arm GNU 14.3.Rel1 GCC 14.3.1 Release; resource spans include region alignment and a 512 B reserved heap.
+
+| Static resource (bytes) | R22 TEST02 | R22 TEST03 (CURRENT STABLE) | Difference |
+|---|---:|---:|---:|
+| FLASH `.text` | 160,728 | 160,712 | −16 |
+| FLASH `.rodata` | 83,272 | 83,272 | 0 |
+| ITCM occupied span | 15,304 | 15,304 | 0 |
+| DTCM occupied span | 107,424 | 107,424 | 0 |
+| General SRAM occupied span | 275,164 | 275,164 | 0 |
+| Complete FLASH payload | 297,680 | 297,664 | −16 |
+| Updater IMG incl. 16 B header | 297,696 | 297,680 | −16 |
+
+TEST03 nominal remaining headroom: ITCM **1,080 B**, DTCM **23,648 B before runtime stack**, SRAM **118,052 B**, application FLASH **718,144 B**. Same compiler/settings comparison; no runtime CPU timing, IRQ/DMA deadline, actual stack high-water or long-run reliability measurements. No claim of acoustic hardware equivalence follows from these static numbers. The owner reports the TEST03 device functionality works and explicitly accepted it as stable; see [owner record](hardware/2026-11-15_r22_owner_device_acceptance.md).
+
+---
+
+## Historical R20 automation test lineage (2026-11-13)
 
 Arm GNU 14.3.Rel1 / GCC 14.3.1 Release. Runtime spans include alignment. General SRAM includes the 512 B linker-reserved heap.
 
