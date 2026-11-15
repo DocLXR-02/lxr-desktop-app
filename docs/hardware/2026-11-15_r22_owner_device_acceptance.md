@@ -10,7 +10,7 @@
 ## What the owner reported
 
 1. During TEST02 hardware use, the owner reported that Drum-to-Drum copying functioned, while the destination-kit label was one higher than the actual kit slot. The code/test correction was then implemented in TEST03.
-2. After TEST03 had passed the independent source/host/CI build verification, the owner reported **"R22 funktioniert und ist von meiner Seite abgenommen"** (R22 works and is accepted by the owner).
+2. After TEST03 had passed the independent source/host/CI build verification, the owner reported **R22 works and is accepted by the owner** (R22 works and is accepted by the owner).
 3. The owner then explicitly directed that **R22 be treated as the current stable release**. This is a functional acceptance and stable-designation decision for the **specific TEST03 binary and source above**.
 
 The owner did **not** supply a complete device-test matrix, audio recordings, instrument-side firmware checksum readback, testing duration or detailed results for every control or persistence scenario. These are therefore **NOT independently verified hardware measurements**. The host/CI matrix, which includes all 448 slot-label combinations and eight FatFs project round trips, is documented separately in the build report; it is **not** a physical-device test.
