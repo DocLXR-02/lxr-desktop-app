@@ -1,5 +1,8 @@
 # LXR Firmware Lab — current project state
 
+> **M3/M4 governance index (2026-11-15):** [Pinned release identities](RELEASE_MANIFEST.json) · [Branch, archive and discrepancy inventory](GOVERNANCE_INVENTORY.md) · [Checkpoint lifecycle](WORKFLOW.md#intermediate-release-checkpoints-m4). This documentation index does not supersede the accepted R22 source, owner hardware record or per-build reports. M5/M6 remain separately gated.
+
+
 Snapshot: 2026-11-15 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-15-R22-STABLE**. The R22 stable entry and currently approved workflow govern continuation; the dated R20/R19 and prior entries below are historical.
 
 This is the current public entry point for continuing the lab. Read this file, [hardware observations](HARDWARE_VALIDATION.md), the [resource ledger](BUILD_RESOURCE_LEDGER.md), [evidence index](EVIDENCE_INDEX.md), [workflow](WORKFLOW.md) and [recordkeeping standard](RECORDKEEPING_STANDARD.md) before proposing another task. Reports are historical evidence at their pinned commits. A report branch is not a firmware source branch.
