@@ -2,7 +2,7 @@
 
 ## Intermediate release checkpoints (M4)
 
-**Status:** Documentation-only protocol approved 2026-11-15. It adds a continuity record; it **does not** change the existing mandatory Codex code-edit/build rule, the applicable source `AGENTS.md`, or the requirement for separate owner authorization for code, CI, firmware, hardware, settings and release actions. The M5 CHAT/Codex policy reconciliation is not yet authorized.
+**Status:** Documentation-only protocol approved 2026-11-15. It adds a continuity record. The later M5 governance decision permits bounded CHAT-first execution only where source-SHA instructions are compatible; otherwise STOP and seek a separate resolution. Owner authorization remains mandatory for code, CI, firmware, hardware, settings and release actions.
 
 For **each newly authorized release**, create `docs/checkpoints/Rxx.md` only when the release is actually opened. Do not manufacture a checkpoint for already accepted R22 or retroactively rewrite historical milestones. A checkpoint is a short **navigation and state-transition record**, not a substitute for immutable reports, raw evidence, release identities, hardware observations or the resource ledger.
 
@@ -32,12 +32,12 @@ Next blocker and required decision: <explicit>
 Transitions: <dated append-only event references>
 ```
 
-**M3/M4 boundary:** documentation on a separate branch only. No firmware, tests, build scripts, CI workflow, settings, accepted source, KnowledgeBase or Library mutation. M5/M6 need separate approval.
+**Historical M3/M4 boundary:** those implementation commits were documentation-only. The subsequent separately approved M5/M6 governance and KnowledgeBase synchronization is recorded independently; no firmware, tests, CI, settings or accepted source were changed by M3/M4.
 
 
 Snapshot: 2026-11-15 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-15-R22-STABLE**. **R22 TEST03 is current owner-approved stable**, exact source `0e37942250f79306627702061d851731bdfdbbc8`, [release record](releases/2026-11-15_r22_owner_accepted_stable.md). R20 is the previous stable source; R18 CLP sound remains a closed protected musical reference. The M5 CHAT-first execution policy below was approved for governance synchronization on 2026-11-15. It does not retroactively authorize any firmware, test, CI, build or hardware action.
 
-## Chat-first execution and mandatory Codex efficiency gate
+## CHAT-first execution and conditional Codex efficiency gate
 
 - **CHAT is the default** for planning, source/evidence review, documentation and narrowly scoped, explicitly owner-approved GitHub code edits where the applicable source instructions and available verification tools permit. A request to review or propose changes is not implementation authorization. For a small/medium authorized change, use an exact source SHA and a separate branch, independently inspect the diff and run essential available regressions/ARM CI where required. Do not imply a test or build occurred if it did not.
 - **CODEX is conditional, not automatic.** Recommend it when multi-file complexity, iterative debugging or local build environments materially exceed practical CHAT/GitHub/CI capabilities. Before delegation, provide the six-part efficiency gate below and obtain task-specific owner approval. Codex tasks remain bounded, auditable and independently reviewed.
