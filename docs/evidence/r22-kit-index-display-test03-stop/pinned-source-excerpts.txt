@@ -1,0 +1,104 @@
+tests/project_transaction/whole.c @ 4372e60337bf5ce35d67e8b5eb577baa3fffb962
+170: }
+171: static void ram_contents(const char *label,unsigned value)
+172: {
+173:  memset(activeParameters,0,sizeof activeParameters);memset(mainParameters,0,sizeof mainParameters);memset(&seq_patternSet,0,sizeof seq_patternSet);
+174:  memset(seq_songData,SONG_END,sizeof seq_songData);memset(savefileNames,0,sizeof savefileNames);
+175:  seq_activePattern=seq_pendingPattern=menu_playedPattern=menu_shownPattern=0;memset(menu_selectedPresetNr,0,sizeof menu_selectedPresetNr);
+176:  for(unsigned i=0;i<64;i++){
+177:   memcpy(savefileNames[i][PROJECT_NAMES],label,8);memcpy(savefileNames[i][KIT_NAMES],"KITNAME!",8);
+178:   memcpy(savefileNames[i][PATTERN_NAMES],"PATTERN!",8);memcpy(savefileNames[i][SONG_NAMES],"SONGNAME",8);
+179:   for(unsigned t=0;t<7;t++)seq_patternSet.length[i][t]=16;
+180:  }
+181:  activeParameters[0]=value;morphParameters=mainParameters[0];seq_activeSong=seq_songData[0];
+182: }
+
+tests/r21_voice_copy/host.c @ 4372e60337bf5ce35d67e8b5eb577baa3fffb962
+73:  seed(0);memset(menu_loadedPresetNr,0,sizeof menu_loadedPresetNr);
+74:  menu_loadedPresetNr[CURRENT_KIT]=9;menu_selectedPresetNr[SAVE_TYPE_KIT]=23;
+75:  menu_activeVoice=4;menu_activePage=4;host_mode=SELECT_MODE_VOICE;
+76:  host_copy=host_shift=running=lastEncoderButton=editModeActive=0;
+77:  menu_voiceCopyActive=menu_voiceCopyDrain=menu_voiceCopyNotice=menu_voiceCopyCopyHeld=0;
+78:  memset(&buttonHandler_stateMemory,0,sizeof buttonHandler_stateMemory);
+79:  buttonHandler_stateMemory.selectButtonMode=SELECT_MODE_VOICE;
+80:  seq_loadPendigFlag=0;morph_state=morph_index=0;armed_step=NO_STEP_SELECTED;buttonHandler_resetLock1=buttonHandler_resetLock2=0;
+81:  menu_voiceCopyModeHeld=0;
+82:  menu_voiceCopyVoiceHeld=0;
+83:  now=100;irq_mask=0;before_commit=0;
+84:  for(unsigned p=0;p<END_OF_SOUND_PARAMETERS;p++){
+85:   activeParameters[p]=(p*7+11)%128;
+86:   mainParameters[1][p]=(p*3+9)%128;
+87:   mainParameters[9][p]=(p*5+7)%128;
+88:  }
+89:  for(unsigned i=0;i<6;i++){
+90:   activeParameters[PAR_TARGET_LFO1+i]=0;
+91:   activeParameters[PAR_VOICE_LFO1+i]=i+1;
+92:   mainParameters[1][PAR_TARGET_LFO1+i]=0;
+93:   mainParameters[1][PAR_VOICE_LFO1+i]=i+1;
+94:  }
+95:  sends=0;
+
+Core/Src/Preset/presetManager.c @ 4372e60337bf5ce35d67e8b5eb577baa3fffb962
+815: void preset_loadDrumsetRam(uint8_t presetNr, uint8_t isMorph, uint8_t sendImmediate)
+816: {
+817:     if(presetNr >= NUM_KIT_SLOTS) return;
+818: 	soundengine_process();
+819: 	if(isMorph)
+820: 	{
+821: 		morphParameters = mainParameters[presetNr];
+822: 	}
+823: 	else
+824: 	{
+825: 		++preset_kitRevision;
+826:         menu_loadedPresetNr[CURRENT_KIT] = presetNr;
+827: 		//copy parameters to edit buffer
+828: 		memcpy(activeParameters, mainParameters[presetNr], sizeof(uint8_t) * END_OF_SOUND_PARAMETERS);
+829: 		//if(activeParameters[PAR_PATTERN_MODE] = 1)
+830: 		//load asociated morph kit as well
+831: 
+832: 		// morphParameters = mainParameters[activeParameters[PAR_MORPH_KIT_DEST]];
+833: 
+834: 
+835: 	}
+836: 	soundengine_process();
+837: 
+838: 	if(sendImmediate)
+839: 	{
+840: 		preset_sendDrumsetParametersImmediate();
+841: 	}
+842: 	else
+843: 	{
+844: 		//activePresetNr = menu_currentPresetNr[menu_saveOptions.category];
+
+Core/Src/Preset/presetManager.c @ 4372e60337bf5ce35d67e8b5eb577baa3fffb962
+1189: 			frontPanel_sendData(CC_VELO_TARGET,upper,lower);
+1190: 
+1191: 			// ensure target voice # is valid
+1192: 			if(activeParameters[PAR_VOICE_LFO1+i] < 1 || activeParameters[PAR_VOICE_LFO1+i] > 6 )
+1193: 				activeParameters[PAR_VOICE_LFO1+i]=1;
+1194: 
+1195: 			// **LFO par_target_lfo will be an index into modTargets, but we need a parameter number to send
+1196: 			value = (uint8_t)pgm_read_word(&modTargets[activeParameters[PAR_TARGET_LFO1+i]].param);
+1197: 
+1198: 			upper = (uint8_t)(((value&0x80)>>7) | (((i)&0x3f)<<1));
+1199: 			lower = value&0x7f;
+1200: 			frontPanel_sendData(CC_LFO_TARGET,upper,lower);
+
+Core/Src/Preset/presetManager.c @ 4372e60337bf5ce35d67e8b5eb577baa3fffb962
+2533: static void preset_makeFileNameSave(char *buf, uint8_t num, uint8_t type, char *name)
+2534: {
+2535: 
+2536: 	char clearedName[9];
+2537: 	clearedName[8] = 0;
+2538: 	clearIllegalCharacters(name , clearedName, 8);
+2539: 	//name scheme: 01-NAME.ext
+2540: 	const char *ext;
+2541: 	numtostrpu_2Bytes(&buf[0],num,'0');
+2542: 	buf[2] = '-';
+2543: 
+2544: 	//copy the first 5 characters of the name to the filename if not empty
+2545: 	uint8_t i=0;
+2546: 	for( ; i<5; i++)
+2547: 	{
+2548: 		if(clearedName[i] != 0)
+2549: 		{
