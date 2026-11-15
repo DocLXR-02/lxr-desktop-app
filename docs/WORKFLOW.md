@@ -1,6 +1,6 @@
 # LXR Firmware Lab — continuation and build evidence
 
-Snapshot: 2026-11-14 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-14-R20**. R18 CLP sound remains the protected musical reference.
+Snapshot: 2026-11-15 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-15-R22-STABLE**. **R22 TEST03 is current owner-approved stable**, exact source `0e37942250f79306627702061d851731bdfdbbc8`, [release record](releases/2026-11-15_r22_owner_accepted_stable.md). R20 is the previous stable source; R18 CLP sound remains a closed protected musical reference. The operational workflow below is **unchanged pending a separate owner-approved conceptual review**.
 
 ## Chat-first execution and mandatory Codex efficiency gate
 
