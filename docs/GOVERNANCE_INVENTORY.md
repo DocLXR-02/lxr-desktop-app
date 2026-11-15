@@ -3,7 +3,7 @@
 > **AGENTS resolution record (2026-11-15):** The owner approved a documentation-only correction to the source-root `AGENTS.md` on isolated branch `docs/agents-policy-reconcile-r22-2026-11-15`, commit `da8ef26b828697bab16dfc42760896ce1c881410`, based on accepted R22 source `0e37942250f79306627702061d851731bdfdbbc8`. The verified one-file diff replaces mandatory `lab-setup` ancestry with owner-approved exact-source-SHA branching, aligns CHAT/Codex selection and report-branch handling. **R22 source SHA and historical AGENTS remain unchanged.** D01 is **RESOLVED IN A NEW POLICY COMMIT, NOT RETROACTIVELY**; for future tasks explicitly provide this corrected instruction file and the current WORKFLOW, and STOP if the actual source SHA has conflicting inherited instructions. No firmware build, merge into R22, or firmware release is authorized by this record.
 
 
-> **M5/M6 update (2026-11-15):** The owner approved the bounded CHAT-first governance policy in WORKFLOW.md. The exact-source AGENTS.md conflict remains OPEN and blocks conflicting code edits. Private KnowledgeBase v1.6.0 is archived in Library as a ZIP; Project attachment sync remains PENDING. Historical v1.5.9 remains immutable. No Library deduplication was performed.
+> **M5/M6 update (2026-11-15):** The owner approved the bounded CHAT-first governance policy in WORKFLOW.md. The original R22-source AGENTS.md conflict is historically preserved; a corrected, owner-approved policy file exists at commit `da8ef26b828697bab16dfc42760896ce1c881410`. New work must explicitly apply the corrected policy, and STOP if inherited source instructions conflict. Private KnowledgeBase v1.6.0 is archived in Library as a ZIP; Project attachment sync remains PENDING. Historical v1.5.9 remains immutable. No Library deduplication was performed.
 
 
 **Audit snapshot:** 2026-11-15. **Scope:** M1/M2 read-only audit carried forward into approved M3 documentation consolidation. **Source:** live GitHub refs and owner Library inventory. This file is an index, not a branch deletion plan.
@@ -15,7 +15,7 @@
 - **Default branch:** `main` at `a43cd4fcda23ec3d577dc425261c3eb28bd5abff`, not the current accepted firmware.
 - **Historical base:** `lab-setup` at `5829398cea5d337200393757e39a37d4d8148256`.
 - **R18 accepted FX-CLP sonic reference:** `41b364067bce0d8cde624c184933d9cb88e2725b`, closed and protected by owner policy.
-- **Current KnowledgeBase:** private v1.5.9; Project-attached v1.5.8(2) is stale and remains an unresolved synchronization boundary.
+- **Current KnowledgeBase:** private v1.6.0 (owner-confirmed Library upload; Markdown ZIP member SHA-256 `4acbe7ca072e8677c274d5304d6a427052d66085079d7141e81ec3d83a010de3`); v1.5.9 is historical. Project-attached older copies are stale and remain an unresolved synchronization boundary.
 
 ## Branch inventory
 
@@ -57,7 +57,7 @@ The complete 93-row archive inventory, SHA-256 values and access status are in `
 
 | ID | Priority | Status | Required decision |
 |---|---|---|---|
-| D01 | HIGH | OPEN | Reconcile `AGENTS.md` at source SHAs with `docs/WORKFLOW.md`; no implicit code-policy change |
+| D01 | HIGH | RESOLVED FOR NEW TASKS / HISTORICAL SOURCE UNCHANGED | Corrected `AGENTS.md` at `da8ef26b828697bab16dfc42760896ce1c881410`; inherited source-SHA instructions require an explicit compatibility check and STOP on conflict |
 | D02 | HIGH | OPEN | GitHub protection/rulesets absent; owner authorization needed for settings |
 | D03 | HIGH | OPEN | Locate and hash exact approved R20 distribution ZIP before CI artifact expiry |
 | D04 | MEDIUM | ACCESS LIMITED | 43 metadata-only Library records |
@@ -79,4 +79,4 @@ See [WORKFLOW.md](WORKFLOW.md) for the M4 lifecycle. **No new R22 checkpoint is 
 
 ## Change boundary
 
-This document records governance and archive state only. No code, firmware, CI workflow, release, hardware test, private Library, Project attachment or GitHub settings change is authorized by this inventory. M5 (policy harmonization) and M6 (KnowledgeBase publication/synchronization) remain separately gated.
+This document records governance and archive state only. No code, firmware, CI workflow, release, hardware test, private Library, Project attachment or GitHub settings change is authorized by this inventory. M5 policy harmonization and M6 Library publication were separately approved and completed. Replacement of older Project attachments is not supported by this Library action and remains SYNC_PENDING; no Library cleanup or branch deletion is authorized.
