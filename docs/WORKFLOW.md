@@ -1,5 +1,40 @@
 # LXR Firmware Lab — continuation and build evidence
 
+## Intermediate release checkpoints (M4)
+
+**Status:** Documentation-only protocol approved 2026-11-15. It adds a continuity record; it **does not** change the existing mandatory Codex code-edit/build rule, the applicable source `AGENTS.md`, or the requirement for separate owner authorization for code, CI, firmware, hardware, settings and release actions. The M5 CHAT/Codex policy reconciliation is not yet authorized.
+
+For **each newly authorized release**, create `docs/checkpoints/Rxx.md` only when the release is actually opened. Do not manufacture a checkpoint for already accepted R22 or retroactively rewrite historical milestones. A checkpoint is a short **navigation and state-transition record**, not a substitute for immutable reports, raw evidence, release identities, hardware observations or the resource ledger.
+
+**Required fields:** release ID and fixed topic; state and timestamp; explicit owner authorization/scope; exact base SHA and working branch/head SHA; allowed files/actions and exclusions; reused evidence and pinned reports; latest verified tests/CI; binary/hash only if actually built; owner hardware observations distinguished from host/CI; known FAIL/STOP/NOT ARCHIVED/UNMEASURED boundaries; next blocker and owner decision.
+
+**States:** `OPEN` (authorized task created), `CANDIDATE` (verified build candidate), `OWNER TEST` (awaiting/under owner device evaluation), `STABLE` (explicit owner acceptance), `CLOSED` (no further changes in this release). `STOP`, `REJECTED` and `ARCHIVED` are explicit exceptional/disposition states. Never silently relabel FAIL as PASS. State transitions require evidence and applicable owner approval; documentation is not permission to build, flash or publish.
+
+**Update triggers:** initial authorized release gate, meaningful source/test/CI change, failed stop, candidate handoff, owner test outcome, explicit stable/closed decision, or cross-chat/Codex handoff. Preserve prior decisions and immutable report SHAs; append dated transitions rather than erasing failed history. Do not rewrite the entire KnowledgeBase at each checkpoint.
+
+**Resume gate:** read the current private KnowledgeBase, PROJECT_STATUS, WORKFLOW, EVIDENCE_INDEX, GOVERNANCE_INVENTORY, checkpoint and applicable source-SHA AGENTS.md; independently recheck remote refs and CI. If stale, mark `SYNC_PENDING` instead of guessing. Never convert owner observations to CPU/stack/timing measurements.
+
+**Template (create only for an actually authorized release):**
+
+```text
+# Rxx — <fixed topic>
+State: OPEN | CANDIDATE | OWNER TEST | STABLE | CLOSED | STOP | REJECTED | ARCHIVED
+Last verified: YYYY-MM-DD UTC
+Authorization: <owner decision and bounded scope>
+Source base SHA: <40 hex>; working branch/head: <branch / 40 hex>
+Allowed changes: <paths/actions>; exclusions: <paths/actions>
+Reused evidence: <pinned report SHAs, artifacts and limitations>
+Host tests / CI: <run, source SHA, result, or NOT RUN>
+Build / IMG / ZIP: <exact filenames, sizes, hashes, or NOT BUILT>
+Owner hardware: <bounded observation, or NOT TESTED>
+Failures and limits: <STOP, NOT ARCHIVED, UNMEASURED>
+Next blocker and required decision: <explicit>
+Transitions: <dated append-only event references>
+```
+
+**M3/M4 boundary:** documentation on a separate branch only. No firmware, tests, build scripts, CI workflow, settings, accepted source, KnowledgeBase or Library mutation. M5/M6 need separate approval.
+
+
 Snapshot: 2026-11-15 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-15-R22-STABLE**. **R22 TEST03 is current owner-approved stable**, exact source `0e37942250f79306627702061d851731bdfdbbc8`, [release record](releases/2026-11-15_r22_owner_accepted_stable.md). R20 is the previous stable source; R18 CLP sound remains a closed protected musical reference. The operational workflow below is **unchanged pending a separate owner-approved conceptual review**.
 
 ## Chat-first execution and mandatory Codex efficiency gate
