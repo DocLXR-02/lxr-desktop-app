@@ -1,5 +1,8 @@
 # LXR Firmware Lab — current project state
 
+> **M3–M6 closeout (2026-11-15):** M3 release manifest/governance inventory, M4 checkpoint protocol, M5 CHAT-first conditional Codex workflow, and M6 owner-confirmed KnowledgeBase v1.6.0 Library publication are complete within their approved scopes. The v1.6.0 ZIP was independently CRC-tested; its embedded Markdown SHA-256 is `4acbe7ca072e8677c274d5304d6a427052d66085079d7141e81ec3d83a010de3`. The approved `AGENTS.md` policy correction is isolated at `da8ef26b828697bab16dfc42760896ce1c881410`, not retroactively merged into R22. **Residual administrative boundary:** older Project-attached KnowledgeBase copies remain `SYNC_PENDING`; use the owner-confirmed v1.6.0 Library copy as the active private reference. The v1.6.0 text's historical note that the AGENTS conflict is OPEN predates the separately approved correction and must be read with the later governance resolution. CI artifact preservation and unresolved R20/R11 archive gaps are follow-on archival work, not M3–M6 implementation blockers. No firmware, build, CI, device test or protected source was changed by closeout.
+
+
 > **M5/M6 governance (2026-11-15):** The current workflow is CHAT-first with conditional Codex delegation and an explicit source-AGENTS compatibility STOP gate. Private KnowledgeBase v1.6.0 is uploaded to owner Library as a verified ZIP; the older Project-attached copy remains SYNC_PENDING (not replaceable by a Library upload). No firmware, CI, sound or device test was changed by this documentation synchronization.
 
 
