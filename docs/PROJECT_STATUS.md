@@ -1,12 +1,26 @@
 # LXR Firmware Lab — current project state
 
-Snapshot: 2026-11-14 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-14-R20-STABLE**. The top R20 record and current workflow govern continuation. The dated entries below retain historical context.
+Snapshot: 2026-11-15 (Europe/Vienna). Synchronization ID: **LXR-SYNC-2026-11-15-R22-STABLE**. The R22 stable entry and currently approved workflow govern continuation; the dated R20/R19 and prior entries below are historical.
 
 This is the current public entry point for continuing the lab. Read this file, [hardware observations](HARDWARE_VALIDATION.md), the [resource ledger](BUILD_RESOURCE_LEDGER.md), [evidence index](EVIDENCE_INDEX.md), [workflow](WORKFLOW.md) and [recordkeeping standard](RECORDKEEPING_STANDARD.md) before proposing another task. Reports are historical evidence at their pinned commits. A report branch is not a firmware source branch.
 
-This documentation branch descends from historical lab-setup `5829398cea5d337200393757e39a37d4d8148256`. **Never build the documentation branch to produce firmware.** R20 is the current owner-approved stable firmware at source `b01537282047bda5299cdb1bedeab5e5d5b9bcca`. R19 remains the previous stable recovery reference at source `638b6eaae5b1624637d20cbc11a4a3e0175edca2`. R18 remains the sonic comparison reference. R18 CLP **sound** is owner-accepted; this is not a source merge, public release, hardware timing certification, or measured stack reserve.
+This documentation branch descends from historical lab-setup `5829398cea5d337200393757e39a37d4d8148256`. **Never build the documentation branch to produce firmware.** R22 is the current stable firmware; R20 at `b01537282047bda5299cdb1bedeab5e5d5b9bcca` is the immediately previous stable reference, and R19 at `638b6eaae5b1624637d20cbc11a4a3e0175edca2` is an earlier accepted recovery reference. R18 remains the closed and accepted CLP sonic comparison reference; none of those labels prove timing, stack or long-term hardware reliability.
 
-## R20 — owner-approved stable firmware (2026-11-14)
+## CURRENT STABLE — R22 (owner acceptance 2026-11-15)
+
+**Current authoritative firmware:** **R22**, exact source [`0e37942250f79306627702061d851731bdfdbbc8`](https://github.com/DocLXR-02/lxr-desktop-app/commit/0e37942250f79306627702061d851731bdfdbbc8), branch `release/r22`. Owner reports R22 works on the device and explicitly designated this exact TEST03 build current stable. This supersedes R20's former *current* designation; **R20 is now the previous stable reference**. R19 is earlier, and R18 CLP remains a closed, protected musical reference.
+
+**Stable original binary (no rename or rebuild):** `LXR_V2_R22_TEST03.img`, 297,680 B, SHA-256 `da1c882f6600c96fa5926ad4797d618ce13eefc16ab5563b8a161686f1909c0b`. Its original one-image `LXR_V2_R22_TEST03.zip`, 213,625 B, SHA-256 `1426b2e4fab334ef852b0fda053a035e862e71b05bcbd496a277e2863d901466`. Boot: `LXR LAB R22`.
+
+[Owner acceptance](hardware/2026-11-15_r22_owner_device_acceptance.md) · [Final stable release record](releases/2026-11-15_r22_owner_accepted_stable.md) · [exact-source TEST03 ARM/host build report](https://github.com/DocLXR-02/lxr-desktop-app/blob/2dfe56d8eb71b29a1931a04345c3421f9e12ac4f/docs/codex-berichte/2026-11-15_r22-kit-index-display-test03.md) · [CI run 43707621969](https://github.com/DocLXR-02/lxr-desktop-app/actions/runs/43707621969). This documentation update does **not** create a native GitHub Release/tag, merge to `main`, alter code, flash a device or perform new tests. Recorded owner acceptance is not an exhaustive device-test matrix. CPU/WCET, IRQ/DMA timing, stack high-water and long-term reliability remain **UNMEASURED**.
+
+**Development handoff:** R21 Voice Copy/Paste [`861c643`](https://github.com/DocLXR-02/lxr-desktop-app/commit/861c643632e0a88bdc7d60d9410befb3971489fc) → R22 TEST01 [`ace7ad9`](https://github.com/DocLXR-02/lxr-desktop-app/commit/ace7ad95081aac6a015f11b87b6c540ce100b344) → TEST02 [`4372e60`](https://github.com/DocLXR-02/lxr-desktop-app/commit/4372e60337bf5ce35d67e8b5eb577baa3fffb962) → accepted TEST03 [`0e37942`](https://github.com/DocLXR-02/lxr-desktop-app/commit/0e37942250f79306627702061d851731bdfdbbc8). Earlier TEST03 **failed test fixture** remains in the [immutable STOP report](https://github.com/DocLXR-02/lxr-desktop-app/blob/bf9162ae0b131c97a12d3ea4ab472a45d96f4cc8/docs/codex-berichte/2026-11-15_r22-kit-index-display-test03-stop.md), later corrected in the accepted TEST03 without weakening assertions. Preserve original report refs, build logs and test candidates.
+
+**Next conceptual phase, not performed here:** reconcile the private KnowledgeBase and persistent Library, branch/evidence classification, intermediate release checkpoints, expiring CI artifact preservation, CHAT/Codex boundaries and cross-chat continuity. Do **not** launch a new code/change/build task or reinterpret historical snapshots as current. [Workflow](WORKFLOW.md) remains operative until separately revised.
+
+---
+
+## R20 — historical owner-approved stable firmware (2026-11-14; superseded as current by R22)
 
 On 2026-11-14 the owner approved the corrected R20 build as the lab's new stable firmware. The owner previously confirmed correct display of automation assignments on the LXR-02 and closed active R20 automation work on the working assumption that automation functions. The full device test matrix was not reported. [Owner record](hardware/2026-11-14_r20-automation-owner-disposition.md)
 
@@ -19,9 +33,9 @@ On 2026-11-14 the owner approved the corrected R20 build as the lab's new stable
 
 The approved R20 source is on `fix/r20-target-names-2026-11-13` and boots as `LXR LAB R20`. The accepted firmware uses the original verified IMG and ZIP filenames. IMG `LXR_V2_R20_NAMES_TEST.img`: 293,504 B, SHA-256 `27ebacee348b8dd42d0a2cf35d1513676c712583c2891559483a8a47353e0056`. One-image ZIP `LXR_V2_R20_NAMES_TEST.zip`: 210,077 B, SHA-256 `13c81c9615d83774f34a69eb6d6e12d1682e04ba211692aa4a241b035970bd34`. Host coverage confirms cross-voice and STEP duplicate protection for `0sr`. The owner confirmed the displayed assignment names. Physical `0sr` conflict coverage, CPU/WCET, IRQ/DMA deadlines, stack high-water and long-term reliability remain unverified or unmeasured as applicable.
 
-The capture and A/B experiments are historical R20 lineage. The A/B source [`3ca1256ba62ee5cf4411a68cc0df6c6769ec98b9`](https://github.com/DocLXR-02/lxr-desktop-app/commit/3ca1256ba62ee5cf4411a68cc0df6c6769ec98b9) remains an archived comparison. The approved R20 build descends from the fixed-8-only source. Its predecessor refs remain pinned for reproducibility. For the next approved code change, assign **R21** with a stable topic title and an explicit firmware base SHA in a separate Codex task. [Workflow](WORKFLOW.md)
+The capture and A/B experiments are historical R20 lineage. The A/B source [`3ca1256ba62ee5cf4411a68cc0df6c6769ec98b9`](https://github.com/DocLXR-02/lxr-desktop-app/commit/3ca1256ba62ee5cf4411a68cc0df6c6769ec98b9) remains an archived comparison. The approved R20 build descends from the fixed-8-only source. Its predecessor refs remain pinned for reproducibility. R21 and R22 have since been implemented and are documented in the current R22 section above; the earlier next-R21 instruction is superseded. [Workflow](WORKFLOW.md)
 
-This is the lab's stable firmware designation for the existing binary. The documentation update does not create a native GitHub release or tag.
+This was the lab's R20 stable designation on 2026-11-14; it is now historical. The R20 documentation action did not create a native GitHub release or tag.
 
 ## Live automation recording — FIX8 design finalized and musically closed (2026-11-10)
 
