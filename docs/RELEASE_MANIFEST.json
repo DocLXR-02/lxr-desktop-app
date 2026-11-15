@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0.0",
+  "document_type": "release_identity_register",
+  "snapshot_date": "2026-11-15",
+  "sync_id": "LXR-SYNC-2026-11-15-R22-STABLE",
+  "authority": "docs/releases/2026-11-15_r22_owner_accepted_stable.md",
+  "documentation_branch": "docs/lab-project-state",
+  "documentation_base_sha": "5ec588146d24c0b51322c21aa7f09244997f2181",
+  "current_stable": "R22",
+  "releases": [
+    {
+      "id": "R22",
+      "status": "OWNER_ACCEPTED_STABLE",
+      "candidate": "TEST03",
+      "source_branch": "release/r22",
+      "source_sha": "0e37942250f79306627702061d851731bdfdbbc8",
+      "boot_label": "LXR LAB R22",
+      "owner_acceptance_date": "2026-11-15",
+      "owner_acceptance_record": "docs/hardware/2026-11-15_r22_owner_device_acceptance.md",
+      "release_record": "docs/releases/2026-11-15_r22_owner_accepted_stable.md",
+      "ci": {
+        "run_id": 43707621969,
+        "conclusion": "success",
+        "source_sha": "0e37942250f79306627702061d851731bdfdbbc8",
+        "artifact_id": 14159486119,
+        "expires_utc": "2026-12-15T11:11:00Z"
+      },
+      "image": {
+        "filename": "LXR_V2_R22_TEST03.img",
+        "bytes": 297680,
+        "sha256": "da1c882f6600c96fa5926ad4797d618ce13eefc16ab5563b8a161686f1909c0b"
+      },
+      "distribution": {
+        "filename": "LXR_V2_R22_TEST03.zip",
+        "bytes": 213625,
+        "sha256": "1426b2e4fab334ef852b0fda053a035e862e71b05bcbd496a277e2863d901466"
+      },
+      "evidence": {
+        "sha256": "aa0d442a662d1720647ccae9b73f4d4367fc20e4eb0523ef385a6cab09692c69",
+        "bytes": 756063,
+        "archive_status": "LIBRARY_VERIFIED"
+      },
+      "hardware_status": "OWNER_FUNCTIONAL_ACCEPTANCE_NOT_EXHAUSTIVE",
+      "runtime_status": "UNMEASURED",
+      "native_github_release": false
+    },
+    {
+      "id": "R21",
+      "status": "HISTORICAL_PREDECESSOR",
+      "source_branch": "release/r21",
+      "source_sha": "861c643632e0a88bdc7d60d9410befb3971489fc",
+      "ci": {
+        "run_id": 43621319613
+      },
+      "report_commit": "30ab66c09217330d16e595f149bcab239b9bfad2",
+      "notes": "Historical Voice Copy/Paste TEST01; not current stable"
+    },
+    {
+      "id": "R20",
+      "status": "PREVIOUS_STABLE",
+      "source_sha": "b01537282047bda5299cdb1bedeab5e5d5b9bcca",
+      "distribution_archive_status": "UNRESOLVED_IN_CURRENT_LIBRARY_RAW_INVENTORY",
+      "notes": "Preserve owner-approved original distribution identity; CI candidate labelled NOT_FOR_FLASH must not be substituted"
+    },
+    {
+      "id": "R19",
+      "status": "HISTORICAL_ACCEPTED",
+      "source_sha": "638b6eaae5b1624637d20cbc11a4a3e0175edca2"
+    },
+    {
+      "id": "R18",
+      "status": "CLOSED_MUSICAL_REFERENCE",
+      "source_sha": "41b364067bce0d8cde624c184933d9cb88e2725b",
+      "notes": "FX-CLP musically accepted and closed; no change authorized"
+    }
+  ],
+  "historical_failures": [
+    {
+      "id": "R22_TEST03_STOP",
+      "status": "FAIL_PRESERVED",
+      "report_commit": "bf9162ae0b131c97a12d3ea4ab472a45d96f4cc8",
+      "reason": "Invalid LFO voice IDs in new test fixture; corrected later with separate approval; STOP not a firmware candidate"
+    }
+  ],
+  "rules": {
+    "source_shas_immutable": true,
+    "no_filename_normalization": true,
+    "unknown_fields_not_inferred": true,
+    "build_reports_per_delivered_image": true,
+    "acceptance_not_equivalent_to_runtime_measurements": true
+  }
+}
