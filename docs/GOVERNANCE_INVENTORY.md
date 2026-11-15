@@ -1,5 +1,8 @@
 # LXR Firmware Lab — Governance and Branch Inventory
 
+> **M5/M6 update (2026-11-15):** The owner approved the bounded CHAT-first governance policy in WORKFLOW.md. The exact-source AGENTS.md conflict remains OPEN and blocks conflicting code edits. Private KnowledgeBase v1.6.0 is archived in Library as a ZIP; Project attachment sync remains PENDING. Historical v1.5.9 remains immutable. No Library deduplication was performed.
+
+
 **Audit snapshot:** 2026-11-15. **Scope:** M1/M2 read-only audit carried forward into approved M3 documentation consolidation. **Source:** live GitHub refs and owner Library inventory. This file is an index, not a branch deletion plan.
 
 ## Current authority
