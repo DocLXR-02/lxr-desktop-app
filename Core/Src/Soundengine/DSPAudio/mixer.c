@@ -35,7 +35,9 @@
 //-----------------------------------------------------------------------
 INDTCMZ uint8_t mixer_audioRouting[6];
 /* Fixed workspace: no extra Delay history and no runtime allocation. */
-static INDTCMZ int16_t fxPoolInputs[FX_POOL_PROCESSOR_COUNT][OUTPUT_DMA_SIZE * 2];
+static INDTCMZ int16_t fxPoolInputs[FX_POOL_PROCESSOR_COUNT][OUTPUT_DMA_SIZE * 2] __attribute__((aligned(4)));
+/* One zeroed return workspace prevents FX modules from reading other FX outputs. */
+static INDTCMZ int16_t fxPoolReturn[2][OUTPUT_DMA_SIZE * 2] __attribute__((aligned(4)));
 /* Fail compilation if the original FX enum and pool routing ever diverge. */
 typedef char fx_pool_type_values_match[
     (FX_OFF == FX_POOL_TYPE_OFF && FX_DISTORTION == FX_POOL_TYPE_DISTORTION &&
@@ -787,10 +789,25 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
     if (!(fxPoolMask & (1u << FX_DISTORTION)) && fxBus.distortion.clipStateActive)
         Distortion_resetClip(&fxBus.distortion);
     for (uint8_t fxType = FX_OFF; fxType <= FX_DELAY; ++fxType) {
-        if (fxPoolMask & (1u << fxType))
-            FxBus_processSelected(fxType, fxPoolInputs[fxType],
-                                  &output[pos], &output[pos+1],
-                                  &output2[pos], &output2[pos+1], OUTPUT_DMA_SIZE);
+        if (!(fxPoolMask & (1u << fxType)))
+            continue;
+
+        bufferTool_clearBuffer(fxPoolReturn[0], OUTPUT_DMA_SIZE * 2);
+        bufferTool_clearBuffer(fxPoolReturn[1], OUTPUT_DMA_SIZE * 2);
+        FxBus_processSelected(fxType, fxPoolInputs[fxType],
+                              &fxPoolReturn[0][0], &fxPoolReturn[0][1],
+                              &fxPoolReturn[1][0], &fxPoolReturn[1][1],
+                              OUTPUT_DMA_SIZE);
+
+        /* Mix returned stereo frames after processing, not inside other FX DSP. */
+        int32_t *dac1 = (int32_t *)&output2[pos];
+        int32_t *dac2 = (int32_t *)&output[pos];
+        const int32_t *ret1 = (const int32_t *)fxPoolReturn[1];
+        const int32_t *ret2 = (const int32_t *)fxPoolReturn[0];
+        for (uint8_t frame = 0; frame < OUTPUT_DMA_SIZE; ++frame) {
+            dac1[frame] = __QADD16(dac1[frame], ret1[frame]);
+            dac2[frame] = __QADD16(dac2[frame], ret2[frame]);
+        }
     }
 /*
 	if(activeParameters[UNUSED_PAR_GLO_SAT])
