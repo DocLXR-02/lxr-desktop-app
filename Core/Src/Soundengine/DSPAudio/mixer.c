@@ -788,9 +788,17 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 	/* A shared processor is invoked at most once, regardless of voice count. */
     if (!(fxPoolMask & (1u << FX_DISTORTION)) && fxBus.distortion.clipStateActive)
         Distortion_resetClip(&fxBus.distortion);
+    /* Preserve the R22 single-effect mix path and avoid extra return copies. */
+    const uint8_t multipleFx = (fxPoolMask & (fxPoolMask - 1u)) != 0u;
     for (uint8_t fxType = FX_OFF; fxType <= FX_DELAY; ++fxType) {
         if (!(fxPoolMask & (1u << fxType)))
             continue;
+        if (!multipleFx) {
+            FxBus_processSelected(fxType, fxPoolInputs[fxType],
+                                  &output[pos], &output[pos+1],
+                                  &output2[pos], &output2[pos+1], OUTPUT_DMA_SIZE);
+            continue;
+        }
 
         bufferTool_clearBuffer(fxPoolReturn[0], OUTPUT_DMA_SIZE * 2);
         bufferTool_clearBuffer(fxPoolReturn[1], OUTPUT_DMA_SIZE * 2);
