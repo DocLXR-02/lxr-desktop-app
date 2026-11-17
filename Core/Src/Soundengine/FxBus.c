@@ -38,11 +38,8 @@ void FxBus_init()
 #endif
 }
 
-IN_ITCM_RAM void FxBus_process(int16_t *fxBuffer, int16_t* outL,int16_t* outR,int16_t* outL2, int16_t* outR2, uint32_t size)
+IN_ITCM_RAM void FxBus_processSelected(uint8_t selectedType, int16_t *fxBuffer, int16_t* outL,int16_t* outR,int16_t* outL2, int16_t* outR2, uint32_t size)
 {
-	if(fxBus.fxType != FX_DISTORTION && fxBus.distortion.clipStateActive)
-		Distortion_resetClip(&fxBus.distortion);
-
 	int16_t* out;
 	int16_t* out2 = NULL;
 	// < MIXER_ROUTING_DAC1_L -> stereo 1 or 2
@@ -73,7 +70,7 @@ IN_ITCM_RAM void FxBus_process(int16_t *fxBuffer, int16_t* outL,int16_t* outR,in
 
 	}
 
-	switch(fxBus.fxType)
+	switch(selectedType)
 	{
 	default:
 	case FX_OFF:
@@ -135,6 +132,16 @@ IN_ITCM_RAM void FxBus_process(int16_t *fxBuffer, int16_t* outL,int16_t* outR,in
 
 	}
 
+}
+
+
+/* Compatibility entry for callers expecting the original single-FX bus. */
+void FxBus_process(int16_t *fxBuffer, int16_t* outL,int16_t* outR,
+                   int16_t* outL2,int16_t* outR2,uint32_t size)
+{
+    if (fxBus.fxType != FX_DISTORTION && fxBus.distortion.clipStateActive)
+        Distortion_resetClip(&fxBus.distortion);
+    FxBus_processSelected(fxBus.fxType, fxBuffer, outL, outR, outL2, outR2, size);
 }
 
 void FxBus_prepareFxChange()
