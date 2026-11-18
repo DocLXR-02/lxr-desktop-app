@@ -360,7 +360,7 @@ static void reads_and_legacy(void)
  reset();BYTE song[72]={0};memcpy(song,"SONGNAME",8);song[8]=12;add("/tmp/p000.sng",AM_ARC,song,72);
  assert(preset_loadSongSD(0)==FR_OK && seq_songData[0][0]==12);
  reset();BYTE kit[12]={0};memcpy(kit,"OLDKIT!!",8);kit[8]=7;add("/tmp/p000.snd",AM_ARC,kit,12);
- assert(preset_loadDrumsetSD(0,0)==FR_OK && mainParameters[0][0]==7 && mainParameters[0][246]==0);
+ assert(preset_loadDrumsetSD(0,0)==FR_OK && mainParameters[0][0]==7 && mainParameters[0][END_OF_SOUND_PARAMETERS-1]==0);
  reset();BYTE index=63;add("/proj.idx",AM_ARC,&index,1);uint8_t slot=0;
  close_fail=1;assert(preset_loadLastUsedProjectNrFromSD(&slot)==FR_DISK_ERR && slot==0);
  reset();find_result=FR_DISK_ERR;assert(preset_loadSongSD(0)==FR_DISK_ERR && !opens);
@@ -396,12 +396,63 @@ static void reader_closes(void)
  memcpy(savefileNames[0][PROJECT_NAMES],"OLDNAME!",8);close_fail=1;
  preset_loadProjectNames(0);assert(!memcmp(savefileNames[0][PROJECT_NAMES],"OLDNAME!",8) && preset_sharedFailure==FR_DISK_ERR);
  reset();memset(mainParameters[0],0x69,END_OF_SOUND_PARAMETERS);preset_defaultKit(0);
- assert(!memcmp(mainParameters[0],initKit+8,INIT_KIT_SIZE-8) && mainParameters[0][END_OF_SOUND_PARAMETERS-1]==0);
+ assert(!memcmp(mainParameters[0],initKit+8,END_OF_SOUND_PARAMETERS) && mainParameters[0][END_OF_SOUND_PARAMETERS-1]==0);
  puts("PASS required reader closes: kit/pattern/song/temp/global/name failure never reports success or bypasses retained ownership; init defaults bounded to actual payload");
 }
+
+/* Legacy named kit, new verified FX tail, and corrupted-tail fail-closed. */
+static void fx_kit_files(void)
+{
+    reset();
+    uint8_t old[8+END_OF_SOUND_PARAMETERS]={0};
+    memcpy(old,"OLDFX001",8);
+    old[8+PAR_FX_TYPE]=4;
+    old[8+PAR_FX_DRY_WET]=75;
+    old[8+PAR_FX_ROUTING]=5;
+    old[8+PAR_FX_P1]=93;
+    old[8+PAR_FX_P2]=17;
+    add("/tmp/p001.snd",AM_ARC,old,sizeof(old));
+    assert(preset_loadDrumsetSD(1,0)==FR_OK);
+    assert(mainParameters[1][PAR_FX_TYPE]==4);
+    assert(preset_fxBanks[1][18]==93);
+    assert(preset_fxBanks[1][19]==17);
+    assert(preset_fxBanks[1][22]==75);
+    assert(preset_fxBanks[1][23]==5);
+    for(unsigned j=0;j<18;j++)assert(preset_fxBanks[1][j]==0);
+    assert(preset_saveDrumsetSD(1,0)==FR_OK);
+    char name[13],absolute[80];
+    preset_makeFileNameSave(name,1,FEXT_SOUND,savefileNames[1][KIT_NAMES]);
+    resolve(absolute,name);
+    int k=lookup(absolute);
+    assert(k>=0 && entries[k].size==8+END_OF_SOUND_PARAMETERS+FX_KIT_EXTENSION_BYTES);
+    uint8_t *tail=&entries[k].data[8+END_OF_SOUND_PARAMETERS];
+    assert(fxKit_validate(tail));
+    uint8_t saved[FX_KIT_PAYLOAD_BYTES];
+    memcpy(saved,preset_fxBanks[1],sizeof(saved));
+    uint8_t before[END_OF_SOUND_PARAMETERS];
+    memcpy(before,mainParameters[1],sizeof(before));
+    tail[9]^=1u;
+    assert(preset_loadDrumsetSD(1,0)==FR_INT_ERR && !SDFile.obj.fs);
+    assert(!memcmp(preset_fxBanks[1],saved,sizeof(saved)));
+    assert(!memcmp(mainParameters[1],before,sizeof(before)));
+    /* Named legacy extensions cannot be silently fabricated. */
+    assert(preset_fxReadTail != NULL);
+    reset();
+    menu_loadedPresetNr[CURRENT_KIT]=0;
+    activeParameters[PAR_FX_TYPE]=4;
+    memcpy(hostFxLive,saved,sizeof(saved));
+    assert(preset_saveTmpKit()==FR_OK);
+    k=lookup("/tmp/tmp.snd");
+    assert(k>=0 && entries[k].size==1+END_OF_SOUND_PARAMETERS+FX_KIT_EXTENSION_BYTES);
+    assert(fxKit_validate(entries[k].data+1+END_OF_SOUND_PARAMETERS));
+    entries[k].data[entries[k].size-1]^=0x80u;
+    assert(preset_LoadTmpKit()==FR_INT_ERR && !SDFile.obj.fs);
+    puts("PASS legacy named Kit, v1 append-only save, CRC rejection without RAM mutation or shared-handle leaks; temp Kit CRC rejection");
+}
+
 int main(void)
 {
- setvbuf(stdout,0,_IONBF,0);paths();invalid_indices();cleanup();protection();project_failures();reads_and_legacy();reader_closes();
+ setvbuf(stdout,0,_IONBF,0);paths();invalid_indices();cleanup();protection();project_failures();reads_and_legacy();reader_closes();fx_kit_files();
  puts("PASS all S4b-1 production-body groups under ASan/UBSan (filesystem, HAL, LCD and sound sending are mocked)");
  return 0;
 }
