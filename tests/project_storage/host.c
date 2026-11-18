@@ -298,14 +298,14 @@ static void protection(void)
  assert(preset_sharedFailure==FR_OK && starts==stops);
  assert(preset_saveProject(63)==FR_OK && starts==stops && !SDFile.obj.fs);
  unsigned payload=0,count=0;for(unsigned i=0;i<512;i++)if(entries[i].exists && child("/proj63",entries[i].path)){payload+=entries[i].size;count++;}
- assert(count==194 && payload==255398 && !strcmp(cwd,"/tmp") && lookup("/proj00/prj.nfo")>=0);
+ assert(count==194 && payload==255398+NUM_KIT_SLOTS*FX_KIT_EXTENSION_BYTES && !strcmp(cwd,"/tmp") && lookup("/proj00/prj.nfo")>=0);
  assert(!memcmp(entries[lookup("/proj00/prj.nfo")].data,"OLDVALID",8));
  assert(preset_saveProject(63)==FR_OK && lookup(PROJECT_STAGE)<0 && lookup(PROJECT_BACKUP)<0 && lookup(PROJECT_RECORD)<0);
  reset();stat_result=FR_DISK_ERR;assert(preset_saveProject(1)==FR_DISK_ERR && !mkdirs && !writes);
  reset();add("/proj01",AM_ARC,"unknown",7);assert(preset_saveProject(1)==FR_DENIED && !writes && !mkdirs);
  reset();add("/proj01",AM_DIR,0,0);assert(preset_saveProject(1)==FR_INT_ERR && !writes && !mkdirs);
  reset();chdir_result=FR_NO_PATH;assert(preset_saveProject(1)==FR_NO_PATH && lookup("/LXRSTG/prj.nfo")<0 && writes==1);
- puts("PASS S4b-1 containment retained: unknown data and wrong CWD protected; new/repeated slot63 saves194 files/255398 bytes without stage/backup accumulation");
+ puts("PASS S4b-1 containment retained: unknown data and wrong CWD protected; new/repeated slot63 saves194 files with one FX extension per Kit without stage/backup accumulation");
 }
 static void project_failures(void)
 {
