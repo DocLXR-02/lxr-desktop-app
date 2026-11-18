@@ -92,6 +92,12 @@ static void reset_r21(void)
   mainParameters[1][PAR_TARGET_LFO1+i]=0;
   mainParameters[1][PAR_VOICE_LFO1+i]=i+1;
  }
+ /* Seed the inherited copy tests with modern valid route IDs. Archived and
+  * corrupt routing values are exhaustively tested in the R23 migration suite.
+  */
+ for(unsigned kit=0;kit<NUM_KIT_SLOTS;kit++)
+  preset_fxUpgradeStoredVoiceRoutes(mainParameters[kit]);
+ preset_fxUpgradeStoredVoiceRoutes(activeParameters);
  sends=0;
 }
 static void chord(void)
