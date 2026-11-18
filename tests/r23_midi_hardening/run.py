@@ -72,7 +72,7 @@ realtime=single(
 assert src["midi"].index("if(data >= 0xF8u)") < src["midi"].index("if(data & 0x80)",src["midi"].index("void midiParser_parseUartData("))
 cc_channel=single(
     r'\(\(chanonly == midi_MidiChannels\[voiceNr-1\]\) \|\| '
-    r'\(chanonly == midi_MidiChannels\[7\]\)\)',
+    r'\(chanonly == midi_MidiChannels\[7\]\)\s*\)',
     src["midi"],"voice channel 1-based to 0-based mapping")
 assert "voiceNr==0 || voiceNr >= 7" in src["midi"]
 autocond=r'if\(msg\.data1 != CC_BANK_CHANGE && msg\.data1 != NRPN_DATA_ENTRY_COARSE &&\s*msg\.data1 != NRPN_FINE && msg\.data1 != NRPN_COARSE\)\s*seq_recordAutomation\(frontParser_activeTrack, msg\.data1, msg\.data2\);'
