@@ -1,0 +1,73 @@
+name: R23 final four-FX DSP + Kit integrated host validation
+on:
+  push:
+    branches:
+      - test/r23-four-fx-integrated-kit-host-2026-11-18
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  r23-integrated-host:
+    name: Four real FX, banks, Kit codec and inherited host regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact test source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Enforce test-only source scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/r23-final-host-evidence
+          git rev-parse HEAD | tee build/r23-final-host-evidence/TEST_SHA.txt
+          echo 'e6473c707087c0d1d7ebeba260d18bfae61ec901' > build/r23-final-host-evidence/PRODUCTION_BASE.txt
+          git merge-base --is-ancestor e6473c707087c0d1d7ebeba260d18bfae61ec901 HEAD
+          git diff --check e6473c707087c0d1d7ebeba260d18bfae61ec901 HEAD
+          git diff --name-status e6473c707087c0d1d7ebeba260d18bfae61ec901 HEAD | tee build/r23-final-host-evidence/DIFF_NAME_STATUS.txt
+          unexpected="$(git diff --name-only e6473c707087c0d1d7ebeba260d18bfae61ec901 HEAD | grep -Ev '^(tests/r23_final_fx_integration/run\.py|\.github/workflows/r23-final-four-fx-kit-host\.yml)$' || true)"
+          if [ -n "$unexpected" ]; then echo "STOP: out-of-scope paths: $unexpected"; exit 1; fi
+          python3 --version | tee build/r23-final-host-evidence/PYTHON_VERSION.txt
+          cc --version > build/r23-final-host-evidence/COMPILER_VERSION.txt
+      - name: Original four FX DSP with independent banks and Kit extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r23_final_fx_integration/run.py 2>&1 | tee build/r23-final-host-evidence/real-dsp-kit-integration.log
+      - name: Existing independent FX bank, LXFX and shared pool regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r23_fx_banks/run.py 2>&1 | tee build/r23-final-host-evidence/fx-banks.log
+          python3 tests/r23_fx_kit_format/run.py 2>&1 | tee build/r23-final-host-evidence/fx-kit-codec.log
+          python3 tests/fx_pool_r23/run.py 2>&1 | tee build/r23-final-host-evidence/fx-pool.log
+      - name: Real FatFs Kit/project and owner-accepted regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/project_storage/run.py 2>&1 | tee build/r23-final-host-evidence/project-storage.log
+          python3 tests/project_transaction/run.py 2>&1 | tee build/r23-final-host-evidence/project-transaction.log
+          python3 tests/project_transaction/run.py legacy 2>&1 | tee build/r23-final-host-evidence/project-legacy.log
+          python3 tests/r21_voice_copy/run.py 2>&1 | tee build/r23-final-host-evidence/r21-voice-copy.log
+          python3 tests/r22_drum_copy/run.py 2>&1 | tee build/r23-final-host-evidence/r22-drum-copy.log
+          python3 tests/fx_clip_r18/compare.py 2>&1 | tee build/r23-final-host-evidence/r18-clp.log
+          python3 tests/r18_delay_mono/run.py build/r23-final-delay-host 2>&1 | tee build/r23-final-host-evidence/delay-mono.log
+          python3 tests/r18_compressor_mono/run.py build/r23-final-compressor-host 2>&1 | tee build/r23-final-host-evidence/compressor-mono.log
+          python3 tests/r18_usb_midi/run.py build/r23-final-usb-host 2>&1 | tee build/r23-final-host-evidence/usb-midi.log
+      - name: Preserve test source and raw passing/failing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r23-final-four-fx-kit-host-evidence
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            build/r23-final-host-evidence/
+            build/r23-final-four-fx-kit/
+            build/r23-host-evidence/
+            build/r23-final-delay-host/
+            build/r23-final-compressor-host/
+            build/r23-final-usb-host/
+          # Experimental host validation only; no ARM build or installable IMG.
