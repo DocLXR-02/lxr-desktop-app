@@ -868,8 +868,11 @@ static FRESULT preset_writeDrumsetData(uint8_t presetNr, uint8_t isMorph)
             if(res!=FR_OK)return res;
         }
     } else {
-        res=preset_writeChecked(mainParameters[presetNr],END_OF_SOUND_PARAMETERS);
-        if(res!=FR_OK)return res;
+        /* Preserve the established checked byte-writer fault boundaries. */
+        for(uint16_t i=0;i<END_OF_SOUND_PARAMETERS;i++) {
+            res=preset_writeChecked(&mainParameters[presetNr][i],1);
+            if(res!=FR_OK)return res;
+        }
     }
     return preset_fxWriteTail(preset_fxBanks[presetNr]);
 }
