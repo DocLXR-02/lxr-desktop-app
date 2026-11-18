@@ -16,6 +16,7 @@
 #include "Soundengine/FxBus.h"
 #include "Soundengine/DSPAudio/BufferTools.h"
 #include "Soundengine/DSPAudio/mixer.h"
+#include <string.h>
 INDTCMZ FxBus fxBus;
 
 void FxBus_init()
@@ -23,6 +24,10 @@ void FxBus_init()
 	fxBus.dryWet = 0;
 	fxBus.audioRouting = 0;
 	fxBus.fxType = FX_OFF;
+
+	/* No prior kit-format migration is performed in the core-only phase. */
+	memset(fxBus.bankParameters, 0, sizeof(fxBus.bankParameters));
+	fxBus.parameterBankType = FX_OFF;
 
 	fxBus.delay.delayType = DELAY_NORMAL;
 
@@ -152,48 +157,66 @@ void FxBus_prepareFxChange()
 //	Ringmod_resetPhase(&fxBus.ringmod);
 }
 
-void FxBus_updateParameter()
+/* The legacy four-value edit buffer follows the selected FX type.
+ * Keep banks separate even when the menu/MIDI system writes the legacy view.
+ */
+static void FxBus_syncSelectedBank(void)
 {
-	switch(fxBus.fxType)
+	const uint8_t nextType = fxBus.fxType;
+	if (nextType >= FX_PARAMETER_BANK_COUNT)
+		return;
+
+	const uint8_t previousType = fxBus.parameterBankType;
+	if (previousType != nextType)
+	{
+		if (previousType < FX_PARAMETER_BANK_COUNT)
+			memcpy(fxBus.bankParameters[previousType], fxBus.parameter, sizeof(fxBus.parameter));
+		memcpy(fxBus.parameter, fxBus.bankParameters[nextType], sizeof(fxBus.parameter));
+		fxBus.parameterBankType = nextType;
+	}
+	else
+	{
+		/* Preserve edits made through the existing ParameterArray pointer. */
+		memcpy(fxBus.bankParameters[nextType], fxBus.parameter, sizeof(fxBus.parameter));
+	}
+}
+
+static void FxBus_applyBank(uint8_t type)
+{
+	if (type >= FX_PARAMETER_BANK_COUNT)
+		return;
+	const float *const p = fxBus.bankParameters[type];
+	switch (type)
 	{
 	case FX_OFF:
-
 		break;
-
 	case FX_DISTORTION:
-		Distortion_setDrive(&fxBus.distortion, fxBus.parameter[0] );
-		Distortion_setParam1(&fxBus.distortion, fxBus.parameter[1] );
-		Distortion_setParam2(&fxBus.distortion, fxBus.parameter[2] );
-		Distortion_setParam3(&fxBus.distortion, fxBus.parameter[3] );
+		Distortion_setDrive(&fxBus.distortion, p[0]);
+		Distortion_setParam1(&fxBus.distortion, p[1]);
+		Distortion_setParam2(&fxBus.distortion, p[2]);
+		Distortion_setParam3(&fxBus.distortion, p[3]);
 		break;
-
 	case FX_RING:
-		Ringmod_setFreq(&fxBus.ringmod, fxBus.parameter[0] );
-		//Ringmod_setWave(&fxBus.ringmod, fxBus.parameter[1] );
+		Ringmod_setFreq(&fxBus.ringmod, p[0]);
 		break;
-
 	case FX_COMPRESSOR:
-
-		Compressor_setAttack(&fxBus.compressor , fxBus.parameter[0]);
-		Compressor_setRelease(&fxBus.compressor , fxBus.parameter[1]);
-		Compressor_setTreshold(&fxBus.compressor , fxBus.parameter[2]);
-		Compressor_setGain(&fxBus.compressor , fxBus.parameter[3]);
+		Compressor_setAttack(&fxBus.compressor, p[0]);
+		Compressor_setRelease(&fxBus.compressor, p[1]);
+		Compressor_setTreshold(&fxBus.compressor, p[2]);
+		Compressor_setGain(&fxBus.compressor, p[3]);
 		break;
-
 	case FX_DELAY:
-		Delay_setRange(&fxBus.delay, fxBus.parameter[1]);
-		Delay_setDelayTime(&fxBus.delay, fxBus.parameter[0]);
-		Delay_setFilter(&fxBus.delay, fxBus.parameter[2]);
-		Delay_setFeedback(&fxBus.delay, fxBus.parameter[3]);
-
+		Delay_setRange(&fxBus.delay, p[1]);
+		Delay_setDelayTime(&fxBus.delay, p[0]);
+		Delay_setFilter(&fxBus.delay, p[2]);
+		Delay_setFeedback(&fxBus.delay, p[3]);
 		break;
 #if USE_REVERB
 	case FX_REVERB:
-		Reverb_setDelayTime(&fxBus.reverb, fxBus.parameter[0]);
-		Reverb_setFeedback(&fxBus.reverb, fxBus.parameter[1]);
-		Reverb_setComposition(&fxBus.reverb, fxBus.parameter[2]);
-
-		Reverb_setVariation(&fxBus.reverb, fxBus.parameter[3]);
+		Reverb_setDelayTime(&fxBus.reverb, p[0]);
+		Reverb_setFeedback(&fxBus.reverb, p[1]);
+		Reverb_setComposition(&fxBus.reverb, p[2]);
+		Reverb_setVariation(&fxBus.reverb, p[3]);
 		break;
 #endif
 	default:
@@ -201,13 +224,40 @@ void FxBus_updateParameter()
 	}
 }
 
-void FxBus_setParameter(uint8_t idx, float value)
+void FxBus_updateParameter()
 {
-	fxBus.parameter[idx] = value;
-
-	FxBus_updateParameter();
-
-
+	FxBus_syncSelectedBank();
+	FxBus_applyBank(fxBus.fxType);
 }
 
+void FxBus_setParameter(uint8_t idx, float value)
+{
+	if (idx >= FX_PARAMETER_COUNT)
+		return;
+	FxBus_syncSelectedBank();
+	fxBus.parameter[idx] = value;
+	fxBus.bankParameters[fxBus.parameterBankType][idx] = value;
+	FxBus_applyBank(fxBus.parameterBankType);
+}
 
+/* Change one bank without changing the effect selected on the front panel. */
+void FxBus_setBankParameter(uint8_t type, uint8_t idx, float value)
+{
+	if (type == FX_OFF || type >= FX_PARAMETER_BANK_COUNT ||
+	    idx >= FX_PARAMETER_COUNT)
+		return;
+	FxBus_syncSelectedBank();
+	fxBus.bankParameters[type][idx] = value;
+	if (fxBus.parameterBankType == type)
+		fxBus.parameter[idx] = value;
+	FxBus_applyBank(type);
+}
+
+float FxBus_getBankParameter(uint8_t type, uint8_t idx)
+{
+	if (type == FX_OFF || type >= FX_PARAMETER_BANK_COUNT ||
+	    idx >= FX_PARAMETER_COUNT)
+		return 0.f;
+	return fxBus.bankParameters[type][idx];
+}
+

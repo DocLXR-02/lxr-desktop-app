@@ -25,6 +25,10 @@
 
 #define USE_REVERB 0
 
+/* Five slots include FX_OFF; FX types 1..4 have independent parameter state. */
+#define FX_PARAMETER_COUNT 4u
+#define FX_PARAMETER_BANK_COUNT (5u + USE_REVERB)
+
 enum FxTypeEnum
 {
 	FX_OFF,
@@ -44,7 +48,12 @@ typedef struct FxStruct
 	uint8_t audioRouting;
 	float dryWet;
 
-	float parameter[4];
+	/* Legacy menu/MIDI edit view, backed by independently stored effect values. */
+	float parameter[FX_PARAMETER_COUNT];
+
+	/* Stage 1: four P1-P4 banks. Wet/output and kit persistence are separate. */
+	float bankParameters[FX_PARAMETER_BANK_COUNT][FX_PARAMETER_COUNT];
+	uint8_t parameterBankType;
 
 
 	MasterDistortion distortion;
@@ -67,8 +76,11 @@ void FxBus_processSelected(uint8_t fxType, int16_t *fxBuffer, int16_t* outL,int1
 void FxBus_process(int16_t *fxBuffer, int16_t* outL,int16_t* outR,int16_t* outL2, int16_t* outR2, uint32_t size);
 void FxBus_setParameter(uint8_t idx, float value);
 void FxBus_updateParameter();
+void FxBus_setBankParameter(uint8_t fxType, uint8_t idx, float value);
+float FxBus_getBankParameter(uint8_t fxType, uint8_t idx);
 //to prevent NaN pollution from delay
 void FxBus_prepareFxChange();
 
 
 #endif /* INC_SOUNDENGINE_FXBUS_H_ */
+
