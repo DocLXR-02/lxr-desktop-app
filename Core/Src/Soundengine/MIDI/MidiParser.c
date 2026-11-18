@@ -913,6 +913,14 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue, uint8_t isFl
 		 */
 		if(msg.data1 >= CC2_AUDIO_OUT1 && msg.data1 <= CC2_AUDIO_OUT6 &&
 		   (value.itg == 6u || value.itg > MIXER_ROUTING_FX_COMPRESSOR)) return;
+		/* Reject unsupported FX editor types before changing any cached parameter,
+		 * bank state, or menu selection. The four real processors are 1..4.
+		 */
+#if USE_REVERB
+		if(msg.data1 == CC2_FX_TYPE && value.itg > FX_REVERB) return;
+#else
+		if(msg.data1 == CC2_FX_TYPE && value.itg > FX_DELAY) return;
+#endif
 
 		if(updateOriginalValue && !isFloatModulator && !isMuteCommand) {
 			midiParser_originalCcValues[paramNr] = value.itg;
@@ -1974,10 +1982,19 @@ void midiParser_parseUartData(unsigned char data)
 
   uint8_t parseMsg = 0;
 
-  // if (data == 0xF8)
-  // {
-  //   return;
-  // }
+	/* Realtime MIDI bytes are allowed between data bytes of another message.
+	 * Dispatch them without changing the pending message or running status.
+	 */
+	if(data >= 0xF8u)
+	{
+		MidiMsg realtime = midiMsg_tmp;
+		realtime.status = data;
+		realtime.bits.length = 0;
+		realtime.bits.sysxbyte = 0;
+		realtime.bits.source = midiSourceMIDI;
+		midiParser_parseMidiMessage(realtime);
+		return;
+	}
 
 	if(data & 0x80)
   {
