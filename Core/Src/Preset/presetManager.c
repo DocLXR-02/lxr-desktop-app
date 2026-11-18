@@ -32,6 +32,7 @@
 #include "Soundengine/Sequencer/sequencer.h"
 #include "Soundengine/Soundengine.h"
 #include "Soundengine/FxBus.h"
+#include "Preset/FxKitFormat.h"
 
 
 
@@ -42,6 +43,12 @@
 //FIL SDFile;		/* place to hold 1 file*/
 /* R21 context revision: invalidates a selector even after A/B/A loads. */
 static volatile uint32_t preset_kitRevision;
+/* 64 independent Kit FX snapshots; never persist the selected editor view alone. */
+static uint8_t preset_fxBanks[NUM_KIT_SLOTS][FX_KIT_PAYLOAD_BYTES];
+static uint8_t preset_fxReadBuffer[END_OF_SOUND_PARAMETERS];
+static uint8_t preset_projectLoading;
+_Static_assert(END_OF_SOUND_PARAMETERS == 228, "Keep legacy Kit parameter offsets");
+_Static_assert(FX_BANK_SERIALIZED_BYTES == FX_KIT_PAYLOAD_BYTES, "Bank payload mismatch");
 
 static uint8_t morph_state = 0; //flag for non blocking morph
 static uint8_t morph_index = 0;
@@ -53,6 +60,66 @@ char currentFolder[13];
 //char presetNameBuffer[8];
 //char currentName[8];
 //uint8_t activePresetNr = 0;
+
+
+static void preset_fxFromLegacy(uint8_t *values, const uint8_t *parameters)
+{
+    memset(values, 0, FX_KIT_PAYLOAD_BYTES);
+    const uint8_t type = parameters[PAR_FX_TYPE];
+    if(type < FX_DISTORTION || type > FX_DELAY) return;
+    const unsigned offset = (unsigned)(type-FX_DISTORTION)*FX_KIT_FIELDS_PER_EFFECT;
+    for(unsigned p=0;p<4;p++) {
+        uint8_t x=parameters[PAR_FX_P1+p];
+        values[offset+p]=x<=127u?x:127u;
+    }
+    values[offset+4] = parameters[PAR_FX_DRY_WET]<=100u ? parameters[PAR_FX_DRY_WET] : 100u;
+    values[offset+5] = parameters[PAR_FX_ROUTING]<=5u ? parameters[PAR_FX_ROUTING] : 0u;
+}
+
+static void preset_fxCaptureCurrent(uint8_t slot)
+{
+    if(slot<NUM_KIT_SLOTS) FxBus_exportKitBanks(preset_fxBanks[slot]);
+}
+
+static void preset_fxApplyKit(uint8_t slot)
+{
+    if(slot>=NUM_KIT_SLOTS) return;
+    const uint8_t type=activeParameters[PAR_FX_TYPE];
+    FxBus_importKitBanks(preset_fxBanks[slot],type);
+    if(type>=FX_DISTORTION && type<=FX_DELAY) {
+        const unsigned offset=(unsigned)(type-FX_DISTORTION)*FX_KIT_FIELDS_PER_EFFECT;
+        for(unsigned p=0;p<4;p++)
+            activeParameters[PAR_FX_P1+p]=preset_fxBanks[slot][offset+p];
+        activeParameters[PAR_FX_DRY_WET]=preset_fxBanks[slot][offset+4];
+        activeParameters[PAR_FX_ROUTING]=preset_fxBanks[slot][offset+5];
+    }
+}
+
+static FRESULT preset_fxReadTail(FIL *file, uint32_t fullSize,
+                                 uint8_t *values, const uint8_t *legacy)
+{
+    const uint32_t oldSize=8u+END_OF_SOUND_PARAMETERS;
+    const uint32_t newSize=oldSize+FX_KIT_EXTENSION_BYTES;
+    if(fullSize<8u || (fullSize>oldSize && fullSize!=newSize)) return FR_INT_ERR;
+    if(fullSize==newSize) {
+        uint8_t block[FX_KIT_EXTENSION_BYTES];
+        UINT got=0;
+        FRESULT res=f_read(file,block,sizeof(block),&got);
+        if(res!=FR_OK)return res;
+        if(got!=sizeof(block) || !fxKit_validate(block))return FR_INT_ERR;
+        fxKit_readValues(values,block);
+    } else {
+        preset_fxFromLegacy(values,legacy);
+    }
+    return FR_OK;
+}
+
+static FRESULT preset_fxWriteTail(const uint8_t *values)
+{
+    uint8_t block[FX_KIT_EXTENSION_BYTES];
+    fxKit_writeBlock(block,values);
+    return preset_writeChecked(block,sizeof(block));
+}
 
 #define FILE_VERSION 2
 
@@ -259,12 +326,13 @@ static uint8_t preset_isTmpFile(const char *name)
 /* Match the legacy short-kit zero-fill rule; no stale tail or initKit overread. */
 static void preset_defaultKit(uint8_t slot)
 {
-    if(slot >= NUM_KIT_SLOTS) return;
-    size_t count = sizeof(initKit) - 8;
-    if(count > END_OF_SOUND_PARAMETERS) count = END_OF_SOUND_PARAMETERS;
-    memcpy(savefileNames[slot][KIT_NAMES], initKit, 8);
-    memset(mainParameters[slot], 0, END_OF_SOUND_PARAMETERS);
-    memcpy(mainParameters[slot], initKit + 8, count);
+    if(slot>=NUM_KIT_SLOTS)return;
+    size_t count=sizeof(initKit)-8;
+    if(count>END_OF_SOUND_PARAMETERS)count=END_OF_SOUND_PARAMETERS;
+    memcpy(savefileNames[slot][KIT_NAMES],initKit,8);
+    memset(mainParameters[slot],0,END_OF_SOUND_PARAMETERS);
+    memcpy(mainParameters[slot],initKit+8,count);
+    preset_fxFromLegacy(preset_fxBanks[slot],mainParameters[slot]);
 }
 
 static FRESULT preset_writePatternData(uint8_t patternNr);
@@ -372,16 +440,19 @@ void preset_touchTimer(PresetTimer type)
 
 FRESULT preset_saveTmpKit()
 {
-    if(menu_loadedPresetNr[CURRENT_KIT] >= NUM_KIT_SLOTS) return FR_INVALID_PARAMETER;
+    if(menu_loadedPresetNr[CURRENT_KIT]>=NUM_KIT_SLOTS)return FR_INVALID_PARAMETER;
     FRESULT res;
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
     HAL_TIM_Base_Start_IT(&htim2);
 #endif
-    res = preset_openShared((FIL*)&SDFile, "/tmp/tmp.snd", FA_CREATE_ALWAYS | FA_WRITE);
-    if(res == FR_OK) {
-        res = preset_writeChecked(&menu_loadedPresetNr[CURRENT_KIT], 1);
-        if(res == FR_OK) res = preset_writeChecked(activeParameters, END_OF_SOUND_PARAMETERS);
-        res = preset_finishSave(res);
+    const uint8_t slot=menu_loadedPresetNr[CURRENT_KIT];
+    preset_fxCaptureCurrent(slot);
+    res=preset_openShared((FIL*)&SDFile,"/tmp/tmp.snd",FA_CREATE_ALWAYS|FA_WRITE);
+    if(res==FR_OK){
+        res=preset_writeChecked(&slot,1);
+        if(res==FR_OK)res=preset_writeChecked(activeParameters,END_OF_SOUND_PARAMETERS);
+        if(res==FR_OK)res=preset_fxWriteTail(preset_fxBanks[slot]);
+        res=preset_finishSave(res);
     }
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
     HAL_TIM_Base_Stop_IT(&htim2);
@@ -392,23 +463,42 @@ FRESULT preset_saveTmpKit()
 FRESULT preset_LoadTmpKit(void)
 {
     FRESULT res;
-    UINT count;
-    uint8_t slot, data[END_OF_SOUND_PARAMETERS] = {0};
-    res = preset_openShared((FIL*)&SDFile, "/tmp/tmp.snd", FA_READ);
-    if(res != FR_OK) return res;
-    res = f_read((FIL*)&SDFile, &slot, 1, &count);
-    if(res == FR_OK && (count != 1 || slot >= NUM_KIT_SLOTS)) res = FR_INT_ERR;
-    if(res == FR_OK) res = f_read((FIL*)&SDFile, data, sizeof(data), &count);
-    res = preset_finishRead(res);
-    if(res != FR_OK) return res;
-    /* Short legacy kit tails remain zero-filled, exactly as named kit loading. */
-    const uint8_t nmt = getNumModTargets();
-    for(uint8_t i = 0; i < 6; i++) {
-        if(data[PAR_VEL_DEST_1+i] >= nmt) data[PAR_VEL_DEST_1+i] = 0;
-        if(data[PAR_TARGET_LFO1+i] >= nmt) data[PAR_TARGET_LFO1+i] = 0;
+    UINT got=0;
+    uint8_t slot,data[END_OF_SOUND_PARAMETERS]={0};
+    uint8_t values[FX_KIT_PAYLOAD_BYTES]={0};
+    res=preset_openShared((FIL*)&SDFile,"/tmp/tmp.snd",FA_READ);
+    if(res!=FR_OK)return res;
+    const uint32_t size=f_size((FIL*)&SDFile);
+    res=f_read((FIL*)&SDFile,&slot,1,&got);
+    if(res==FR_OK && (got!=1 || slot>=NUM_KIT_SLOTS))res=FR_INT_ERR;
+    const uint32_t oldSize=1u+END_OF_SOUND_PARAMETERS;
+    const uint32_t newSize=oldSize+FX_KIT_EXTENSION_BYTES;
+    if(res==FR_OK && (size<1u || (size>oldSize && size!=newSize)))res=FR_INT_ERR;
+    if(res==FR_OK) {
+        const UINT wanted=(UINT)((size-1u)<END_OF_SOUND_PARAMETERS?size-1u:END_OF_SOUND_PARAMETERS);
+        res=f_read((FIL*)&SDFile,data,wanted,&got);
+        if(res==FR_OK && got!=wanted)res=FR_INT_ERR;
     }
-    memcpy(activeParameters, data, sizeof(data));
-    menu_selectedPresetNr[SAVE_TYPE_KIT] = menu_loadedPresetNr[CURRENT_KIT] = slot;
+    if(res==FR_OK) {
+        if(size==newSize) {
+            uint8_t block[FX_KIT_EXTENSION_BYTES];
+            res=f_read((FIL*)&SDFile,block,sizeof(block),&got);
+            if(res==FR_OK && (got!=sizeof(block)||!fxKit_validate(block)))res=FR_INT_ERR;
+            if(res==FR_OK)fxKit_readValues(values,block);
+        }else preset_fxFromLegacy(values,data);
+    }
+    if(res!=FR_OK)return res;
+    res=preset_finishRead(res);
+    if(res!=FR_OK)return res;
+    const uint8_t nmt=getNumModTargets();
+    for(uint8_t i=0;i<6;i++) {
+        if(data[PAR_VEL_DEST_1+i]>=nmt)data[PAR_VEL_DEST_1+i]=0;
+        if(data[PAR_TARGET_LFO1+i]>=nmt)data[PAR_TARGET_LFO1+i]=0;
+    }
+    memcpy(activeParameters,data,sizeof(data));
+    memcpy(preset_fxBanks[slot],values,sizeof(values));
+    menu_selectedPresetNr[SAVE_TYPE_KIT]=menu_loadedPresetNr[CURRENT_KIT]=slot;
+    preset_fxApplyKit(slot);
     ++preset_kitRevision;
     preset_sendDrumsetParameters();
     return FR_OK;
