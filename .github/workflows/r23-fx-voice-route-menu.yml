@@ -23,7 +23,7 @@ jobs:
           mkdir -p build/r23-host-evidence
           git rev-parse HEAD > build/r23-host-evidence/SOURCE_SHA.txt
           git merge-base --is-ancestor 0e37942250f79306627702061d851731bdfdbbc8 HEAD
-          git diff --check c0f942e1997916b2f3a11b285178fcf7078a6e8a HEAD
+          git -c core.whitespace=cr-at-eol diff --check c0f942e1997916b2f3a11b285178fcf7078a6e8a HEAD
           git merge-base --is-ancestor c0f942e1997916b2f3a11b285178fcf7078a6e8a HEAD
           git diff --name-only c0f942e1997916b2f3a11b285178fcf7078a6e8a HEAD > build/r23-host-evidence/step-changed-files.txt
           unexpected="$(grep -Ev '^(Core/Inc/menu/MenuText\.h|Core/Src/Soundengine/MIDI/MidiParser\.c|tests/r23_fx_route_menu/run\.py|\.github/workflows/r23-fx-voice-route-menu\.yml)$' build/r23-host-evidence/step-changed-files.txt || true)"
@@ -104,7 +104,7 @@ jobs:
           mkdir -p build/r23-arm-evidence
           git rev-parse HEAD > build/r23-arm-evidence/SOURCE_SHA.txt
           git merge-base --is-ancestor 0e37942250f79306627702061d851731bdfdbbc8 HEAD
-          git diff --check c0f942e1997916b2f3a11b285178fcf7078a6e8a HEAD
+          git -c core.whitespace=cr-at-eol diff --check c0f942e1997916b2f3a11b285178fcf7078a6e8a HEAD
           git diff --name-status 0e37942250f79306627702061d851731bdfdbbc8 HEAD > build/r23-arm-evidence/changed-files.txt
       - name: Install pinned Arm GNU 14.3.rel1 toolchain
         shell: bash
