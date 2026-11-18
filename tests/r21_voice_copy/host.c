@@ -86,6 +86,13 @@ static void reset_r21(void)
   mainParameters[1][p]=(p*3+9)%128;
   mainParameters[9][p]=(p*5+7)%128;
  }
+ /* A real Kit uses one of the five supported FX editor types (0..4).
+  * The inherited byte-identity fixture must not seed an invalid FX type:
+  * R23 deliberately normalizes unsupported imported values before playback.
+  */
+ activeParameters[PAR_FX_TYPE]=0;
+ mainParameters[1][PAR_FX_TYPE]=0;
+ mainParameters[9][PAR_FX_TYPE]=0;
  for(unsigned i=0;i<6;i++){
   activeParameters[PAR_TARGET_LFO1+i]=0;
   activeParameters[PAR_VOICE_LFO1+i]=i+1;
