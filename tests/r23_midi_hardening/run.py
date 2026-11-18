@@ -52,7 +52,7 @@ fxguard=single(
 cache=src["midi"].index("midiParser_originalCcValues[paramNr] = value.itg;")
 assert src["midi"].index("if(msg.data1 == CC2_FX_TYPE && value.itg > FX_DELAY) return;") < cache
 fxmenu=single(
-    r'case MENU_FX:\s*p = curParmVal < fxNames\[0\]\[0\] \? fxNames\[curParmVal\+1\] : menuText_dash;\s*break;',
+    r'case MENU_FX:\s*/\*.*?\*/\s*p = curParmVal < fxNames\[0\]\[0\] \? fxNames\[curParmVal\+1\] : menuText_dash;\s*break;',
     src["menu"],"FX menu bounds")
 names=single(r'const char fxNames\[\]\[4\]\s*=\s*\{.*?\};',src["names"],"FX names")
 assert src["preset"].count("if(activeParameters[PAR_FX_TYPE] >= FX_PARAMETER_BANK_COUNT)") == 1
