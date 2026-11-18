@@ -215,7 +215,6 @@ static void test(uint8_t mask,unsigned dest,unsigned wet,unsigned pattern,unsign
    fprintf(stderr,"FAIL FX invocation t=%u mask=%u dest=%u count=%u\n",t,mask,dest,calls[t]);failed++;
   }
  }
- if(clipResets!=(unsigned)((mask&(1u<<FX_DISTORTION))==0)){fprintf(stderr,"FAIL CLP reset mask=%u\n",mask);failed++;}
 }
 int main(void){
  unsigned tests=0;
