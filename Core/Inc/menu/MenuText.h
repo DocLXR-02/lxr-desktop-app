@@ -317,7 +317,7 @@ const char waveformNames[][4]  =
 //-----------------------------------------------------------------
 const char outputNames[][7]  =
 {
-	{7},		//number of entries
+	{11},		//number of entries
 	{"St1"}	,	//Stereo Out DAC 1
 	{"St2"}	,	//Stereo Out DAC 2
 	{"L1"}	,	//Mono Out Left DAC 1
@@ -325,6 +325,10 @@ const char outputNames[][7]  =
 	{"L2"}	,	//Mono Out Left DAC 2
 	{"R2"}	,	//Mono Out Right DAC 2
 	{"FX"}	,	//to FX Bus
+	{"DLY"},	//direct Delay processor
+	{"RNG"},	//direct Ringmod processor
+	{"DRV"},	//direct Distortion / CLP processor
+	{"CMP"},	//direct Compressor processor
 };
 //-----------------------------------------------------------------
 //output routing for FX processor, without FX target
