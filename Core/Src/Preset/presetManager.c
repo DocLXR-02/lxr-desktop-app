@@ -103,8 +103,8 @@ static void preset_fxApplyKit(uint8_t slot)
     if(slot>=NUM_KIT_SLOTS) return;
     preset_fxUpgradeStoredVoiceRoutes(activeParameters);
     /* Never publish unsupported archived FX type values to the menu/MIDI view. */
-    if(activeParameters[PAR_FX_TYPE] >= FX_PARAMETER_BANK_COUNT)
-        activeParameters[PAR_FX_TYPE] = FX_OFF;
+    if(activeParameters[PAR_FX_TYPE] >= FX_POOL_PROCESSOR_COUNT)
+        activeParameters[PAR_FX_TYPE] = FX_POOL_TYPE_OFF;
     const uint8_t type=activeParameters[PAR_FX_TYPE];
     FxBus_importKitBanks(preset_fxBanks[slot],type);
     if(type>=FX_KIT_FIRST_TYPE && type<=FX_KIT_LAST_TYPE) {
