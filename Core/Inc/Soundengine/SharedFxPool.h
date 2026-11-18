@@ -1,19 +1,18 @@
-/* P17/R23 experimental shared FX selection. GPL-3.0-only. */
+/* R23 shared FX pool: direct processor routing and one-time stored-Kit migration.
+ * GPL-3.0-only. The historical voice route 6 is reserved, not a DSP route.
+ */
 #ifndef LXR_SHARED_FX_POOL_H_
 #define LXR_SHARED_FX_POOL_H_
 #include <stdint.h>
 
-/* Existing audio destinations are 0..5; 6 is the legacy shared FX route.
- * Values 7..10 are not yet exposed by the menu or stored as new kit data.
- */
+/* Physical destinations are 0..5. Keep 7..10 stable for existing R23 Kits. */
 enum {
-    FX_POOL_ROUTE_LEGACY = 6,
     FX_POOL_ROUTE_DELAY = 7,
     FX_POOL_ROUTE_RING = 8,
     FX_POOL_ROUTE_DISTORTION = 9,
     FX_POOL_ROUTE_COMPRESSOR = 10
 };
-/* Values intentionally match the existing FxTypeEnum. */
+/* Processor IDs match FxTypeEnum, independent of the selected editor. */
 enum {
     FX_POOL_TYPE_OFF = 0,
     FX_POOL_TYPE_DISTORTION = 1,
@@ -25,31 +24,45 @@ enum {
     FX_POOL_INVALID = 255
 };
 
-static inline uint8_t SharedFxPool_typeForRoute(uint8_t route, uint8_t legacyType)
+/* Used only when decoding stored Kits, never by the audio mixer.
+ * A historical route 6 followed the then-selected effect.
+ * FX Off was a dry pass-through; use the stored physical FX output for bypass.
+ * Preserve already-direct R23 route numbers without renumbering.
+ */
+static inline uint8_t SharedFxPool_upgradeStoredRoute(uint8_t storedRoute,
+                                                       uint8_t storedFxType,
+                                                       uint8_t storedFxOutput)
+{
+    if (storedRoute == 6u) {
+        switch (storedFxType) {
+        case FX_POOL_TYPE_DISTORTION: return FX_POOL_ROUTE_DISTORTION;
+        case FX_POOL_TYPE_RING: return FX_POOL_ROUTE_RING;
+        case FX_POOL_TYPE_COMPRESSOR: return FX_POOL_ROUTE_COMPRESSOR;
+        case FX_POOL_TYPE_DELAY: return FX_POOL_ROUTE_DELAY;
+        default: return storedFxOutput <= 5u ? storedFxOutput : 0u;
+        }
+    }
+    return storedRoute <= FX_POOL_ROUTE_COMPRESSOR ? storedRoute : 0u;
+}
+
+/* No selected-effect or global legacy route in the real-time audio path. */
+static inline uint8_t SharedFxPool_typeForRoute(uint8_t route)
 {
     switch (route) {
-    case FX_POOL_ROUTE_LEGACY:
-        return legacyType < FX_POOL_PROCESSOR_COUNT ? legacyType : FX_POOL_INVALID;
-    case FX_POOL_ROUTE_DELAY:
-        return FX_POOL_TYPE_DELAY;
-    case FX_POOL_ROUTE_RING:
-        return FX_POOL_TYPE_RING;
-    case FX_POOL_ROUTE_DISTORTION:
-        return FX_POOL_TYPE_DISTORTION;
-    case FX_POOL_ROUTE_COMPRESSOR:
-        return FX_POOL_TYPE_COMPRESSOR;
-    default:
-        return FX_POOL_INVALID; /* Physical outputs bypass the shared FX pool. */
+    case FX_POOL_ROUTE_DELAY: return FX_POOL_TYPE_DELAY;
+    case FX_POOL_ROUTE_RING: return FX_POOL_TYPE_RING;
+    case FX_POOL_ROUTE_DISTORTION: return FX_POOL_TYPE_DISTORTION;
+    case FX_POOL_ROUTE_COMPRESSOR: return FX_POOL_TYPE_COMPRESSOR;
+    default: return FX_POOL_INVALID; /* 0..6 and invalid bypass FX processors. */
     }
 }
 
-/* Bitmask of unique effect processors, not the number of routed voices. */
-static inline uint8_t SharedFxPool_activeMask(const uint8_t routes[FX_POOL_VOICE_COUNT],
-                                               uint8_t legacyType)
+/* A processor executes at most once per block for all its routed voices. */
+static inline uint8_t SharedFxPool_activeMask(const uint8_t routes[FX_POOL_VOICE_COUNT])
 {
     uint8_t mask = 0;
     for (uint8_t voice = 0; voice < FX_POOL_VOICE_COUNT; ++voice) {
-        const uint8_t type = SharedFxPool_typeForRoute(routes[voice], legacyType);
+        const uint8_t type = SharedFxPool_typeForRoute(routes[voice]);
         if (type != FX_POOL_INVALID)
             mask |= (uint8_t)(1u << type);
     }
