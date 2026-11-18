@@ -2871,7 +2871,8 @@ static void getMenuItemNameForValue(const uint8_t menuId, const uint8_t curParmV
 		break;
 
 	case MENU_FX:
-		p=fxNames[curParmVal+1];
+		/* Archived Kits and external controllers may contain invalid FX types. */
+		p = curParmVal < fxNames[0][0] ? fxNames[curParmVal+1] : menuText_dash;
 		break;
 
 	case MENU_DIST:
