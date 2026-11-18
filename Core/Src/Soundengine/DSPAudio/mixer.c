@@ -111,9 +111,6 @@ IN_ITCM_RAM void mixer_decimateBlock(const uint8_t voiceNr, int16_t* buffer)
         case MIXER_ROUTING_FX_DISTORTION:
         case MIXER_ROUTING_FX_COMPRESSOR:
             return dest;
-		case MIXER_ROUTING_FX_BUS:
-			return MIXER_ROUTING_FX_BUS;
-			break;
 
 		case MIXER_ROUTING_DAC1_STEREO:
 			if(r1_Available && l1_Available) {
@@ -328,6 +325,9 @@ IN_ITCM_RAM static inline void mixer_addDataToOutputFilteredPan(uint8_t dest, co
 
 	//check if a cable is in the selected out
 	dest = mixer_checkOutJackAvailable(dest);
+	const uint8_t selectedType = SharedFxPool_typeForRoute(dest);
+	if (selectedType != FX_POOL_INVALID)
+		fxBuffer += (uint32_t)selectedType * (OUTPUT_DMA_SIZE * 2u);
 	//assert_param(dest <= MIXER_ROUTING_DAC2_R);
 
 	//TODO may be possible to optimize here using both halfwords of add for stereo mixing
@@ -335,7 +335,10 @@ IN_ITCM_RAM static inline void mixer_addDataToOutputFilteredPan(uint8_t dest, co
 	switch(dest)
 	{
 
-	case MIXER_ROUTING_FX_BUS:
+	case MIXER_ROUTING_FX_DELAY:
+	case MIXER_ROUTING_FX_RING:
+	case MIXER_ROUTING_FX_DISTORTION:
+	case MIXER_ROUTING_FX_COMPRESSOR:
 #if 0
 		for(i=0;i<OUTPUT_DMA_SIZE;i++)
 		{
@@ -455,7 +458,7 @@ IN_ITCM_RAM static __attribute__((noinline)) void mixer_addDataToOutput(uint8_t 
 	//check if a cable is in the selected out
 	dest = mixer_checkOutJackAvailable(dest);
 
-    const uint8_t selectedType = SharedFxPool_typeForRoute(dest, fxBus.fxType);
+    const uint8_t selectedType = SharedFxPool_typeForRoute(dest);
     if (selectedType != FX_POOL_INVALID)
         fxBuffer += (uint32_t)selectedType * (OUTPUT_DMA_SIZE * 2u);
 	//assert_param(dest <= MIXER_ROUTING_DAC2_R);
@@ -469,7 +472,6 @@ IN_ITCM_RAM static __attribute__((noinline)) void mixer_addDataToOutput(uint8_t 
     case MIXER_ROUTING_FX_RING:
     case MIXER_ROUTING_FX_DISTORTION:
     case MIXER_ROUTING_FX_COMPRESSOR:
-	case MIXER_ROUTING_FX_BUS:
 #if 0
 		for(i=0;i<OUTPUT_DMA_SIZE;i++)
 		{
@@ -576,22 +578,22 @@ IN_ITCM_RAM static __attribute__((noinline)) void mixer_addDataToOutput(uint8_t 
 static __attribute__((noinline)) float mixer_clipMaxRoutedFaderGain(void)
 {
     float maxQ = -1.f;
-    if(SharedFxPool_typeForRoute(mixer_audioRouting[0], fxBus.fxType) == FX_DISTORTION &&
+    if(SharedFxPool_typeForRoute(mixer_audioRouting[0]) == FX_DISTORTION &&
        voiceArray[0].FaderVolumeFilter.b > maxQ)
         maxQ = voiceArray[0].FaderVolumeFilter.b;
-    if(SharedFxPool_typeForRoute(mixer_audioRouting[1], fxBus.fxType) == FX_DISTORTION &&
+    if(SharedFxPool_typeForRoute(mixer_audioRouting[1]) == FX_DISTORTION &&
        voiceArray[1].FaderVolumeFilter.b > maxQ)
         maxQ = voiceArray[1].FaderVolumeFilter.b;
-    if(SharedFxPool_typeForRoute(mixer_audioRouting[2], fxBus.fxType) == FX_DISTORTION &&
+    if(SharedFxPool_typeForRoute(mixer_audioRouting[2]) == FX_DISTORTION &&
        voiceArray[2].FaderVolumeFilter.b > maxQ)
         maxQ = voiceArray[2].FaderVolumeFilter.b;
-    if(SharedFxPool_typeForRoute(mixer_audioRouting[3], fxBus.fxType) == FX_DISTORTION &&
+    if(SharedFxPool_typeForRoute(mixer_audioRouting[3]) == FX_DISTORTION &&
        snareVoice.FaderVolumeFilter.b > maxQ)
         maxQ = snareVoice.FaderVolumeFilter.b;
-    if(SharedFxPool_typeForRoute(mixer_audioRouting[4], fxBus.fxType) == FX_DISTORTION &&
+    if(SharedFxPool_typeForRoute(mixer_audioRouting[4]) == FX_DISTORTION &&
        cymbalVoice.FaderVolumeFilter.b > maxQ)
         maxQ = cymbalVoice.FaderVolumeFilter.b;
-    if(SharedFxPool_typeForRoute(mixer_audioRouting[5], fxBus.fxType) == FX_DISTORTION &&
+    if(SharedFxPool_typeForRoute(mixer_audioRouting[5]) == FX_DISTORTION &&
        hatVoice.FaderVolumeFilter.b > maxQ)
         maxQ = hatVoice.FaderVolumeFilter.b;
 
@@ -644,7 +646,7 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 	//an array to store intermediate voice samples
 	//befor output distribution
 	int16_t sampleData[OUTPUT_DMA_SIZE];
-    const uint8_t fxPoolMask = SharedFxPool_activeMask(mixer_audioRouting, fxBus.fxType);
+    const uint8_t fxPoolMask = SharedFxPool_activeMask(mixer_audioRouting);
 	/* R14: evaluate shared MAX-feedback control before voice rendering. */
 	const uint8_t clpFeedbackActive = (fxPoolMask & (1u << FX_DISTORTION)) != 0 &&
 		fxBus.distortion.distortionType == DISTORTION_RAT;
