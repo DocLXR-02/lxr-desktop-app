@@ -1,0 +1,44 @@
+name: R23 exact-source native A/B runtime and output-parity
+on:
+  push:
+    branches:
+      - experiment/r23-ab-native-runtime-2026-11-18
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-ab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify pinned source ancestry and change whitespace
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          git merge-base --is-ancestor a6e0cf675837ad01f94e52d7813b2d49e5795814 HEAD
+          git diff --check a6e0cf675837ad01f94e52d7813b2d49e5795814 HEAD
+          gcc --version
+      - name: Run source-extracted parity and native A/B runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/r23-ab-runtime
+          git rev-parse HEAD > build/r23-ab-runtime/TEST_SHA.txt
+          printf 'R23 base d0b49dff26b6fcf11e0367249d329a6682bfefa4\nR23 A a6e0cf675837ad01f94e52d7813b2d49e5795814\n' > build/r23-ab-runtime/SOURCES.txt
+          python3 tests/r23_mixer_runtime/run.py 2>&1 | tee build/r23-ab-runtime/results.log
+          sha256sum build/r23-ab-runtime/R23.c build/r23-ab-runtime/R23A.c > build/r23-ab-runtime/SOURCE_SHA256.txt
+      - name: Retain raw host evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r23-ab-native-runtime-evidence
+          path: |
+            build/r23-ab-runtime/*.log
+            build/r23-ab-runtime/*.txt
+            build/r23-ab-runtime/*.csv
+            build/r23-ab-runtime/*.c
+          retention-days: 30
+          if-no-files-found: warn
