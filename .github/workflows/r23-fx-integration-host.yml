@@ -1,0 +1,62 @@
+name: R23 multi-FX exact-source host integration
+on:
+  push:
+    branches:
+      - experiment/r23-integration-host-2026-11-18
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  multi-fx:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify source pin and source extraction
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/r23-fx-integration
+          git rev-parse HEAD > build/r23-fx-integration/TEST_SHA.txt
+          git merge-base --is-ancestor 238389475359f11bf317b446e668e0c82333c231 HEAD
+          git diff --check 238389475359f11bf317b446e668e0c82333c231 HEAD
+          python3 - <<'PY'
+          import subprocess,pathlib
+          sha="238389475359f11bf317b446e668e0c82333c231"
+          base=pathlib.Path("tests/r23_fx_integration/prod_fx_return.c").read_text()
+          def show(path): return subprocess.check_output(["git","show",sha+":"+path],text=True).replace("\r\n","\n")
+          s=show("Core/Src/Soundengine/FxBus.c");b=s.index("IN_ITCM_RAM void FxBus_processSelected(");start=s.index("{",b);depth=0
+          for i in range(start,len(s)):
+           if s[i]=="{":depth+=1
+           if s[i]=="}":
+            depth-=1
+            if depth==0:break
+          func=s[b:i+1]
+          mix=show("Core/Src/Soundengine/DSPAudio/mixer.c")
+          a=mix.index("    const uint8_t multipleFx = ")
+          z=mix.index("\n/*\n\tif(activeParameters",a)
+          block=mix[a:z]
+          assert func==base.split("/* SOURCE_FXBUS_BEGIN */\n",1)[1].split("\n/* SOURCE_FXBUS_END */",1)[0]
+          assert block==base.split("/* SOURCE_MIXER_RET_BEGIN */\n",1)[1].split("\n/* SOURCE_MIXER_RET_END */",1)[0]
+          print("PASS pinned production function and FX return loop byte equality")
+          PY
+      - name: Run integration and sanitizer tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cc --version > build/r23-fx-integration/TOOLCHAIN.txt
+          for sanitizer in undefined address; do
+            cc -std=c11 -O2 -Wall -Wextra -Wno-unused-parameter -fno-strict-aliasing -fno-sanitize-recover=all -fsanitize=$sanitizer tests/r23_fx_integration/prod_fx_return.c -o build/r23-fx-integration/test_$sanitizer
+            build/r23-fx-integration/test_$sanitizer 2>&1 | tee build/r23-fx-integration/$sanitizer.log
+          done
+          sha256sum tests/r23_fx_integration/prod_fx_return.c > build/r23-fx-integration/SOURCE_SHA256.txt
+      - name: Retain evidence on PASS or STOP
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r23-fx-integration-evidence
+          path: build/r23-fx-integration/
+          retention-days: 30
+          if-no-files-found: warn
