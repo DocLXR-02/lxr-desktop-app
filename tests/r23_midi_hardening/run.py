@@ -77,7 +77,10 @@ cc_channel=single(
 assert "voiceNr==0 || voiceNr >= 7" in src["midi"]
 autocond=r'if\(msg\.data1 != CC_BANK_CHANGE && msg\.data1 != NRPN_DATA_ENTRY_COARSE &&\s*msg\.data1 != NRPN_FINE && msg\.data1 != NRPN_COARSE\)\s*seq_recordAutomation\(frontParser_activeTrack, msg\.data1, msg\.data2\);'
 count(autocond,src["midi"],2,"both automation entry points")
-condition=single(r'msg\.data1 != CC_BANK_CHANGE && msg\.data1 != NRPN_DATA_ENTRY_COARSE &&\s*msg\.data1 != NRPN_FINE && msg\.data1 != NRPN_COARSE',src["midi"].split("void midiParser_parseMidiMessage(")[1],"automation guard",flags=0)
+guard_pattern=r'msg\.data1 != CC_BANK_CHANGE && msg\.data1 != NRPN_DATA_ENTRY_COARSE &&\s*msg\.data1 != NRPN_FINE && msg\.data1 != NRPN_COARSE'
+guards=re.findall(guard_pattern,src["midi"].split("void midiParser_parseMidiMessage(")[1])
+assert len(guards)==2 and guards[0]==guards[1], "Both automation guards must agree"
+condition=guards[0]
 
 voice_start=src["voice"].index("void voiceControl_noteOn(")
 voice_end=src["voice"].index("//------------------------------------------------",voice_start)
