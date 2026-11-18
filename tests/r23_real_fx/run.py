@@ -278,12 +278,62 @@ static void case_run(int scenario,int mode,int wet,int ping,int wave,int dist,in
  if(mask==0x1eu)allFourCases++;
  completeCases++;
 }
+static void test_real_delay_pause_resume(int mode) {
+ state_init(0,mode,REC);
+ fxBus.dryWet=1.f;
+ fxBus.audioRouting=MIXER_ROUTING_DAC1_STEREO;
+ Delay *d=&fxBus.delay;
+ d->oldRead=1000;d->newRead=1000;d->write=2000;
+ d->interpValue=0.f;d->timePending=0;d->feedback=.45f;
+ d->tone.r=.65f;d->tone2.r=.65f;
+ for(int i=0;i<=FX_BUFFER_SIZE;i++)FX_BUFFER[i]=(__fp16)(((int)(i%11)-5)*.07f);
+ memset(fxPoolInputs,0,sizeof(fxPoolInputs));
+ for(int k=0;k<8;k++) {
+  memset(stereoOut1,0,sizeof(stereoOut1));
+  memset(stereoOut2,0,sizeof(stereoOut2));
+  fxPoolInputs[FX_DELAY][0]=k==0?1200:0;
+  fxPoolInputs[FX_DELAY][1]=k==0?-900:0;
+  process_active(1u<<FX_DELAY,stereoOut2,stereoOut1);
+ }
+ Delay frozen=*d;
+ __fp16 *freezeBuffer=malloc(sizeof(FX_BUFFER));
+ if(!freezeBuffer)abort();
+ memcpy(freezeBuffer,FX_BUFFER,sizeof(FX_BUFFER));
+ memset(fxPoolInputs,0,sizeof(fxPoolInputs));
+ for(int k=0;k<12;k++) {
+  memset(stereoOut1,0,sizeof(stereoOut1));
+  memset(stereoOut2,0,sizeof(stereoOut2));
+  process_active(1u<<FX_RING,stereoOut2,stereoOut1);
+ }
+ if(memcmp(d,&frozen,sizeof(frozen))!=0 || memcmp(FX_BUFFER,freezeBuffer,sizeof(FX_BUFFER))!=0) {
+  fprintf(stderr,"FAIL Delay state altered while unrouted mode=%d\n",mode);
+  failures++;
+ }
+ free(freezeBuffer);
+ memset(stereoOut1,0,sizeof(stereoOut1));
+ memset(stereoOut2,0,sizeof(stereoOut2));
+ process_active(1u<<FX_DELAY,stereoOut2,stereoOut1);
+ if(d->write==frozen.write || d->oldRead==frozen.oldRead) {
+  fprintf(stderr,"FAIL Delay did not resume mode=%d\n",mode);
+  failures++;
+ }
+ unsigned signal=0;
+ for(int i=0;i<128;i++)signal |= (unsigned)(stereoOut1[i]!=0 || stereoOut2[i]!=0);
+ if(!signal){
+  fprintf(stderr,"FAIL previously populated Delay returned silence mode=%d\n",mode);
+  failures++;
+ }
+ if(!failures)printf("PASS actual Delay %s: 8 active blocks, 12 inactive blocks frozen, state resumes with retained signal\n",
+   mode?"ping-pong":"normal");
+}
 int main(void) {
  for(int sc=0;sc<9;sc++)for(int mode=0;mode<6;mode+=2)
  for(int wet=0;wet<3;wet++)for(int ping=0;ping<2;ping++)
  for(int wave=0;wave<2;wave++)for(int dist=0;dist<3;dist++)
  for(int block=0;block<3;block++)
   case_run(sc,mode,wet,ping,wave?SINE:REC,dist,block);
+ test_real_delay_pause_resume(DELAY_NORMAL);
+ test_real_delay_pause_resume(DELAY_PINGPONG);
  if(failures){
   fprintf(stderr,"STOP %d output mismatches across %u 64-frame cases\n",failures,completeCases);
   return 1;
