@@ -410,8 +410,52 @@ static void edge(void)
  }
  printf("PASS %u real-FatFs full-card/retry, unknown/collision/invalid record/index, failed-recovery overlay guard and first-save interruption/rescue cases\n",cases);
 }
+/* Model a sealed old-format project by retaining its original leading
+ * Kit bytes and truncating the new extension from all 64 .snd files.
+ * The production loader must still accept it without rewriting project files.
+ */
+static void legacy_kit_project(void)
+{
+    for(unsigned fs=0;fs<2;fs++) {
+        seed(fs);
+        for(unsigned slot=0;slot<64;slot++) {
+            mainParameters[slot][PAR_FX_TYPE]=4u;
+            mainParameters[slot][PAR_FX_P1]=(uint8_t)slot;
+            mainParameters[slot][PAR_FX_DRY_WET]=60u;
+            mainParameters[slot][PAR_FX_ROUTING]=(uint8_t)(slot%6);
+        }
+        activeParameters[PAR_FX_TYPE]=4u;
+        activeParameters[PAR_FX_P1]=0u;
+        activeParameters[PAR_FX_DRY_WET]=60u;
+        activeParameters[PAR_FX_ROUTING]=0u;
+        assert(preset_saveProject(0)==FR_OK);
+        for(unsigned slot=0;slot<64;slot++) {
+            char path[32];
+            int n=snprintf(path,sizeof(path),"/proj00/%02u-KITNA.snd",slot);
+            assert(n>0 && n<(int)sizeof(path));
+            FIL file={0};
+            assert(f_open(&file,path,FA_WRITE)==FR_OK);
+            assert(f_size(&file)==8u+END_OF_SOUND_PARAMETERS+FX_KIT_EXTENSION_BYTES);
+            assert(f_lseek(&file,8u+END_OF_SOUND_PARAMETERS)==FR_OK);
+            assert(f_truncate(&file)==FR_OK);
+            assert(f_close(&file)==FR_OK);
+        }
+        uint32_t root,hash;uint16_t count;
+        assert(preset_txnValidate("/proj00",1,&root,&hash,&count)==FR_OK && count==194);
+        /* Simulate coming back to an old complete project on this build. */
+        assert(preset_loadProject(0,0)==FR_OK);
+        for(unsigned slot=1;slot<64;slot++) {
+            assert(mainParameters[slot][PAR_FX_P1]==slot);
+            const unsigned offset=3u*FX_KIT_FIELDS_PER_EFFECT;
+            assert(preset_fxBanks[slot][offset]==slot);
+            assert(preset_fxBanks[slot][offset+4]==60u);
+            assert(preset_fxBanks[slot][offset+5]==slot%6u);
+        }
+        printf("PASS FAT%u legacy project: 64 unextended Kits load and reconstruct selected FX bank\n",fs?32:16);
+    }
+}
 int main(int argc,char **argv)
 {
  setvbuf(stdout,0,_IONBF,0);assert(argc==2);
- if(!strcmp(argv[1],"normal"))normal();else if(!strcmp(argv[1],"faults"))faults();else if(!strcmp(argv[1],"boundaries"))boundaries();else if(!strcmp(argv[1],"sector"))sector();else if(!strcmp(argv[1],"edge"))edge();else assert(0);
+ if(!strcmp(argv[1],"normal"))normal();else if(!strcmp(argv[1],"faults"))faults();else if(!strcmp(argv[1],"boundaries"))boundaries();else if(!strcmp(argv[1],"sector"))sector();else if(!strcmp(argv[1],"edge"))edge();else if(!strcmp(argv[1],"legacy"))legacy_kit_project();else assert(0);
 }

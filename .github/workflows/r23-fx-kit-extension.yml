@@ -62,6 +62,7 @@ jobs:
           python3 tests/r22_drum_copy/run.py 2>&1 | tee build/r23-host-evidence/drum-copy.log
           python3 tests/project_storage/run.py 2>&1 | tee build/r23-host-evidence/project-storage.log
           python3 tests/project_transaction/run.py 2>&1 | tee build/r23-host-evidence/project-transaction.log
+          python3 tests/project_transaction/run.py legacy 2>&1 | tee build/r23-host-evidence/legacy-project.log
       - name: Preserve host evidence even after failure
         if: always()
         uses: actions/upload-artifact@v4
