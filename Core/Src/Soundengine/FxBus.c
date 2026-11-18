@@ -27,6 +27,8 @@ void FxBus_init()
 
 	/* No prior kit-format migration is performed in the core-only phase. */
 	memset(fxBus.bankParameters, 0, sizeof(fxBus.bankParameters));
+	memset(fxBus.bankDryWet, 0, sizeof(fxBus.bankDryWet));
+	memset(fxBus.bankAudioRouting, 0, sizeof(fxBus.bankAudioRouting));
 	fxBus.parameterBankType = FX_OFF;
 
 	fxBus.delay.delayType = DELAY_NORMAL;
@@ -45,11 +47,15 @@ void FxBus_init()
 
 IN_ITCM_RAM void FxBus_processSelected(uint8_t selectedType, int16_t *fxBuffer, int16_t* outL,int16_t* outR,int16_t* outL2, int16_t* outR2, uint32_t size)
 {
+	/* The processing effect, not the selected editor page, owns output and wet mix. */
+	const uint8_t routeType = selectedType < FX_PARAMETER_BANK_COUNT ? selectedType : FX_OFF;
+	const uint8_t selectedRoute = fxBus.bankAudioRouting[routeType];
+	const float selectedWet = fxBus.bankDryWet[routeType];
 	int16_t* out;
 	int16_t* out2 = NULL;
 	// < MIXER_ROUTING_DAC1_L -> stereo 1 or 2
-	const uint8_t channels = fxBus.audioRouting < MIXER_ROUTING_DAC1_L ? 2 : 1;
-	switch(fxBus.audioRouting)
+	const uint8_t channels = selectedRoute < MIXER_ROUTING_DAC1_L ? 2 : 1;
+	switch(selectedRoute)
 	{
 	default:
 	case MIXER_ROUTING_DAC1_STEREO:
@@ -108,30 +114,30 @@ IN_ITCM_RAM void FxBus_processSelected(uint8_t selectedType, int16_t *fxBuffer, 
 	break;
 
 	case FX_DISTORTION:
-		Distortion_process(&fxBus.distortion, fxBuffer, out, out2, size, channels, fxBus.dryWet);
+		Distortion_process(&fxBus.distortion, fxBuffer, out, out2, size, channels, selectedWet);
 		break;
 
 	case FX_RING:
-		Ringmod_process(&fxBus.ringmod, fxBuffer, out, out2, size, channels, fxBus.dryWet);
+		Ringmod_process(&fxBus.ringmod, fxBuffer, out, out2, size, channels, selectedWet);
 		break;
 
 	case FX_COMPRESSOR:
-		Compressor_process(&fxBus.compressor, fxBuffer, out, out2, size, channels, fxBus.dryWet);
+		Compressor_process(&fxBus.compressor, fxBuffer, out, out2, size, channels, selectedWet);
 		break;
 
 	case FX_DELAY:
 		if(fxBus.delay.delayType == DELAY_NORMAL)
 		{
-			Delay_process(&fxBus.delay, fxBuffer, out, out2, size, channels, fxBus.dryWet);
+			Delay_process(&fxBus.delay, fxBuffer, out, out2, size, channels, selectedWet);
 		}
 		else
 		{
-			Delay_processPingPong(&fxBus.delay, fxBuffer, out, out2, size, channels, fxBus.dryWet);
+			Delay_processPingPong(&fxBus.delay, fxBuffer, out, out2, size, channels, selectedWet);
 		}
 		break;
 #if USE_REVERB
 	case FX_REVERB:
-		Reverb_process(&fxBus.reverb, fxBuffer, out, out2, size, channels, fxBus.dryWet);
+		Reverb_process(&fxBus.reverb, fxBuffer, out, out2, size, channels, selectedWet);
 		break;
 #endif
 
@@ -165,19 +171,28 @@ static void FxBus_syncSelectedBank(void)
 	const uint8_t nextType = fxBus.fxType;
 	if (nextType >= FX_PARAMETER_BANK_COUNT)
 		return;
-
 	const uint8_t previousType = fxBus.parameterBankType;
 	if (previousType != nextType)
 	{
 		if (previousType < FX_PARAMETER_BANK_COUNT)
-			memcpy(fxBus.bankParameters[previousType], fxBus.parameter, sizeof(fxBus.parameter));
-		memcpy(fxBus.parameter, fxBus.bankParameters[nextType], sizeof(fxBus.parameter));
+		{
+			memcpy(fxBus.bankParameters[previousType], fxBus.parameter,
+			       sizeof(fxBus.parameter));
+			fxBus.bankDryWet[previousType] = fxBus.dryWet;
+			fxBus.bankAudioRouting[previousType] = fxBus.audioRouting;
+		}
+		memcpy(fxBus.parameter, fxBus.bankParameters[nextType],
+		       sizeof(fxBus.parameter));
+		fxBus.dryWet = fxBus.bankDryWet[nextType];
+		fxBus.audioRouting = fxBus.bankAudioRouting[nextType];
 		fxBus.parameterBankType = nextType;
 	}
 	else
 	{
-		/* Preserve edits made through the existing ParameterArray pointer. */
-		memcpy(fxBus.bankParameters[nextType], fxBus.parameter, sizeof(fxBus.parameter));
+		memcpy(fxBus.bankParameters[nextType], fxBus.parameter,
+		       sizeof(fxBus.parameter));
+		fxBus.bankDryWet[nextType] = fxBus.dryWet;
+		fxBus.bankAudioRouting[nextType] = fxBus.audioRouting;
 	}
 }
 
@@ -259,4 +274,39 @@ float FxBus_getBankParameter(uint8_t type, uint8_t idx)
 	    idx >= FX_PARAMETER_COUNT)
 		return 0.f;
 	return fxBus.bankParameters[type][idx];
+}
+
+/* Adjust one FX without changing the selected front-panel effect. */
+void FxBus_setBankWet(uint8_t type, float value)
+{
+	if (type >= FX_PARAMETER_BANK_COUNT)
+		return;
+	FxBus_syncSelectedBank();
+	if (!(value >= 0.f)) value = 0.f;
+	if (value > 1.f) value = 1.f;
+	fxBus.bankDryWet[type] = value;
+	if (type == fxBus.parameterBankType)
+		fxBus.dryWet = value;
+}
+
+void FxBus_setBankOutput(uint8_t type, uint8_t routing)
+{
+	if (type >= FX_PARAMETER_BANK_COUNT || routing > MIXER_ROUTING_DAC2_R)
+		return;
+	FxBus_syncSelectedBank();
+	fxBus.bankAudioRouting[type] = routing;
+	if (type == fxBus.parameterBankType)
+		fxBus.audioRouting = routing;
+}
+
+void FxBus_setSelectedWet(float value)
+{
+	FxBus_syncSelectedBank();
+	FxBus_setBankWet(fxBus.parameterBankType, value);
+}
+
+void FxBus_setSelectedOutput(uint8_t routing)
+{
+	FxBus_syncSelectedBank();
+	FxBus_setBankOutput(fxBus.parameterBankType, routing);
 }

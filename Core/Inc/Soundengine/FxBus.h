@@ -53,6 +53,9 @@ typedef struct FxStruct
 
 	/* Stage 1: four P1-P4 banks. Wet/output and kit persistence are separate. */
 	float bankParameters[FX_PARAMETER_BANK_COUNT][FX_PARAMETER_COUNT];
+	/* Independent per-processor wet mix and physical output destination. */
+	float bankDryWet[FX_PARAMETER_BANK_COUNT];
+	uint8_t bankAudioRouting[FX_PARAMETER_BANK_COUNT];
 	uint8_t parameterBankType;
 
 
@@ -78,6 +81,10 @@ void FxBus_setParameter(uint8_t idx, float value);
 void FxBus_updateParameter();
 void FxBus_setBankParameter(uint8_t fxType, uint8_t idx, float value);
 float FxBus_getBankParameter(uint8_t fxType, uint8_t idx);
+void FxBus_setBankWet(uint8_t type, float value);
+void FxBus_setBankOutput(uint8_t type, uint8_t routing);
+void FxBus_setSelectedWet(float value);
+void FxBus_setSelectedOutput(uint8_t routing);
 //to prevent NaN pollution from delay
 void FxBus_prepareFxChange();
 

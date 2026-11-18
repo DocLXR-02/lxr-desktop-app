@@ -1381,16 +1381,17 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue, uint8_t isFl
 				//change visible parameters to selected FX type
 				if(menu_activePage == FX_MODE_PAGE)
 				{
+					menu_syncFxParameterView();
 					if(menu_getSubPage() != fxBus.fxType)
 						menu_switchSubPage(fxBus.fxType, 1 );
 				}
 #endif
 				break;
 			case CC2_FX_ROUTING:
-				fxBus.audioRouting = value.itg;
+				FxBus_setSelectedOutput(value.itg);
 				break;
 			case CC2_FX_AMOUNT:
-				fxBus.dryWet = value.itg/100.f;
+				FxBus_setSelectedWet(value.itg/100.f);
 				break;
 
 			case CC2_FX_DIST_TYPE:

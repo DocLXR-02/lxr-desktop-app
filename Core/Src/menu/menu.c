@@ -32,6 +32,7 @@
 
 #include "Soundengine/Sequencer/sequencer.h"
 #include "Soundengine/Soundengine.h"
+#include "Soundengine/FxBus.h"
 
 
 uint8_t display_refresh_state = 0;
@@ -3404,6 +3405,26 @@ uint8_t menu_getSubPage()
 	return (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
 };
 //-----------------------------------------------------------------
+/* The shared FX page is an editor for one independently stored processor. */
+static uint8_t menu_fxFloatByte(float value, uint8_t maximum)
+{
+	if (!(value >= 0.f)) return 0;
+	if (value >= 1.f) return maximum;
+	return (uint8_t)(value * maximum + 0.5f);
+}
+
+void menu_syncFxParameterView(void)
+{
+	if (fxBus.fxType >= FX_PARAMETER_BANK_COUNT) return;
+	activeParameters[PAR_FX_TYPE] = fxBus.fxType;
+	activeParameters[PAR_FX_ROUTING] = fxBus.audioRouting;
+	activeParameters[PAR_FX_DRY_WET] = menu_fxFloatByte(fxBus.dryWet, 100);
+	activeParameters[PAR_FX_P1] = menu_fxFloatByte(fxBus.parameter[0], 127);
+	activeParameters[PAR_FX_P2] = menu_fxFloatByte(fxBus.parameter[1], 127);
+	activeParameters[PAR_FX_P3] = menu_fxFloatByte(fxBus.parameter[2], 127);
+	activeParameters[PAR_FX_P4] = menu_fxFloatByte(fxBus.parameter[3], 127);
+}
+
 void menu_switchPage(uint8_t pageNr)
 {
 	//autosave config page settings
@@ -3445,6 +3466,8 @@ void menu_switchPage(uint8_t pageNr)
 	case FX_MODE_PAGE:
 		editModeActive = 0;
 		menu_activePage=FX_MODE_PAGE;
+		FxBus_updateParameter();
+		menu_syncFxParameterView();
 		break;
 
 	case SONG_MODE_PAGE:
