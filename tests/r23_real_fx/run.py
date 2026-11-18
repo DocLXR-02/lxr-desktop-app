@@ -15,7 +15,7 @@ def source(path):
     raw=subprocess.check_output(["git","show",PIN+":"+path],cwd=ROOT)
     return raw.decode("utf-8").replace("\r\n","\n")
 def find(name,s):
-    rx=r"(?m)^[ \t]*(?:(?:static|__inline|inline|IN_ITCM_RAM)\s+)*(?:void|float|double|int16_t|uint32_t|uint8_t|int32_t)\s+"+re.escape(name)+r"\s*\([^;]*?\)\s*(?://[^\n]*\n\s*)?\{"
+    rx=r"(?m)^[ \t]*(?:(?:static|__inline|inline|IN_ITCM_RAM)\s+)*(?:void|int|float|double|int16_t|uint32_t|uint8_t|int32_t)\s+"+re.escape(name)+r"\s*\([^;]*?\)\s*(?://[^\n]*\n\s*)?\{"
     m=re.search(rx,s,flags=re.M|re.S)
     if not m: raise AssertionError("Source function absent: "+name)
     k=s.index("{",m.start());level=0
