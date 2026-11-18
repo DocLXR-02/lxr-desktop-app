@@ -26,7 +26,7 @@ jobs:
           git -c core.whitespace=cr-at-eol diff --check 256497e7cd7b0070dc6fabc34c4f73f1712c4862 HEAD
           git merge-base --is-ancestor 256497e7cd7b0070dc6fabc34c4f73f1712c4862 HEAD
           git diff --name-only 256497e7cd7b0070dc6fabc34c4f73f1712c4862 HEAD > build/r23-host-evidence/step-changed-files.txt
-          unexpected="$(grep -Ev '^(Core/Src/frontPanelParser\.c|Core/Src/Soundengine/MIDI/MidiParser\.c|Core/Src/Soundengine/MIDI/MidiVoiceControl\.c|Core/Src/menu/menu\.c|Core/Src/Preset/presetManager\.c|tests/r23_midi_hardening/run\.py|\.github/workflows/r23-midi-hardening\.yml)$' build/r23-host-evidence/step-changed-files.txt || true)"
+          unexpected="$(grep -Ev '^(Core/Src/frontPanelParser\.c|Core/Src/Soundengine/MIDI/MidiParser\.c|Core/Src/Soundengine/MIDI/MidiVoiceControl\.c|Core/Src/menu/menu\.c|Core/Src/Preset/presetManager\.c|tests/r23_midi_hardening/run\.py|tests/r23_legacy_kit_migration/run\.py|\.github/workflows/r23-midi-hardening\.yml)$' build/r23-host-evidence/step-changed-files.txt || true)"
           if [ -n "$unexpected" ]; then echo "STOP unexpected changed paths: $unexpected"; exit 1; fi
           for f in Delay Ringmod Distortion Compressor; do
             source="Core/Src/Soundengine/DSPAudio/FX/${f}.c"
