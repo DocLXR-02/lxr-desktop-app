@@ -324,7 +324,7 @@ const char outputNames[][7]  =
 	{"R1"}	,	//Mono Out Right DAC 1
 	{"L2"}	,	//Mono Out Left DAC 2
 	{"R2"}	,	//Mono Out Right DAC 2
-	{"FX"}	,	//to FX Bus
+	{"---"}	,	//reserved stored route 6; not selectable
 	{"DLY"},	//direct Delay processor
 	{"RNG"},	//direct Ringmod processor
 	{"DRV"},	//direct Distortion / CLP processor
