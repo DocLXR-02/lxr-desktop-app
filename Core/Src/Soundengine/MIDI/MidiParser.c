@@ -908,11 +908,11 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue, uint8_t isFl
 		const uint8_t isMuteCommand = msg.data1 >= CC2_MUTE_1 && msg.data1 <= CC2_MUTE_7;
 		if(!isMuteCommand && (paramNr >= END_OF_SOUND_PARAMETERS ||
 			paramNr >= sizeof(midiParser_originalCcValues))) return;
-		/* Reject unsupported voice destinations before writing either the MIDI
-		 * cache or the live routing array. The voice menu exposes values 0..10.
+		/* The archived FX-bus destination 6 is valid only inside the Kit
+		 * importer. Reject it (and out-of-range values) before caching or routing.
 		 */
 		if(msg.data1 >= CC2_AUDIO_OUT1 && msg.data1 <= CC2_AUDIO_OUT6 &&
-		   value.itg > MIXER_ROUTING_FX_COMPRESSOR) return;
+		   (value.itg == 6u || value.itg > MIXER_ROUTING_FX_COMPRESSOR)) return;
 
 		if(updateOriginalValue && !isFloatModulator && !isMuteCommand) {
 			midiParser_originalCcValues[paramNr] = value.itg;
