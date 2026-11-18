@@ -487,7 +487,6 @@ FRESULT preset_LoadTmpKit(void)
             if(res==FR_OK)fxKit_readValues(values,block);
         }else preset_fxFromLegacy(values,data);
     }
-    if(res!=FR_OK)return res;
     res=preset_finishRead(res);
     if(res!=FR_OK)return res;
     const uint8_t nmt=getNumModTargets();
