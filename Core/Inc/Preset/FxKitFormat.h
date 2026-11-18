@@ -22,7 +22,9 @@ static inline uint16_t fxKit_crc16(const uint8_t *bytes, unsigned count)
     for (unsigned i = 0; i < count; i++) {
         crc ^= (uint16_t)bytes[i] << 8;
         for (unsigned bit = 0; bit < 8; bit++)
-            crc = (uint16_t)((crc & 0x8000u) ? (crc << 1) ^ 0x1021u : crc << 1);
+            crc = (uint16_t)((crc & 0x8000u) ?
+                (((uint32_t)crc << 1u) ^ 0x1021u) :
+                ((uint32_t)crc << 1u));
     }
     return crc;
 }
