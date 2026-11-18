@@ -1384,11 +1384,7 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue, uint8_t isFl
 
 			case CC2_FX_TYPE:
 #if 1
-#if USE_REVERB
-				if((value.itg == FX_REVERB) && (fxBus.fxType != value.itg)) FxBus_prepareFxChange();
-#else
-				if( fxBus.fxType != value.itg) FxBus_prepareFxChange();
-#endif
+				/* Direct FX routing owns CLP DSP lifetime: editor selection must not reset it. */
 				fxBus.fxType = value.itg;
 				FxBus_updateParameter();
 				//change visible parameters to selected FX type
