@@ -925,7 +925,8 @@ void preset_saveDrumsetRam(uint8_t presetNr, uint8_t isMorph)
             uint8_t value;
             if((i>=PAR_VEL_DEST_1 && i<=PAR_VEL_DEST_6) ||
                (i>=PAR_TARGET_LFO1 && i<=PAR_TARGET_LFO6) ||
-               (i>=PAR_VOICE_LFO1 && i<=PAR_VOICE_LFO6))
+               (i>=PAR_VOICE_LFO1 && i<=PAR_VOICE_LFO6) ||
+               (i>=PAR_AUDIO_OUT1 && i<=PAR_AUDIO_OUT6))
                 value=activeParameters[i];
             else value=preset_getMorphValue(i,activeParameters[PAR_MORPH]);
             mainParameters[presetNr][i]=value;
