@@ -9,7 +9,7 @@ spec = importlib.util.spec_from_file_location('save_helpers', ROOT/'tests/save_e
 h = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(h)
 source = h.preset_source()
-helpers = ['preset_fxFromLegacy','preset_fxCaptureCurrent','preset_fxApplyKit',
+helpers = ['preset_fxUpgradeStoredVoiceRoutes','preset_fxFromLegacy','preset_fxCaptureCurrent','preset_fxApplyKit',
            'preset_fxReadTail','preset_fxWriteTail','preset_sharedStatus','preset_openShared','preset_closeShared',
            'preset_writeChecked','preset_finishSave','preset_finishRead',
            'preset_projectPath','preset_createProjectFolder','preset_childPath',
@@ -57,7 +57,8 @@ def production_source():
         definition = h.extract(source, n)
         prototypes.append(definition[:definition.index('{')].rstrip()+';\n')
     prefix=transaction[:transaction.index('static FRESULT preset_txnMutation')]
-    code = ('static volatile uint32_t preset_kitRevision;\n'
+    code = ('#include "Soundengine/SharedFxPool.h"\n'
+            'static volatile uint32_t preset_kitRevision;\n'
             'static uint8_t preset_fxBanks[NUM_KIT_SLOTS][FX_KIT_PAYLOAD_BYTES];\n'
             'static uint8_t preset_fxReadBuffer[END_OF_SOUND_PARAMETERS];\n'
             'static uint8_t preset_projectLoading;\n') + prefix + ''.join(prototypes) + ''.join(h.extract(source,n) for n in helpers)
