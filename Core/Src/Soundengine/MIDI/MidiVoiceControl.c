@@ -51,11 +51,10 @@ void voiceControl_noteOn(uint8_t voice, uint8_t note, uint8_t vel)
 	}
 	*/
 
-	if (active_voices & (1<<voice))
-	{
-    uint8_t midiChan = midi_MidiChannels[voice];
-		seq_sendMidiNoteOn(midiChan, note, vel);
-	}
+	/* MIDI Note On belongs to each caller, not the voice trigger itself.
+	 * The sequencer already sends its selected note after triggering; sending
+	 * here too produced a duplicate with no matching Note Off.
+	 */
 
 	// Send to front panel so it can pulse the LED
 	uart_sendFrontpanelByte(NOTE_ON);
