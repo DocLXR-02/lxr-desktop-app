@@ -327,7 +327,7 @@ static void test_real_delay_pause_resume(int mode) {
    mode?"ping-pong":"normal");
 }
 int main(void) {
- for(int sc=0;sc<9;sc++)for(int mode=0;mode<6;mode+=2)
+ for(int sc=0;sc<9;sc++)for(int mode=0;mode<6;mode++)
  for(int wet=0;wet<3;wet++)for(int ping=0;ping<2;ping++)
  for(int wave=0;wave<2;wave++)for(int dist=0;dist<3;dist++)
  for(int block=0;block<3;block++)
