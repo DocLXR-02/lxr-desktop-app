@@ -77,7 +77,6 @@ extern INDTCMZ FxBus fxBus;
 
 void FxBus_init();
 void FxBus_processSelected(uint8_t fxType, int16_t *fxBuffer, int16_t* outL,int16_t* outR,int16_t* outL2, int16_t* outR2, uint32_t size);
-void FxBus_process(int16_t *fxBuffer, int16_t* outL,int16_t* outR,int16_t* outL2, int16_t* outR2, uint32_t size);
 void FxBus_setParameter(uint8_t idx, float value);
 void FxBus_updateParameter();
 void FxBus_setBankParameter(uint8_t fxType, uint8_t idx, float value);
