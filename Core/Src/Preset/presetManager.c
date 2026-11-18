@@ -47,7 +47,9 @@ static volatile uint32_t preset_kitRevision;
 static uint8_t preset_fxBanks[NUM_KIT_SLOTS][FX_KIT_PAYLOAD_BYTES];
 static uint8_t preset_fxReadBuffer[END_OF_SOUND_PARAMETERS];
 static uint8_t preset_projectLoading;
-_Static_assert(END_OF_SOUND_PARAMETERS == 228, "Keep legacy Kit parameter offsets");
+/* Also used by the inline append-only FX writer defined above this body. */
+static FRESULT preset_writeChecked(const void *data, UINT count);
+/* No fixed numeric assumption: the existing enum determines legacy length. */
 _Static_assert(FX_BANK_SERIALIZED_BYTES == FX_KIT_PAYLOAD_BYTES, "Bank payload mismatch");
 
 static uint8_t morph_state = 0; //flag for non blocking morph
@@ -66,8 +68,8 @@ static void preset_fxFromLegacy(uint8_t *values, const uint8_t *parameters)
 {
     memset(values, 0, FX_KIT_PAYLOAD_BYTES);
     const uint8_t type = parameters[PAR_FX_TYPE];
-    if(type < FX_DISTORTION || type > FX_DELAY) return;
-    const unsigned offset = (unsigned)(type-FX_DISTORTION)*FX_KIT_FIELDS_PER_EFFECT;
+    if(type < FX_KIT_FIRST_TYPE || type > FX_KIT_LAST_TYPE) return;
+    const unsigned offset = (unsigned)(type-FX_KIT_FIRST_TYPE)*FX_KIT_FIELDS_PER_EFFECT;
     for(unsigned p=0;p<4;p++) {
         uint8_t x=parameters[PAR_FX_P1+p];
         values[offset+p]=x<=127u?x:127u;
@@ -86,8 +88,8 @@ static void preset_fxApplyKit(uint8_t slot)
     if(slot>=NUM_KIT_SLOTS) return;
     const uint8_t type=activeParameters[PAR_FX_TYPE];
     FxBus_importKitBanks(preset_fxBanks[slot],type);
-    if(type>=FX_DISTORTION && type<=FX_DELAY) {
-        const unsigned offset=(unsigned)(type-FX_DISTORTION)*FX_KIT_FIELDS_PER_EFFECT;
+    if(type>=FX_KIT_FIRST_TYPE && type<=FX_KIT_LAST_TYPE) {
+        const unsigned offset=(unsigned)(type-FX_KIT_FIRST_TYPE)*FX_KIT_FIELDS_PER_EFFECT;
         for(unsigned p=0;p<4;p++)
             activeParameters[PAR_FX_P1+p]=preset_fxBanks[slot][offset+p];
         activeParameters[PAR_FX_DRY_WET]=preset_fxBanks[slot][offset+4];

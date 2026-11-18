@@ -1,5 +1,5 @@
 /* Versioned, append-only FX extension for legacy LXR Kit (.snd) payloads.
- * The original eight-byte name and 228 sound parameter bytes stay unchanged.
+ * The original eight-byte name and END_OF_SOUND_PARAMETERS byte prefix stay unchanged.
  * There is no change to the R18 CLP DSP algorithm or audio signal.
  */
 #ifndef LXR_PRESET_FX_KIT_FORMAT_H
@@ -8,6 +8,8 @@
 #include <string.h>
 
 enum {
+    FX_KIT_FIRST_TYPE = 1,
+    FX_KIT_LAST_TYPE = 4,
     FX_KIT_EFFECT_COUNT = 4,
     FX_KIT_FIELDS_PER_EFFECT = 6, /* P1..P4, Dry/Wet, output */
     FX_KIT_PAYLOAD_BYTES = FX_KIT_EFFECT_COUNT * FX_KIT_FIELDS_PER_EFFECT,

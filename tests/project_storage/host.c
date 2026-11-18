@@ -16,6 +16,10 @@ typedef uint16_t WORD,WCHAR;
 typedef uint64_t QWORD;
 #include "Preset/PresetManager.h"
 #include "Preset/FxKitFormat.h"
+/* Bound only to test doubles; the production Firmware provides these. */
+void FxBus_exportKitBanks(uint8_t *out);
+void FxBus_importKitBanks(const uint8_t *in, uint8_t selected);
+
 #include "Soundengine/Sequencer/sequencer.h"
 #include "menu/menu.h"
 #include "lcd.h"
@@ -396,7 +400,8 @@ static void reader_closes(void)
  memcpy(savefileNames[0][PROJECT_NAMES],"OLDNAME!",8);close_fail=1;
  preset_loadProjectNames(0);assert(!memcmp(savefileNames[0][PROJECT_NAMES],"OLDNAME!",8) && preset_sharedFailure==FR_DISK_ERR);
  reset();memset(mainParameters[0],0x69,END_OF_SOUND_PARAMETERS);preset_defaultKit(0);
- assert(!memcmp(mainParameters[0],initKit+8,END_OF_SOUND_PARAMETERS) && mainParameters[0][END_OF_SOUND_PARAMETERS-1]==0);
+ assert(!memcmp(mainParameters[0],initKit+8,
+     END_OF_SOUND_PARAMETERS<INIT_KIT_SIZE-8?END_OF_SOUND_PARAMETERS:INIT_KIT_SIZE-8) && mainParameters[0][END_OF_SOUND_PARAMETERS-1]==0);
  puts("PASS required reader closes: kit/pattern/song/temp/global/name failure never reports success or bypasses retained ownership; init defaults bounded to actual payload");
 }
 

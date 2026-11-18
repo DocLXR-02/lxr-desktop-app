@@ -12,6 +12,10 @@ typedef int32_t INT,LONG;typedef uint32_t UINT,DWORD;typedef uint8_t BYTE;
 typedef int16_t SHORT;typedef uint16_t WORD,WCHAR;typedef uint64_t QWORD;
 #include "Preset/PresetManager.h"
 #include "Preset/FxKitFormat.h"
+/* Bound only to test doubles; the production Firmware provides these. */
+void FxBus_exportKitBanks(uint8_t *out);
+void FxBus_importKitBanks(const uint8_t *in, uint8_t selected);
+
 #include "Soundengine/Sequencer/sequencer.h"
 #include "menu/menu.h"
 #include "lcd.h"
