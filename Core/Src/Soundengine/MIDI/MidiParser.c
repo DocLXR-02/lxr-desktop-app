@@ -1900,7 +1900,10 @@ void midiParser_parseMidiMessage(MidiMsg msg)
 				if((midiParser_txRxFilter & MIDI_FILTER_CC) && (midiParser_isValidChannel(chanonly) ))
 				{
 					//record automation if record is turned on
-					seq_recordAutomation(frontParser_activeTrack, msg.data1, msg.data2);
+					/* CC0 and NRPN selectors are commands, not automatable sound values. */
+					if(msg.data1 != CC_BANK_CHANGE && msg.data1 != NRPN_DATA_ENTRY_COARSE &&
+					   msg.data1 != NRPN_FINE && msg.data1 != NRPN_COARSE)
+						seq_recordAutomation(frontParser_activeTrack, msg.data1, msg.data2);
 
 					//handle midi data
 					midiParser_ccHandler(msg,1, 0, 0.f);
@@ -1914,9 +1917,12 @@ void midiParser_parseMidiMessage(MidiMsg msg)
 			{
 
 				// respond to CC message. This responds only when global channel or voice channel matches the cc message's channel
-				if((midiParser_txRxFilter & MIDI_FILTER_CC) && ((chanonly == midi_MidiChannels[voiceNr]) || (chanonly == midi_MidiChannels[7]) )) {
+				if((midiParser_txRxFilter & MIDI_FILTER_CC) && ((chanonly == midi_MidiChannels[voiceNr-1]) || (chanonly == midi_MidiChannels[7]) )) {
 					//record automation if record is turned on
-					seq_recordAutomation(frontParser_activeTrack, msg.data1, msg.data2);
+					/* CC0 and NRPN selectors are commands, not automatable sound values. */
+					if(msg.data1 != CC_BANK_CHANGE && msg.data1 != NRPN_DATA_ENTRY_COARSE &&
+					   msg.data1 != NRPN_FINE && msg.data1 != NRPN_COARSE)
+						seq_recordAutomation(frontParser_activeTrack, msg.data1, msg.data2);
 
 					//handle midi data
 					midiParser_ccHandler(msg,1, 0, 0.f);
