@@ -32,6 +32,7 @@
 #include "Soundengine/Sequencer/sequencer.h"
 #include "Soundengine/Soundengine.h"
 #include "Soundengine/FxBus.h"
+#include "Soundengine/SharedFxPool.h"
 #include "Preset/FxKitFormat.h"
 
 
@@ -64,6 +65,20 @@ char currentFolder[13];
 //uint8_t activePresetNr = 0;
 
 
+/* Upgrade archived voice route 6 once when importing a Kit into parameter RAM.
+ * All live audio routing uses direct destinations; the selected FX editor never
+ * determines a processor in the mixer. Values 7..10 remain stable across R23.
+ */
+static void preset_fxUpgradeStoredVoiceRoutes(uint8_t *parameters)
+{
+    const uint8_t selectedFx = parameters[PAR_FX_TYPE];
+    const uint8_t output = parameters[PAR_FX_ROUTING];
+    for(uint8_t voice = 0; voice < FX_POOL_VOICE_COUNT; ++voice) {
+        const unsigned at = PAR_AUDIO_OUT1 + voice;
+        parameters[at] = SharedFxPool_upgradeStoredRoute(parameters[at], selectedFx, output);
+    }
+}
+
 static void preset_fxFromLegacy(uint8_t *values, const uint8_t *parameters)
 {
     memset(values, 0, FX_KIT_PAYLOAD_BYTES);
@@ -86,6 +101,7 @@ static void preset_fxCaptureCurrent(uint8_t slot)
 static void preset_fxApplyKit(uint8_t slot)
 {
     if(slot>=NUM_KIT_SLOTS) return;
+    preset_fxUpgradeStoredVoiceRoutes(activeParameters);
     const uint8_t type=activeParameters[PAR_FX_TYPE];
     FxBus_importKitBanks(preset_fxBanks[slot],type);
     if(type>=FX_KIT_FIRST_TYPE && type<=FX_KIT_LAST_TYPE) {
@@ -334,6 +350,7 @@ static void preset_defaultKit(uint8_t slot)
     memcpy(savefileNames[slot][KIT_NAMES],initKit,8);
     memset(mainParameters[slot],0,END_OF_SOUND_PARAMETERS);
     memcpy(mainParameters[slot],initKit+8,count);
+    preset_fxUpgradeStoredVoiceRoutes(mainParameters[slot]);
     preset_fxFromLegacy(preset_fxBanks[slot],mainParameters[slot]);
 }
 
@@ -496,6 +513,7 @@ FRESULT preset_LoadTmpKit(void)
         if(data[PAR_VEL_DEST_1+i]>=nmt)data[PAR_VEL_DEST_1+i]=0;
         if(data[PAR_TARGET_LFO1+i]>=nmt)data[PAR_TARGET_LFO1+i]=0;
     }
+    preset_fxUpgradeStoredVoiceRoutes(data);
     memcpy(activeParameters,data,sizeof(data));
     memcpy(preset_fxBanks[slot],values,sizeof(values));
     menu_selectedPresetNr[SAVE_TYPE_KIT]=menu_loadedPresetNr[CURRENT_KIT]=slot;
@@ -861,7 +879,8 @@ static FRESULT preset_writeDrumsetData(uint8_t presetNr, uint8_t isMorph)
             uint8_t value;
             if((i>=PAR_VEL_DEST_1 && i<=PAR_VEL_DEST_6) ||
                (i>=PAR_TARGET_LFO1 && i<=PAR_TARGET_LFO6) ||
-               (i>=PAR_VOICE_LFO1 && i<=PAR_VOICE_LFO6))
+               (i>=PAR_VOICE_LFO1 && i<=PAR_VOICE_LFO6) ||
+               (i>=PAR_AUDIO_OUT1 && i<=PAR_AUDIO_OUT6))
                 value=activeParameters[i];
             else value=preset_getMorphValue(i,activeParameters[PAR_MORPH]);
             res=preset_writeChecked(&value,1);
@@ -889,6 +908,7 @@ void preset_loadDrumsetRam(uint8_t presetNr, uint8_t isMorph, uint8_t sendImmedi
             preset_fxCaptureCurrent(previous);
         ++preset_kitRevision;
         menu_loadedPresetNr[CURRENT_KIT]=presetNr;
+        preset_fxUpgradeStoredVoiceRoutes(mainParameters[presetNr]);
         memcpy(activeParameters,mainParameters[presetNr],END_OF_SOUND_PARAMETERS);
         preset_fxApplyKit(presetNr);
     }
@@ -1089,6 +1109,7 @@ static FRESULT preset_readDrumsetData(uint8_t presetNr, uint8_t isMorph)
     uint8_t values[FX_KIT_PAYLOAD_BYTES];
     res=preset_fxReadTail((FIL*)&SDFile,size,values,preset_fxReadBuffer);
     if(res!=FR_OK)return res;
+    preset_fxUpgradeStoredVoiceRoutes(preset_fxReadBuffer);
     const uint8_t nmt=getNumModTargets();
     for(uint8_t i=0;i<6;i++) {
         if(preset_fxReadBuffer[PAR_VEL_DEST_1+i]>=nmt)
