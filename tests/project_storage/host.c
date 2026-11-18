@@ -15,6 +15,7 @@ typedef int16_t SHORT;
 typedef uint16_t WORD,WCHAR;
 typedef uint64_t QWORD;
 #include "Preset/PresetManager.h"
+#include "Preset/FxKitFormat.h"
 #include "Soundengine/Sequencer/sequencer.h"
 #include "menu/menu.h"
 #include "lcd.h"
@@ -37,6 +38,14 @@ uint8_t menu_playedPattern,menu_shownPattern,lcd_process_display_interrupt;
 char currentFolder[13],savefileNames[NUM_KIT_SLOTS][NUM_SAVEFILE_NAMES][8];
 FIL SDFile;
 TIM_HandleTypeDef htim2;
+/* The filesystem tests keep FX runtime behavior observable without STM32 DSP. */
+static uint8_t hostFxLive[FX_KIT_PAYLOAD_BYTES];
+static uint8_t hostFxLastType;
+void FxBus_exportKitBanks(uint8_t *out) { memcpy(out,hostFxLive,sizeof(hostFxLive)); }
+void FxBus_importKitBanks(const uint8_t *in,uint8_t selected) {
+    memcpy(hostFxLive,in,sizeof(hostFxLive));hostFxLastType=selected;
+}
+
 static FATFS host_fs;
 static FRESULT preset_sharedFailure;
 static uint8_t preset_autosavePaused;
@@ -78,6 +87,7 @@ static void reset(void)
  stat_result=chdir_result=find_result=dir_result=dir_close_result=unlink_result=FR_OK;
  bad_entry=0;lcd_process_display_interrupt=1;
  memset(mainParameters,0x42,sizeof mainParameters);memset(activeParameters,0,sizeof activeParameters);
+ memset(hostFxLive,0,sizeof hostFxLive);
  memset(seq_songData,SONG_END,sizeof seq_songData);memset(savefileNames,0,sizeof savefileNames);
  memset(&seq_patternSet,0,sizeof seq_patternSet);
  for(unsigned p=0;p<64;p++){
