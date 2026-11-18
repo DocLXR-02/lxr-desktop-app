@@ -100,6 +100,7 @@ static void alter_stage(void)
  if(corrupt_stage==1){r=f_open(&f,"/LXRSTG/00-PATTE.pat",FA_WRITE);assert(r==FR_OK);assert(f_lseek(&f,100)==FR_OK && f_truncate(&f)==FR_OK);}
  else if(corrupt_stage==2){r=f_open(&f,"/LXRSTG/00-PATTE.pat",FA_WRITE);assert(r==FR_OK);BYTE bad=255;assert(f_lseek(&f,3662)==FR_OK && f_write(&f,&bad,1,&got)==FR_OK && got==1);}
  else if(corrupt_stage==3){assert(f_open(&f,"/LXRSTG/README.TXT",FA_CREATE_NEW|FA_WRITE)==FR_OK);assert(f_write(&f,"unknown",7,&got)==FR_OK && got==7);}
+ else if(corrupt_stage==4){r=f_open(&f,"/LXRSTG/00-KITNA.snd",FA_WRITE);assert(r==FR_OK);BYTE bad=255;assert(f_lseek(&f,8u+END_OF_SOUND_PARAMETERS+FX_KIT_HEADER_BYTES+2u)==FR_OK && f_write(&f,&bad,1,&got)==FR_OK && got==1);}
  else assert(0);
  assert(f_close(&f)==FR_OK);corrupt_stage=0;
 }
@@ -293,7 +294,7 @@ static void faults(void)
   }
   unsigned sync_positions[]={1,2,10,100,total_syncs};
   for(unsigned j=0;j<5;j++){restore();sync_failure=sync_positions[j];failure_result(preset_saveProject(0));}
-  for(unsigned n=1;n<=3;n++){
+  for(unsigned n=1;n<=4;n++){
    restore();corrupt_stage=n;FRESULT r=preset_saveProject(0);assert(r!=FR_OK && rename_calls==0);failure_result(r);
   }
   for(unsigned n=1;n<=2;n++){
@@ -311,7 +312,7 @@ static void faults(void)
   restore();unlink_failure=1;injected_result=FR_DENIED;assert(preset_saveProject(0)==FR_DENIED && fingerprint("/proj00")==expected_new);
   unlink_failure=0;assert(preset_saveProject(0)==FR_OK);no_transaction();cases++;
  }
- printf("PASS %u whole-FatFs fault/retry cases: writes before/after acceptance, reads/opens/closes/sync, partial writes, bad staged size/kit/unknown contents, rename/cleanup errors, nine safe failures then success; no false success or unsafe replay\n",cases);
+ printf("PASS %u whole-FatFs fault/retry cases: writes before/after acceptance, reads/opens/closes/sync, partial writes, bad staged pattern/FX CRC/unknown contents, rename/cleanup errors, nine safe failures then success; no false success or unsafe replay\n",cases);
 }
 static void boundaries(void)
 {
