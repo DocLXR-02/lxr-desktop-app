@@ -146,15 +146,6 @@ IN_ITCM_RAM void FxBus_processSelected(uint8_t selectedType, int16_t *fxBuffer, 
 }
 
 
-/* Compatibility entry for callers expecting the original single-FX bus. */
-void FxBus_process(int16_t *fxBuffer, int16_t* outL,int16_t* outR,
-                   int16_t* outL2,int16_t* outR2,uint32_t size)
-{
-    if (fxBus.fxType != FX_DISTORTION && fxBus.distortion.clipStateActive)
-        Distortion_resetClip(&fxBus.distortion);
-    FxBus_processSelected(fxBus.fxType, fxBuffer, outL, outR, outL2, outR2, size);
-}
-
 void FxBus_prepareFxChange()
 {
 	/* Re-entry to CLP starts from quiet runtime history, including same-type recalls. */
