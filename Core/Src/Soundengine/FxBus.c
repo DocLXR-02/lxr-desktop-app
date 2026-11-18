@@ -260,4 +260,3 @@ float FxBus_getBankParameter(uint8_t type, uint8_t idx)
 		return 0.f;
 	return fxBus.bankParameters[type][idx];
 }
-

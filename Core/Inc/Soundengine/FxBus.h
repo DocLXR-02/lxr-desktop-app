@@ -83,4 +83,3 @@ void FxBus_prepareFxChange();
 
 
 #endif /* INC_SOUNDENGINE_FXBUS_H_ */
-
