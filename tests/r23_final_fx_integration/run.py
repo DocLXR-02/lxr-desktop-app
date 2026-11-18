@@ -227,10 +227,10 @@ static uint8_t voice_routes(int scenario) {
   {9,8,9,8,9,8}, /* distortion + ring */
   {9,7,9,7,9,7}, /* distortion + delay */
   {0,1,2,3,4,5}, /* physical bypass */
-  {6,8,9,10,7,0} /* global legacy and all four, plus physical */
+  {7,8,9,10,7,0} /* all four explicit destinations, plus physical */
  };
  for(int v=0;v<6;v++)mixer_audioRouting[v]=routes[scenario][v];
- return SharedFxPool_activeMask(mixer_audioRouting,fxBus.fxType);
+ return SharedFxPool_activeMask(mixer_audioRouting);
 }
 static void make_inputs(int scenario,int block,int amp) {
  memset(fxPoolInputs,0,sizeof(fxPoolInputs));
