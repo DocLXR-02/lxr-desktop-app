@@ -160,9 +160,14 @@ static FRESULT preset_txnValidate(const char *folder, uint8_t strict,
         uint32_t size = f_size((FIL*)&SDFile);
         uint8_t type = key < 2 ? key : (key - 2) % 3 + 2;
         uint8_t prefix[14] = {0}, tail[8] = {0};
+        uint8_t fxExtension[FX_KIT_EXTENSION_BYTES] = {0};
         if((type == 0 && size != 8) || (type == 1 && size != PAR_REC_MODE - PAR_BEGINNING_OF_GLOBALS &&
             size != PAR_REC_MODE - PAR_BEGINNING_OF_GLOBALS + 1u) ||
-           (type == 2 && (size < 8 || size > END_OF_SOUND_PARAMETERS + 8 || (strict && size != END_OF_SOUND_PARAMETERS + 8))) ||
+           (type == 2 && (size < 8 ||
+                (size > END_OF_SOUND_PARAMETERS + 8 &&
+                 size != END_OF_SOUND_PARAMETERS + 8 + FX_KIT_EXTENSION_BYTES) ||
+                (strict && size != END_OF_SOUND_PARAMETERS + 8 &&
+                 size != END_OF_SOUND_PARAMETERS + 8 + FX_KIT_EXTENSION_BYTES))) ||
            (type == 3 && (size < 8 || size > PROJECT_PATTERN_BYTES)) || (type == 4 && size != MAX_SONG_LENGTH + 8))
             res = FR_INT_ERR;
         uint8_t frame[6] = {key, key >> 8};
@@ -179,9 +184,15 @@ static FRESULT preset_txnValidate(const char *folder, uint8_t strict,
                 uint32_t at = offset + i;
                 if(at < sizeof(prefix)) prefix[at] = preset_projectBytes[i];
                 if(at >= size - 8) tail[at - (size - 8)] = preset_projectBytes[i];
+                if(type == 2 && size == END_OF_SOUND_PARAMETERS + 8 + FX_KIT_EXTENSION_BYTES &&
+                   at >= size - FX_KIT_EXTENSION_BYTES)
+                    fxExtension[at - (size - FX_KIT_EXTENSION_BYTES)] = preset_projectBytes[i];
             }
             offset += got;
         }
+        if(res == FR_OK && type == 2 &&
+           size == END_OF_SOUND_PARAMETERS + 8 + FX_KIT_EXTENSION_BYTES &&
+           !fxKit_validate(fxExtension)) res = FR_INT_ERR;
         if(res == FR_OK && type == 3) {
             uint8_t version = 1, header = 8;
             if(!memcmp(prefix + 8, "PatV", 4)) {
@@ -415,7 +426,7 @@ static FRESULT preset_txnSpace(void)
     uint32_t cluster = (uint32_t)volume->csize * _MAX_SS;
     uint32_t required = (8u + cluster - 1u) / cluster +
                         (PAR_REC_MODE - PAR_BEGINNING_OF_GLOBALS + cluster - 1u) / cluster;
-    required += NUM_KIT_SLOTS * ((8u + END_OF_SOUND_PARAMETERS + cluster - 1u) / cluster +
+    required += NUM_KIT_SLOTS * ((8u + END_OF_SOUND_PARAMETERS + FX_KIT_EXTENSION_BYTES + cluster - 1u) / cluster +
                 (PROJECT_PATTERN_BYTES + cluster - 1u) / cluster +
                 (8u + MAX_SONG_LENGTH + cluster - 1u) / cluster);
     required += ((PROJECT_FILES + 2u) * 32u + cluster - 1u) / cluster;
