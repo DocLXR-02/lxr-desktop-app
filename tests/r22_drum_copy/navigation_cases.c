@@ -246,8 +246,13 @@ static void slot_label_oracle(void)
    assert(preset_saveProject(0)==FR_OK);
    char path[]="/proj00/00-KITNA.snd";memcpy(path+8,labels[kit]+1,2);
    FIL file={0};UINT count;uint8_t data[8+END_OF_SOUND_PARAMETERS];
-   assert(f_open(&file,path,FA_READ)==FR_OK&&f_size(&file)==sizeof data);
-   assert(f_read(&file,data,sizeof data,&count)==FR_OK&&count==sizeof data&&f_close(&file)==FR_OK);
+   uint8_t extension[FX_KIT_EXTENSION_BYTES];
+   assert(f_open(&file,path,FA_READ)==FR_OK&&
+          f_size(&file)==sizeof(data)+sizeof(extension));
+   assert(f_read(&file,data,sizeof data,&count)==FR_OK&&count==sizeof data);
+   assert(f_read(&file,extension,sizeof extension,&count)==FR_OK&&
+          count==sizeof extension&&fxKit_validate(extension));
+   assert(f_close(&file)==FR_OK);
    assert(!memcmp(data,"KITNAME!",8)&&!memcmp(data+8,expected,sizeof expected));
    memset(mainParameters[kit],0,sizeof expected);
    assert(preset_loadProject(0,0)==FR_OK&&!memcmp(mainParameters[kit],expected,sizeof expected));
