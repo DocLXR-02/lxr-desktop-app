@@ -838,136 +838,78 @@ uint8_t preset_isNameEmpty(char* name)
 //load init kit
 void preset_init(uint8_t presetNr)
 {
-
     if(presetNr >= NUM_KIT_SLOTS) return;
     preset_defaultKit(presetNr);
-    uint8_t *para = mainParameters[presetNr];
-    int16_t i;
-
-	//special case mod targets. normalize.
-	const uint8_t nmt=getNumModTargets();
-	for(i=0;i<6;i++) {
-		// since I've changed the meaning of these, I'll ensure that it's valid for kits saved prior to the
-		// change
-		if(para[PAR_VEL_DEST_1+i] >= nmt )
-			para[PAR_VEL_DEST_1+i] = 0;
-		if(para[PAR_TARGET_LFO1+i] >= nmt )
-			para[PAR_TARGET_LFO1+i] = 0;
-	}
-
-	//copy parameters to edit buffer
-	memcpy(activeParameters, mainParameters[presetNr], sizeof(uint8_t) * END_OF_SOUND_PARAMETERS);
-	preset_sendDrumsetParameters();
-	//frontPanel_sendData(PRESET,PRESET_LOAD,presetNr);
-
+    uint8_t *para=mainParameters[presetNr];
+    const uint8_t nmt=getNumModTargets();
+    for(uint8_t i=0;i<6;i++) {
+        if(para[PAR_VEL_DEST_1+i]>=nmt)para[PAR_VEL_DEST_1+i]=0;
+        if(para[PAR_TARGET_LFO1+i]>=nmt)para[PAR_TARGET_LFO1+i]=0;
+    }
+    memcpy(activeParameters,mainParameters[presetNr],END_OF_SOUND_PARAMETERS);
+    preset_fxApplyKit(presetNr);
+    preset_sendDrumsetParameters();
 }
 
 //----------------------------------------------------
 static FRESULT preset_writeDrumsetData(uint8_t presetNr, uint8_t isMorph)
 {
-	uint16_t i;
-	FRESULT res;
-
-	if(isMorph)
-	{
-		for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
-		{
-			uint8_t value;
-			//Mod targets are not morphed!!!
-			if( (i >= PAR_VEL_DEST_1) && (i <= PAR_VEL_DEST_6) )
-			{
-				value = activeParameters[i];
-			} else if( (i >= PAR_TARGET_LFO1) && (i <= PAR_TARGET_LFO6) )
-			{
-				value = activeParameters[i];
-			} else if( (i >= PAR_VOICE_LFO1) && (i <= PAR_VOICE_LFO6) )
-			{
-				value = activeParameters[i];
-			} 
-			else 
-			{
-				value = preset_getMorphValue(i,activeParameters[PAR_MORPH]);
-			}					
-			res = preset_writeChecked(&value,1);
-			if(res != FR_OK) return res;
-		}
-	} else {
-		for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
-		{
-			res = preset_writeChecked(&mainParameters[presetNr][i],1);
-			if(res != FR_OK) return res;
-		}
-	}
-    return FR_OK;
+    FRESULT res;
+    if(isMorph) {
+        for(uint16_t i=0;i<END_OF_SOUND_PARAMETERS;i++) {
+            uint8_t value;
+            if((i>=PAR_VEL_DEST_1 && i<=PAR_VEL_DEST_6) ||
+               (i>=PAR_TARGET_LFO1 && i<=PAR_TARGET_LFO6) ||
+               (i>=PAR_VOICE_LFO1 && i<=PAR_VOICE_LFO6))
+                value=activeParameters[i];
+            else value=preset_getMorphValue(i,activeParameters[PAR_MORPH]);
+            res=preset_writeChecked(&value,1);
+            if(res!=FR_OK)return res;
+        }
+    } else {
+        res=preset_writeChecked(mainParameters[presetNr],END_OF_SOUND_PARAMETERS);
+        if(res!=FR_OK)return res;
+    }
+    return preset_fxWriteTail(preset_fxBanks[presetNr]);
 }
 
 //----------------------------------------------------
 void preset_loadDrumsetRam(uint8_t presetNr, uint8_t isMorph, uint8_t sendImmediate)
 {
-    if(presetNr >= NUM_KIT_SLOTS) return;
-	soundengine_process();
-	if(isMorph)
-	{
-		morphParameters = mainParameters[presetNr];
-	}
-	else
-	{
-		++preset_kitRevision;
-        menu_loadedPresetNr[CURRENT_KIT] = presetNr;
-		//copy parameters to edit buffer
-		memcpy(activeParameters, mainParameters[presetNr], sizeof(uint8_t) * END_OF_SOUND_PARAMETERS);
-		//if(activeParameters[PAR_PATTERN_MODE] = 1)
-		//load asociated morph kit as well
-
-		// morphParameters = mainParameters[activeParameters[PAR_MORPH_KIT_DEST]];
-
-
-	}
-	soundengine_process();
-
-	if(sendImmediate)
-	{
-		preset_sendDrumsetParametersImmediate();
-	}
-	else
-	{
-		//activePresetNr = menu_currentPresetNr[menu_saveOptions.category];
-		preset_sendDrumsetParameters();
-	}
+    if(presetNr>=NUM_KIT_SLOTS)return;
+    soundengine_process();
+    if(isMorph) morphParameters=mainParameters[presetNr];
+    else {
+        const uint8_t previous=menu_loadedPresetNr[CURRENT_KIT];
+        if(!preset_projectLoading && previous<NUM_KIT_SLOTS && previous!=presetNr)
+            preset_fxCaptureCurrent(previous);
+        ++preset_kitRevision;
+        menu_loadedPresetNr[CURRENT_KIT]=presetNr;
+        memcpy(activeParameters,mainParameters[presetNr],END_OF_SOUND_PARAMETERS);
+        preset_fxApplyKit(presetNr);
+    }
+    soundengine_process();
+    if(sendImmediate)preset_sendDrumsetParametersImmediate();
+    else preset_sendDrumsetParameters();
 }
 //----------------------------------------------------
 void preset_saveDrumsetRam(uint8_t presetNr, uint8_t isMorph)
 {
-    if(presetNr >= NUM_KIT_SLOTS) return;
-	if(isMorph)
-	{
-		for(uint16_t i=0;i<END_OF_SOUND_PARAMETERS;i++)
-		{
-			uint8_t value;
-			//Mod targets are not morphed!!!
-			if( (i >= PAR_VEL_DEST_1) && (i <= PAR_VEL_DEST_6) )
-			{
-				value = activeParameters[i];
-			} else if( (i >= PAR_TARGET_LFO1) && (i <= PAR_TARGET_LFO6) )
-			{
-				value = activeParameters[i];
-			} else if( (i >= PAR_VOICE_LFO1) && (i <= PAR_VOICE_LFO6) )
-			{
-				value = activeParameters[i];
-			}
-			else
-			{
-				value = preset_getMorphValue(i,activeParameters[PAR_MORPH]);
-			}
-			//f_write((FIL*)&SDFile,&value,1,&bytesWritten);
-			mainParameters[presetNr][i] = value;
-		}
-	}
-	else
-	{
-		//copy edit buffer to parameter array
-		memcpy(mainParameters[presetNr], activeParameters, sizeof(uint8_t) * END_OF_SOUND_PARAMETERS);
-	}
+    if(presetNr>=NUM_KIT_SLOTS)return;
+    if(isMorph) {
+        for(uint16_t i=0;i<END_OF_SOUND_PARAMETERS;i++) {
+            uint8_t value;
+            if((i>=PAR_VEL_DEST_1 && i<=PAR_VEL_DEST_6) ||
+               (i>=PAR_TARGET_LFO1 && i<=PAR_TARGET_LFO6) ||
+               (i>=PAR_VOICE_LFO1 && i<=PAR_VOICE_LFO6))
+                value=activeParameters[i];
+            else value=preset_getMorphValue(i,activeParameters[PAR_MORPH]);
+            mainParameters[presetNr][i]=value;
+        }
+    } else {
+        memcpy(mainParameters[presetNr],activeParameters,END_OF_SOUND_PARAMETERS);
+        preset_fxCaptureCurrent(presetNr);
+    }
 }
 //----------------------------------------------------
 FRESULT preset_saveDrumsetSD(uint8_t presetNr, uint8_t isMorph)
@@ -975,12 +917,15 @@ FRESULT preset_saveDrumsetSD(uint8_t presetNr, uint8_t isMorph)
 #if USE_SD_CARD
     char filename[13];
     FRESULT res;
-    if(presetNr >= NUM_KIT_SLOTS) return FR_INVALID_PARAMETER;
-    preset_makeFileNameSave(filename, presetNr, FEXT_SOUND, savefileNames[presetNr][KIT_NAMES]);
-    res = preset_openShared((FIL*)&SDFile, filename, FA_CREATE_ALWAYS | FA_WRITE);
-    if(res != FR_OK) return res;
-    res = preset_writeChecked(savefileNames[presetNr][KIT_NAMES], 8);
-    if(res == FR_OK) res = preset_writeDrumsetData(presetNr, isMorph);
+    if(presetNr>=NUM_KIT_SLOTS)return FR_INVALID_PARAMETER;
+    if(!isMorph && presetNr==menu_loadedPresetNr[CURRENT_KIT])
+        preset_fxCaptureCurrent(presetNr);
+    preset_makeFileNameSave(filename,presetNr,FEXT_SOUND,
+                            savefileNames[presetNr][KIT_NAMES]);
+    res=preset_openShared((FIL*)&SDFile,filename,FA_CREATE_ALWAYS|FA_WRITE);
+    if(res!=FR_OK)return res;
+    res=preset_writeChecked(savefileNames[presetNr][KIT_NAMES],8);
+    if(res==FR_OK)res=preset_writeDrumsetData(presetNr,isMorph);
     return preset_finishSave(res);
 #else
     return FR_NOT_READY;
@@ -1124,41 +1069,37 @@ FRESULT preset_saveLastUsedProjectNrToSD(uint8_t projNr)
 // fix some values, and set values to 0 that were not read in
 static FRESULT preset_readDrumsetData(uint8_t presetNr, uint8_t isMorph)
 {
-    if(presetNr >= NUM_KIT_SLOTS) return FR_INVALID_PARAMETER;
-	
-#if USE_SD_CARD		
-	//read the file content
-	unsigned int bytesRead=1;
-	int16_t i;
-	uint8_t *para;
-	bytesRead = 0;
-	
-	// TODO check: using this function for morph may be wrong
-	if(isMorph)
-		para=morphParameters;
-	else
-		para=mainParameters[presetNr];
-
-	FRESULT res=f_read((FIL*)&SDFile, para,END_OF_SOUND_PARAMETERS, &bytesRead);
-	if(res==FR_OK) {
-		// set to 0 for any that were not read from the file
-		if(END_OF_SOUND_PARAMETERS-bytesRead)
-			memset(para+bytesRead,0,END_OF_SOUND_PARAMETERS-bytesRead);
-		
-		//special case mod targets. normalize.
-		const uint8_t nmt=getNumModTargets();
-		for(i=0;i<6;i++) {
-			// since I've changed the meaning of these, I'll ensure that it's valid for kits saved prior to the
-			// change
-			if(para[PAR_VEL_DEST_1+i] >= nmt )
-				para[PAR_VEL_DEST_1+i] = 0;
-			if(para[PAR_TARGET_LFO1+i] >= nmt )
-				para[PAR_TARGET_LFO1+i] = 0;
-		}
-	}
-
-	return res;
-
+    if(presetNr>=NUM_KIT_SLOTS)return FR_INVALID_PARAMETER;
+#if USE_SD_CARD
+    const uint32_t size=f_size((FIL*)&SDFile);
+    const uint32_t oldSize=8u+END_OF_SOUND_PARAMETERS;
+    if(size<8u || (size>oldSize && size!=oldSize+FX_KIT_EXTENSION_BYTES))
+        return FR_INT_ERR;
+    const UINT wanted=(UINT)(size-8u<END_OF_SOUND_PARAMETERS?
+                             size-8u:END_OF_SOUND_PARAMETERS);
+    memset(preset_fxReadBuffer,0,sizeof(preset_fxReadBuffer));
+    UINT got=0;
+    FRESULT res=f_read((FIL*)&SDFile,preset_fxReadBuffer,wanted,&got);
+    if(res!=FR_OK)return res;
+    if(got!=wanted)return FR_INT_ERR;
+    uint8_t values[FX_KIT_PAYLOAD_BYTES];
+    res=preset_fxReadTail((FIL*)&SDFile,size,values,preset_fxReadBuffer);
+    if(res!=FR_OK)return res;
+    const uint8_t nmt=getNumModTargets();
+    for(uint8_t i=0;i<6;i++) {
+        if(preset_fxReadBuffer[PAR_VEL_DEST_1+i]>=nmt)
+            preset_fxReadBuffer[PAR_VEL_DEST_1+i]=0;
+        if(preset_fxReadBuffer[PAR_TARGET_LFO1+i]>=nmt)
+            preset_fxReadBuffer[PAR_TARGET_LFO1+i]=0;
+    }
+    if(isMorph)memcpy(morphParameters,preset_fxReadBuffer,END_OF_SOUND_PARAMETERS);
+    else {
+        memcpy(mainParameters[presetNr],preset_fxReadBuffer,END_OF_SOUND_PARAMETERS);
+        memcpy(preset_fxBanks[presetNr],values,FX_KIT_PAYLOAD_BYTES);
+    }
+    return FR_OK;
+#else
+    return FR_NOT_READY;
 #endif
 }
 
@@ -1231,7 +1172,12 @@ closeFile:
 
 	// update the soundengine with the new parameters
 	if(res==FR_OK) {
-		preset_sendDrumsetParameters();
+        if(!isMorph && !preset_projectLoading &&
+           presetNr==menu_loadedPresetNr[CURRENT_KIT]) {
+            memcpy(activeParameters,mainParameters[presetNr],END_OF_SOUND_PARAMETERS);
+            preset_fxApplyKit(presetNr);
+        }
+        preset_sendDrumsetParameters();
 		return FR_OK;
 	}
 error:
@@ -2418,6 +2364,7 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
 #if USE_INTERRUPT_ONLY_DURING_SAVE_PROJ
     HAL_TIM_Base_Start_IT(&htim2);
 #endif
+    preset_projectLoading = 1;
     res = preset_txnLoadFolder(presetNr, folder);
     if(res != FR_OK) goto done;
     res = f_stat(folder, &info);
@@ -2494,6 +2441,7 @@ FRESULT preset_loadProject(uint8_t presetNr, uint8_t clearTmp)
     seq_setNextPattern(0);
     if(clearTmp && !preset_projectRecovered) res = preset_clearTmpFolder(); /* Only after a completed load. */
 done:
+    preset_projectLoading = 0;
     lcd_process_display_interrupt = 1;
     if(entered && preset_sharedStatus() == FR_OK) {
         FRESULT restored = preset_projectRecovered ? f_chdir("/tmp") : preset_initTmpFolder();
