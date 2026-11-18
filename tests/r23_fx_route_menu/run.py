@@ -37,7 +37,7 @@ assert fx_table and re.search(r"\{\s*6\s*\}",fx_table.group(1))
 assert len(re.findall(r'\{\s*"[^"]+"\s*\}',fx_table.group(1)))==6
 assert "MIXER_ROUTING_FX_BUS" not in mixer
 assert "FX_POOL_ROUTE_LEGACY" not in inputs["Core/Inc/Soundengine/SharedFxPool.h"]
-assert re.search(r"case MENU_AUDIO_OUT:\s*p\s*=\s*\(curParmVal == 6u \|\| curParmVal >= outputNames\[0\]\[0\]\)",menu)
+assert re.search(r"case MENU_AUDIO_OUT:\s*/\*[^*]*\*/\s*p\s*=\s*\(curParmVal == 6u \|\| curParmVal >= outputNames\[0\]\[0\]\)",menu)
 assert len(re.findall(r"/\*PAR_AUDIO_OUT[1-6]\*/\s*DTYPE_MENU\s*\|\s*\(MENU_AUDIO_OUT<<8\)",menu))==6
 assert re.search(r"CC2_AUDIO_OUT1\s*,\s*CC2_AUDIO_OUT2\s*,\s*CC2_AUDIO_OUT3\s*,\s*CC2_AUDIO_OUT4\s*,\s*CC2_AUDIO_OUT5\s*,\s*CC2_AUDIO_OUT6\s*,",messages)
 
