@@ -27,6 +27,7 @@
 
 /* Five slots include FX_OFF; FX types 1..4 have independent parameter state. */
 #define FX_PARAMETER_COUNT 4u
+#define FX_BANK_SERIALIZED_BYTES 24u
 #define FX_PARAMETER_BANK_COUNT (5u + USE_REVERB)
 
 enum FxTypeEnum
@@ -85,6 +86,9 @@ void FxBus_setBankWet(uint8_t type, float value);
 void FxBus_setBankOutput(uint8_t type, uint8_t routing);
 void FxBus_setSelectedWet(float value);
 void FxBus_setSelectedOutput(uint8_t routing);
+/* Compact, lossless at the original 7-bit menu resolution. */
+void FxBus_exportKitBanks(uint8_t *bytes);
+void FxBus_importKitBanks(const uint8_t *bytes, uint8_t selectedType);
 //to prevent NaN pollution from delay
 void FxBus_prepareFxChange();
 

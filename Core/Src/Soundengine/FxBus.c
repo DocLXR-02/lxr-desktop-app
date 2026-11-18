@@ -310,3 +310,47 @@ void FxBus_setSelectedOutput(uint8_t routing)
 	FxBus_syncSelectedBank();
 	FxBus_setBankOutput(fxBus.parameterBankType, routing);
 }
+
+/* Serialize the four independent banks; the OFF editor slot is not stored. */
+static uint8_t FxBus_storageByte(float value, unsigned maximum)
+{
+	if (!(value >= 0.f)) return 0u;
+	if (value >= 1.f) return (uint8_t)maximum;
+	return (uint8_t)(value * maximum + 0.5f);
+}
+
+void FxBus_exportKitBanks(uint8_t *bytes)
+{
+	if (!bytes) return;
+	FxBus_syncSelectedBank();
+	for (uint8_t t = FX_DISTORTION; t <= FX_DELAY; ++t)
+	{
+		const unsigned offset = (unsigned)(t - FX_DISTORTION) * 6u;
+		for (unsigned i = 0; i < FX_PARAMETER_COUNT; ++i)
+			bytes[offset+i] = FxBus_storageByte(fxBus.bankParameters[t][i], 127u);
+		bytes[offset+4] = FxBus_storageByte(fxBus.bankDryWet[t], 100u);
+		bytes[offset+5] = fxBus.bankAudioRouting[t] <= MIXER_ROUTING_DAC2_R ?
+		                  fxBus.bankAudioRouting[t] : MIXER_ROUTING_DAC1_STEREO;
+	}
+}
+
+void FxBus_importKitBanks(const uint8_t *bytes, uint8_t selectedType)
+{
+	if (!bytes) return;
+	for (uint8_t t = FX_DISTORTION; t <= FX_DELAY; ++t)
+	{
+		const unsigned offset = (unsigned)(t - FX_DISTORTION) * 6u;
+		for (unsigned i = 0; i < FX_PARAMETER_COUNT; ++i)
+			fxBus.bankParameters[t][i] = bytes[offset+i] / 127.f;
+		fxBus.bankDryWet[t] = bytes[offset+4] / 100.f;
+		fxBus.bankAudioRouting[t] = bytes[offset+5];
+	}
+	if (selectedType > FX_DELAY) selectedType = FX_OFF;
+	fxBus.fxType = selectedType;
+	fxBus.parameterBankType = selectedType;
+	memcpy(fxBus.parameter, fxBus.bankParameters[selectedType], sizeof(fxBus.parameter));
+	fxBus.dryWet = fxBus.bankDryWet[selectedType];
+	fxBus.audioRouting = fxBus.bankAudioRouting[selectedType];
+	for (uint8_t t = FX_DISTORTION; t <= FX_DELAY; ++t)
+		FxBus_applyBank(t);
+}
