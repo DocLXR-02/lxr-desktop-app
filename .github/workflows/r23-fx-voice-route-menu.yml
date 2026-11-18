@@ -1,0 +1,296 @@
+name: R23 voice output FX routing menu and MIDI bounds - host and ARM validation
+on:
+  push:
+    branches:
+      - experiment/r23-fx-voice-route-menu-2026-11-18
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  host-regressions:
+    name: Host FX routing, DSP, and storage regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Prepare pinned evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/r23-host-evidence
+          git rev-parse HEAD > build/r23-host-evidence/SOURCE_SHA.txt
+          git merge-base --is-ancestor 0e37942250f79306627702061d851731bdfdbbc8 HEAD
+          git diff --check c0f942e1997916b2f3a11b285178fcf7078a6e8a HEAD
+          git merge-base --is-ancestor c0f942e1997916b2f3a11b285178fcf7078a6e8a HEAD
+          git diff --name-only c0f942e1997916b2f3a11b285178fcf7078a6e8a HEAD > build/r23-host-evidence/step-changed-files.txt
+          unexpected="$(grep -Ev '^(Core/Inc/menu/MenuText\.h|Core/Src/Soundengine/MIDI/MidiParser\.c|tests/r23_fx_route_menu/run\.py|\.github/workflows/r23-fx-voice-route-menu\.yml)
+          for f in Delay Ringmod Distortion Compressor; do
+            source="Core/Src/Soundengine/DSPAudio/FX/${f}.c"
+            git diff --quiet 0e37942250f79306627702061d851731bdfdbbc8 HEAD -- "$source"
+          done
+          git diff --name-status 0e37942250f79306627702061d851731bdfdbbc8 HEAD > build/r23-host-evidence/changed-files.txt
+          python3 --version > build/r23-host-evidence/HOST_TOOLCHAIN.txt
+          cc --version >> build/r23-host-evidence/HOST_TOOLCHAIN.txt
+      - name: Validate versioned FX kit extension codec with ASan and UBSan
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r23_fx_kit_format/run.py 2>&1 | tee build/r23-host-evidence/fx-kit-codec.log
+      - name: Run exact-source bank isolation tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r23_fx_banks/run.py 2>&1 | tee build/r23-host-evidence/parameter-banks.log
+      - name: Check new voice route labels, CC2 reject limits and source exactness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r23_fx_route_menu/run.py 2>&1 | tee build/r23-host-evidence/voice-route-menu.log
+      - name: Re-run original four DSP + Kit banks integration on changed UI source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r23_final_fx_integration/run.py 2>&1 | tee build/r23-host-evidence/real-four-dsp-kit-integration.log
+      - name: Run R23 production routing selector tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/fx_pool_r23/run.py 2>&1 | tee build/r23-host-evidence/route.log
+      - name: Run inherited Delay, Compressor, CLP and USB audio regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r18_delay_mono/run.py build/r23-delay-host 2>&1 | tee build/r23-host-evidence/delay.log
+          python3 tests/r18_compressor_mono/run.py build/r23-compressor-host 2>&1 | tee build/r23-host-evidence/compressor.log
+          python3 tests/fx_clip_r18/compare.py 2>&1 | tee build/r23-host-evidence/clp-compare.log
+          python3 tests/r18_usb_midi/run.py build/r23-usb-host 2>&1 | tee build/r23-host-evidence/usb-midi.log
+      - name: Run preserved R21/R22 and storage regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r21_voice_copy/run.py 2>&1 | tee build/r23-host-evidence/voice-copy.log
+          python3 tests/r22_drum_copy/run.py 2>&1 | tee build/r23-host-evidence/drum-copy.log
+          python3 tests/project_storage/run.py 2>&1 | tee build/r23-host-evidence/project-storage.log
+          python3 tests/project_transaction/run.py 2>&1 | tee build/r23-host-evidence/project-transaction.log
+          python3 tests/project_transaction/run.py legacy 2>&1 | tee build/r23-host-evidence/legacy-project.log
+      - name: Preserve host evidence even after failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r23-fx-voice-route-menu-host-evidence
+          path: |
+            build/r23-host-evidence/
+            build/r23-fx-route-ui/
+            build/r23-final-four-fx-kit/
+          retention-days: 30
+          if-no-files-found: warn
+
+  arm-validation:
+    name: ARM Release compile, section and image identity (validation only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pin R23 source and release comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/r23-arm-evidence
+          git rev-parse HEAD > build/r23-arm-evidence/SOURCE_SHA.txt
+          git merge-base --is-ancestor 0e37942250f79306627702061d851731bdfdbbc8 HEAD
+          git diff --check c0f942e1997916b2f3a11b285178fcf7078a6e8a HEAD
+          git diff --name-status 0e37942250f79306627702061d851731bdfdbbc8 HEAD > build/r23-arm-evidence/changed-files.txt
+      - name: Install pinned Arm GNU 14.3.rel1 toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          url=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz
+          curl -fL --retry 3 "$url" -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          echo "8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd  $RUNNER_TEMP/arm-toolchain.tar.xz" | sha256sum --check
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+      - name: Build exact R23 ARM Release (not for device)
+        shell: bash
+        run: |
+          set -euo pipefail
+          arm-none-eabi-gcc --version | tee build/r23-arm-evidence/COMPILER.txt
+          cmake --version > build/r23-arm-evidence/CMAKE.txt
+          cmake --preset release 2>&1 | tee build/r23-arm-evidence/configure.log
+          cmake --build --preset release --parallel 2 2>&1 | tee build/r23-arm-evidence/build.log
+          arm-none-eabi-size -A build/release/LXR_V2_STM32F765.elf 2>&1 | tee build/r23-arm-evidence/sections.log
+          cp build/release/LXR_V2_STM32F765.map build/r23-arm-evidence/
+          cp build/release/LXR_V2_STM32F765.elf build/r23-arm-evidence/
+          sha256sum build/release/LXR_V2_V1.7.img build/release/LXR_V2_STM32F765.elf build/release/LXR_V2_STM32F765.map > build/r23-arm-evidence/OUTPUT_SHA256SUMS.txt
+          stat -c '%n %s bytes' build/release/LXR_V2_V1.7.img build/release/LXR_V2_STM32F765.elf build/release/LXR_V2_STM32F765.map > build/r23-arm-evidence/OUTPUT_SIZES.txt
+          printf 'R23 voice output FX routing menu experimental validation only. NOT APPROVED FOR FLASHING, OWNER DEVICE TEST OR RELEASE. The IMG file is not published in this artifact.\n' > build/r23-arm-evidence/NOT_FOR_FLASHING.txt
+      - name: Compare static sections to accepted R22
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee build/r23-arm-evidence/static-comparison.txt
+          from pathlib import Path
+          import re
+          data=Path("build/r23-arm-evidence/sections.log").read_text()
+          sizes={}
+          for line in data.splitlines():
+              m=re.fullmatch(r'\s*(\.[\w.]+)\s+(\d+)\s+\d+\s*',line)
+              if m:
+                  sizes[m.group(1)] = int(m.group(2))
+          needed=(".text",".rodata",".itcm_text",".dtcm",".dtcmz",".data",".bss","._user_heap")
+          missing=[s for s in needed if s not in sizes]
+          if missing: raise RuntimeError("Missing expected ARM sections: "+repr(missing))
+          base={"text":160712,"rodata":83272,"itcm":15304,"dtcm":107424,"sram":275164}
+          actual={"text":sizes[".text"],"rodata":sizes[".rodata"],
+                  "itcm":sizes[".itcm_text"],"dtcm":sizes[".dtcm"]+sizes[".dtcmz"],
+                  "sram":sizes[".data"]+sizes[".bss"]+sizes["._user_heap"]}
+          for k in base:
+              print(f"{k}: R22={base[k]:,} R23={actual[k]:,} delta={actual[k]-base[k]:+,}")
+          print(f"ITCM nominal gap: {16384-actual['itcm']:,} bytes")
+          print(f"DTCM nominal gap before stack: {131072-actual['dtcm']:,} bytes")
+          print(f"General SRAM nominal gap: {393216-actual['sram']:,} bytes")
+          assert actual['itcm'] <= 16384, "ITCM section overflow"
+          assert actual['dtcm'] <= 131072, "DTCM static region overflow"
+          assert actual['sram'] <= 393216, "General SRAM static region overflow"
+          print("NOTE: CPU/WCET, IRQ/DMA deadlines, stack high water and device audio remain UNMEASURED")
+          PY
+      - name: Preserve non-flashable build evidence even after failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r23-fx-voice-route-menu-arm-evidence
+          path: build/r23-arm-evidence/
+          retention-days: 30
+          if-no-files-found: warn
+ build/r23-host-evidence/step-changed-files.txt || true)"
+          if [ -n "$unexpected" ]; then echo "STOP unexpected changed paths: $unexpected"; exit 1; fi
+          for f in Delay Ringmod Distortion Compressor; do
+            source="Core/Src/Soundengine/DSPAudio/FX/${f}.c"
+            git diff --quiet 0e37942250f79306627702061d851731bdfdbbc8 HEAD -- "$source"
+          done
+          git diff --name-status 0e37942250f79306627702061d851731bdfdbbc8 HEAD > build/r23-host-evidence/changed-files.txt
+          python3 --version > build/r23-host-evidence/HOST_TOOLCHAIN.txt
+          cc --version >> build/r23-host-evidence/HOST_TOOLCHAIN.txt
+      - name: Validate versioned FX kit extension codec with ASan and UBSan
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r23_fx_kit_format/run.py 2>&1 | tee build/r23-host-evidence/fx-kit-codec.log
+      - name: Run exact-source bank isolation tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r23_fx_banks/run.py 2>&1 | tee build/r23-host-evidence/parameter-banks.log
+      - name: Run R23 production routing selector tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/fx_pool_r23/run.py 2>&1 | tee build/r23-host-evidence/route.log
+      - name: Run inherited Delay, Compressor, CLP and USB audio regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r18_delay_mono/run.py build/r23-delay-host 2>&1 | tee build/r23-host-evidence/delay.log
+          python3 tests/r18_compressor_mono/run.py build/r23-compressor-host 2>&1 | tee build/r23-host-evidence/compressor.log
+          python3 tests/fx_clip_r18/compare.py 2>&1 | tee build/r23-host-evidence/clp-compare.log
+          python3 tests/r18_usb_midi/run.py build/r23-usb-host 2>&1 | tee build/r23-host-evidence/usb-midi.log
+      - name: Run preserved R21/R22 and storage regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r21_voice_copy/run.py 2>&1 | tee build/r23-host-evidence/voice-copy.log
+          python3 tests/r22_drum_copy/run.py 2>&1 | tee build/r23-host-evidence/drum-copy.log
+          python3 tests/project_storage/run.py 2>&1 | tee build/r23-host-evidence/project-storage.log
+          python3 tests/project_transaction/run.py 2>&1 | tee build/r23-host-evidence/project-transaction.log
+          python3 tests/project_transaction/run.py legacy 2>&1 | tee build/r23-host-evidence/legacy-project.log
+      - name: Preserve host evidence even after failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r23-fx-kit-extension-host-evidence
+          path: build/r23-host-evidence/
+          retention-days: 30
+          if-no-files-found: warn
+
+  arm-validation:
+    name: ARM Release compile, section and image identity (validation only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pin R23 source and release comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/r23-arm-evidence
+          git rev-parse HEAD > build/r23-arm-evidence/SOURCE_SHA.txt
+          git merge-base --is-ancestor 0e37942250f79306627702061d851731bdfdbbc8 HEAD
+          git diff --check 238389475359f11bf317b446e668e0c82333c231 HEAD
+          git diff --name-status 0e37942250f79306627702061d851731bdfdbbc8 HEAD > build/r23-arm-evidence/changed-files.txt
+      - name: Install pinned Arm GNU 14.3.rel1 toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          url=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz
+          curl -fL --retry 3 "$url" -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          echo "8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd  $RUNNER_TEMP/arm-toolchain.tar.xz" | sha256sum --check
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+      - name: Build exact R23 ARM Release (not for device)
+        shell: bash
+        run: |
+          set -euo pipefail
+          arm-none-eabi-gcc --version | tee build/r23-arm-evidence/COMPILER.txt
+          cmake --version > build/r23-arm-evidence/CMAKE.txt
+          cmake --preset release 2>&1 | tee build/r23-arm-evidence/configure.log
+          cmake --build --preset release --parallel 2 2>&1 | tee build/r23-arm-evidence/build.log
+          arm-none-eabi-size -A build/release/LXR_V2_STM32F765.elf 2>&1 | tee build/r23-arm-evidence/sections.log
+          cp build/release/LXR_V2_STM32F765.map build/r23-arm-evidence/
+          cp build/release/LXR_V2_STM32F765.elf build/r23-arm-evidence/
+          sha256sum build/release/LXR_V2_V1.7.img build/release/LXR_V2_STM32F765.elf build/release/LXR_V2_STM32F765.map > build/r23-arm-evidence/OUTPUT_SHA256SUMS.txt
+          stat -c '%n %s bytes' build/release/LXR_V2_V1.7.img build/release/LXR_V2_STM32F765.elf build/release/LXR_V2_STM32F765.map > build/r23-arm-evidence/OUTPUT_SIZES.txt
+          printf 'R23 FX kit extension experimental validation only. NOT APPROVED FOR FLASHING, OWNER DEVICE TEST OR RELEASE. The IMG file is not published in this artifact.\n' > build/r23-arm-evidence/NOT_FOR_FLASHING.txt
+      - name: Compare static sections to accepted R22
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee build/r23-arm-evidence/static-comparison.txt
+          from pathlib import Path
+          import re
+          data=Path("build/r23-arm-evidence/sections.log").read_text()
+          sizes={}
+          for line in data.splitlines():
+              m=re.fullmatch(r'\s*(\.[\w.]+)\s+(\d+)\s+\d+\s*',line)
+              if m:
+                  sizes[m.group(1)] = int(m.group(2))
+          needed=(".text",".rodata",".itcm_text",".dtcm",".dtcmz",".data",".bss","._user_heap")
+          missing=[s for s in needed if s not in sizes]
+          if missing: raise RuntimeError("Missing expected ARM sections: "+repr(missing))
+          base={"text":160712,"rodata":83272,"itcm":15304,"dtcm":107424,"sram":275164}
+          actual={"text":sizes[".text"],"rodata":sizes[".rodata"],
+                  "itcm":sizes[".itcm_text"],"dtcm":sizes[".dtcm"]+sizes[".dtcmz"],
+                  "sram":sizes[".data"]+sizes[".bss"]+sizes["._user_heap"]}
+          for k in base:
+              print(f"{k}: R22={base[k]:,} R23={actual[k]:,} delta={actual[k]-base[k]:+,}")
+          print(f"ITCM nominal gap: {16384-actual['itcm']:,} bytes")
+          print(f"DTCM nominal gap before stack: {131072-actual['dtcm']:,} bytes")
+          print(f"General SRAM nominal gap: {393216-actual['sram']:,} bytes")
+          assert actual['itcm'] <= 16384, "ITCM section overflow"
+          assert actual['dtcm'] <= 131072, "DTCM static region overflow"
+          assert actual['sram'] <= 393216, "General SRAM static region overflow"
+          print("NOTE: CPU/WCET, IRQ/DMA deadlines, stack high water and device audio remain UNMEASURED")
+          PY
+      - name: Preserve non-flashable build evidence even after failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r23-fx-kit-extension-arm-evidence
+          path: build/r23-arm-evidence/
+          retention-days: 30
+          if-no-files-found: warn
