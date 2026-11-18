@@ -55,10 +55,10 @@ fxmenu=single(
     r'case MENU_FX:\s*/\*.*?\*/\s*p = curParmVal < fxNames\[0\]\[0\] \? fxNames\[curParmVal\+1\] : menuText_dash;\s*break;',
     src["menu"],"FX menu bounds")
 names=single(r'const char fxNames\[\]\[4\]\s*=\s*\{.*?\};',src["names"],"FX names")
-assert src["preset"].count("if(activeParameters[PAR_FX_TYPE] >= FX_PARAMETER_BANK_COUNT)") == 1
+assert src["preset"].count("if(activeParameters[PAR_FX_TYPE] >= FX_POOL_PROCESSOR_COUNT)") == 1
 stored_type=single(
-    r'if\(activeParameters\[PAR_FX_TYPE\] >= FX_PARAMETER_BANK_COUNT\)\s*'
-    r'activeParameters\[PAR_FX_TYPE\] = FX_OFF;',
+    r'if\(activeParameters\[PAR_FX_TYPE\] >= FX_POOL_PROCESSOR_COUNT\)\s*'
+    r'activeParameters\[PAR_FX_TYPE\] = FX_POOL_TYPE_OFF;',
     src["preset"],"stored Kit FX type sanitization")
 realtime=single(
     r'if\(data >= 0xF8u\)\s*\{\s*'
@@ -105,8 +105,8 @@ code=r'''
 #define CC2_FX_TYPE 33
 #define FX_DELAY 4
 #define FX_REVERB 5
-#define FX_OFF 0
-#define FX_PARAMETER_BANK_COUNT 5
+#define FX_POOL_TYPE_OFF 0
+#define FX_POOL_PROCESSOR_COUNT 5
 #define PAR_FX_TYPE 9
 #define USE_REVERB 0
 #define CC_BANK_CHANGE 0
@@ -183,7 +183,7 @@ int main(void) {
         assert(!memcmp(fx_label((uint8_t)val),val<5?fxNames[val+1]:"---",3));
         activeParameters[PAR_FX_TYPE]=(uint8_t)val;
         sanitize_stored_fx();
-        assert(activeParameters[PAR_FX_TYPE]==(val<5?val:FX_OFF));
+        assert(activeParameters[PAR_FX_TYPE]==(val<5?val:FX_POOL_TYPE_OFF));
         assert(automation((uint8_t)val) != (val==0 || val==6 || val==98 || val==99));
         cases+=5;
     }
