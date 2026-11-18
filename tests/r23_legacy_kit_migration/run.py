@@ -40,7 +40,7 @@ assert re.search(r"preset_fxUpgradeStoredVoiceRoutes\(preset_fxReadBuffer\);\s*c
 assert re.search(r"preset_fxUpgradeStoredVoiceRoutes\(data\);\s*memcpy\(activeParameters,data",preset)
 assert re.search(r"preset_fxUpgradeStoredVoiceRoutes\(mainParameters\[slot\]\);\s*preset_fxFromLegacy",preset)
 assert re.search(r"preset_fxUpgradeStoredVoiceRoutes\(mainParameters\[presetNr\]\);\s*memcpy\(activeParameters",preset)
-assert re.search(r"preset_fxUpgradeStoredVoiceRoutes\(activeParameters\);\s*/\* Never publish unsupported archived FX type values to the menu/MIDI view\. \*/\s*if\(activeParameters\[PAR_FX_TYPE\] >= FX_PARAMETER_BANK_COUNT\)\s*activeParameters\[PAR_FX_TYPE\] = FX_OFF;\s*const uint8_t type=",preset)
+assert re.search(r"preset_fxUpgradeStoredVoiceRoutes\(activeParameters\);\s*/\* Never publish unsupported archived FX type values to the menu/MIDI view\. \*/\s*if\(activeParameters\[PAR_FX_TYPE\] >= FX_POOL_PROCESSOR_COUNT\)\s*activeParameters\[PAR_FX_TYPE\] = FX_POOL_TYPE_OFF;\s*const uint8_t type=",preset)
 assert "preset_fxReadTail((FIL*)&SDFile,size,values,preset_fxReadBuffer)" in preset
 assert "fxKit_validate(block)" in preset
 # Morph tick never interpolates voice routing. Both save variants must preserve source routing.
