@@ -134,7 +134,7 @@ void osc_setFreq(OscInfo*);
 '''
 osc_body="\n".join(find(x,OS) for x in osc_funcs)
 # All four original wavetables, not generated approximations.
-tables="\n".join(brace_segment(WAV,"INDTCM const int16_t "+name) for name in ["sine_table","recTable","triTable","sawTable"])
+tables="\n".join(brace_segment(WAV,needle) for needle in ["INDTCM const int16_t sine_table"," const int16_t recTable","const int16_t triTable","const int16_t sawTable"])
 ext_fx=find("FxBus_processSelected",BUS)
 mixhelpers=find("mixer_checkOutJackAvailable",MIX)+"\n"+find("mixer_addDataToOutput",MIX)
 # Source-exact routing and return program slice from production mixer.
