@@ -1,48 +1,71 @@
-/* R23 shared FX pool routing tests, isolated from STM32 hardware. */
+/* R23 direct shared FX pool routing and archived Kit decoding host oracle. */
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include "Soundengine/SharedFxPool.h"
 
-static uint8_t expected_type(uint8_t route, uint8_t legacy)
+static uint8_t expected_type(uint8_t route)
 {
-    if (route == 6) return legacy <= 4 ? legacy : 255;
-    if (route == 7) return 4;
-    if (route == 8) return 2;
-    if (route == 9) return 1;
-    if (route == 10) return 3;
-    return 255;
+    switch(route) {
+    case 7: return 4;
+    case 8: return 2;
+    case 9: return 1;
+    case 10: return 3;
+    default: return 255;
+    }
+}
+static uint8_t expected_legacy(uint8_t fx, uint8_t physical)
+{
+    switch(fx) {
+    case 1: return 9;
+    case 2: return 8;
+    case 3: return 10;
+    case 4: return 7;
+    default: return physical <= 5 ? physical : 0;
+    }
 }
 int main(void)
 {
     const uint8_t choices[] = {0, 6, 7, 8, 9, 10};
     unsigned long cases = 0;
-    for (uint8_t legacy = 0; legacy <= 5; legacy++) {
-        for (uint8_t route = 0; route <= 15; route++) {
-            assert(SharedFxPool_typeForRoute(route, legacy) == expected_type(route, legacy));
+    /* No global FX selector can change the real-time type lookup. */
+    for (unsigned route = 0; route < 256; route++) {
+        assert(SharedFxPool_typeForRoute((uint8_t)route) == expected_type((uint8_t)route));
+        cases++;
+    }
+    assert(SharedFxPool_typeForRoute(6) == FX_POOL_INVALID);
+    for (unsigned fx = 0; fx < 256; fx++) {
+        for (unsigned physical = 0; physical < 8; physical++) {
+            uint8_t decoded = SharedFxPool_upgradeStoredRoute(6, (uint8_t)fx, (uint8_t)physical);
+            assert(decoded == expected_legacy((uint8_t)fx, (uint8_t)physical));
+            assert(decoded != 6);
             cases++;
         }
-        for (uint32_t combination = 0; combination < 46656u; combination++) {
-            uint32_t value = combination;
-            uint8_t routes[6], expectedMask = 0;
-            for (unsigned v = 0; v < 6; v++) {
-                routes[v] = choices[value % 6u];
-                value /= 6u;
-                uint8_t type = expected_type(routes[v], legacy);
-                if (type < 5u) expectedMask |= (uint8_t)(1u << type);
-            }
-            assert(SharedFxPool_activeMask(routes, legacy) == expectedMask);
+        for (unsigned route = 0; route < 256; route++) {
+            if (route == 6) continue;
+            const uint8_t result=SharedFxPool_upgradeStoredRoute((uint8_t)route,(uint8_t)fx,2);
+            assert(result == (route <= 10 ? route : 0));
+            assert(result != 6);
             cases++;
         }
     }
-    {   /* All six voices to Delay require exactly one shared processor. */
-        const uint8_t allDelay[6] = {7,7,7,7,7,7};
-        assert(SharedFxPool_activeMask(allDelay, 0) == (1u << 4));
+    /* All 6^6 direct/invalid routes, without a selected-effect parameter. */
+    for (uint32_t combination = 0; combination < 46656u; combination++) {
+        uint32_t value = combination;
+        uint8_t routes[6], expectedMask = 0;
+        for (unsigned voice = 0; voice < 6; voice++) {
+            routes[voice] = choices[value % 6u];
+            value /= 6u;
+            uint8_t type = expected_type(routes[voice]);
+            if(type < 5u)expectedMask |= (uint8_t)(1u << type);
+        }
+        assert(SharedFxPool_activeMask(routes) == expectedMask);
+        cases++;
     }
-    {   /* Delay, Ring and Distortion are simultaneously dispatchable. */
-        const uint8_t mixed[6] = {7,7,9,7,8,7};
-        assert(SharedFxPool_activeMask(mixed, 0) == ((1u << 4)|(1u << 2)|(1u << 1)));
-    }
-    printf("PASS R23 Shared FX Pool: %lu route/mask cases, shared-once dispatch\n", cases);
+    { const uint8_t allDelay[6]={7,7,7,7,7,7};
+      assert(SharedFxPool_activeMask(allDelay)==(1u<<4)); }
+    { const uint8_t allEffects[6]={7,8,9,10,0,6};
+      assert(SharedFxPool_activeMask(allEffects)==0x1eu); }
+    printf("PASS R23 direct-FX pool: %lu routing/upgrade/mask cases; archived 6 never dispatched\n",cases);
     return 0;
 }
