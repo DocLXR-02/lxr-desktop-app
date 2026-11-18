@@ -95,6 +95,11 @@ static void bufferTool_clearBuffer(int16_t*b,unsigned samples){memset(b,0,sample
 '''
 # Existing routing definitions are imported unchanged from the pinned header.
 PRE+='#include "Soundengine/SharedFxPool.h"\n'
+# Include the original numeric filter and Delay range macros from pinned headers.
+for header_name in ("OnePole","Delay"):
+    for header_line in headers[header_name].splitlines():
+        if header_line.startswith(tuple("#define "+x for x in ("CALC_FILTER_FREQ","SECONDS_TO_SAMPLES","LOW_MIN","LOW_MAX","HI_MIN","HI_MAX"))):
+            PRE+=header_line+"\n"
 types=[
   brace_segment(headers["OnePole"],"typedef struct OnePoleStruct"),
   brace_segment(headers["Oscillator"],"enum OscWaveforms"),
