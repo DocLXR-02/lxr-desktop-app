@@ -2807,7 +2807,9 @@ static void getMenuItemNameForValue(const uint8_t menuId, const uint8_t curParmV
 		p = transientNames[curParmVal + 1];
 		break;
 	case MENU_AUDIO_OUT:
-		p = outputNames[curParmVal + 1];
+		/* Route 6 is an archived Kit value, not an editable audio destination. */
+		p = (curParmVal == 6u || curParmVal >= outputNames[0][0]) ?
+		    menuText_dash : outputNames[curParmVal + 1];
 		break;
 
 	case MENU_AUDIO_OUT_FX:
@@ -3189,6 +3191,9 @@ static void menu_encoderChangeParameter(int8_t inc)
 		uint8_t numEntries = getMaxEntriesForMenu(menuId);
 		if(*paramValue >= numEntries)
 			*paramValue = (uint8_t)(numEntries-1);
+		/* Keep direct FX route IDs 7..10; skip archived destination 6. */
+		if (menuId == MENU_AUDIO_OUT && *paramValue == 6u)
+			*paramValue = inc > 0 ? 7u : 5u;
 
 	} // parameter_dtypes[paramNr] & 0x0F case DTYPE_MENU
 		break;
@@ -4021,6 +4026,8 @@ static uint8_t limitPotValue(int8_t diff, uint16_t paramNr)
 		uint8_t numEntries=getMaxEntriesForMenu(menuId);
 		//return (uint8_t)(frac * (numEntries-1));
 		if(newValue > (numEntries-1)) newValue = (numEntries-1);
+		if(menuId == MENU_AUDIO_OUT && newValue == 6u)
+			newValue = diff > 0 ? 7u : 5u;
 	}
 
 		break;
