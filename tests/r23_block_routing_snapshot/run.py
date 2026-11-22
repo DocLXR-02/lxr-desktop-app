@@ -23,12 +23,21 @@ assert "SharedFxPool_activeMask" in header and "SharedFxPool_typeForRoute" in he
 
 function_start = "IN_ITCM_RAM void mixer_calcNextSampleBlock("
 before, render = mixer.split(function_start, 1)
-sig = "static __attribute__((noinline)) float mixer_clipMaxRoutedFaderGain("
-assert before.count(sig) == 1, "Unexpected CLP function signature"
-fader = before[before.index(sig):].strip()
-assert re.search(r"mixer_clipMaxRoutedFaderGain\(const uint8_t routes\[FX_POOL_VOICE_COUNT\]\)", fader)
-assert len(re.findall(r"routes\[[0-5]\]", fader)) == 6
-assert "mixer_audioRouting[" not in fader
+assert "mixer_clipMaxRoutedFaderGain" not in mixer, "Obsolete CLP fader helper remains"
+assert "clpFeedbackActive" not in mixer, "Fader-controlled CLP gate remains"
+clp_setting = re.search(
+    r"(?s)(/\* R24: retain CLP's input/output levels and idle gate;.*?\*/\s*"
+    r"fxBus\.distortion\.clipFaderFeedbackFirst = 1\.f;\s*"
+    r"fxBus\.distortion\.clipFaderFeedbackStep = 0\.f;)",
+    render,
+)
+assert clp_setting, "Production CLP feedback setting is not constant"
+clp_setting = clp_setting.group(1)
+voice = (root / "Core/Src/Soundengine/DSPAudio/DrumVoice.c").read_text()
+assert "buf[i] *= voiceArray[voiceNr].combinedVolume;" in voice, "Voice fader volume path changed"
+dsp = (root / "Core/Src/Soundengine/DSPAudio/FX/Distortion.c").read_text()
+assert "CLIP_IDLE_HOLD_SAMPLES 441u" in dsp, "CLP inactivity hold changed"
+assert "CLIP_FEEDBACK_FADE_STEP (1.f / 221.f)" in dsp, "CLP inactivity fade changed"
 
 match = re.search(
     r"(?s)(uint8_t routesForBlock\[FX_POOL_VOICE_COUNT\];\s*"
@@ -41,7 +50,8 @@ assert match, "Production six-route snapshot not found"
 capture = match.group(1)
 assert render.count("mixer_audioRouting[") == 1, "Audio block still rereads a live voice route"
 assert len(re.findall(r"routesForBlock\[[0-5]\]", render)) == 23, "Voice dispatches not all using snapshot"
-assert render.count("mixer_clipMaxRoutedFaderGain(routesForBlock)") == 2
+assert render.count("fxBus.distortion.clipFaderFeedbackFirst = 1.f;") == 1
+assert render.count("fxBus.distortion.clipFaderFeedbackStep = 0.f;") == 1
 assert render.count("SharedFxPool_activeMask(routesForBlock)") == 1
 assert "fxBuffer = fxPoolInputs[selectedType];" in mixer
 assert "fxBuffer += (uint32_t)selectedType" not in mixer
@@ -54,7 +64,13 @@ extern float sqrtf(float);
 typedef struct { struct { float b; } FaderVolumeFilter; } TestVoice;
 TestVoice voiceArray[3], snareVoice, cymbalVoice, hatVoice;
 uint8_t mixer_audioRouting[FX_POOL_VOICE_COUNT];
-""" + "\n" + fader + "\n" + r"""
+"""
+typedef struct { float clipFaderFeedbackFirst, clipFaderFeedbackStep; } TestDistortion;
+struct { TestDistortion distortion; } fxBus;
+void r24_update_clip_control(void) {
+""" + clp_setting + r"""
+}
+""" + r"""
 uint8_t snapshot_capture(uint8_t out[FX_POOL_VOICE_COUNT]) {
 """ + capture + r"""
     for (uint8_t i=0;i<FX_POOL_VOICE_COUNT;++i) out[i]=routesForBlock[i];
@@ -98,20 +114,29 @@ int main(void) {
         if(mask!=expected_mask(mixer_audioRouting)) ++negative;
     }
     check(negative>1000,"negative control did not detect live reread");
-    for(unsigned i=0;i<6;i++)mixer_audioRouting[i]=0;
-    snapshot_capture(snapshot);
-    check(mixer_clipMaxRoutedFaderGain(snapshot)==1.f,"unrouted CLP fallback");
-    mixer_audioRouting[0]=9; snapshot_capture(snapshot);
-    voiceArray[0].FaderVolumeFilter.b=0.f;
-    check(mixer_clipMaxRoutedFaderGain(snapshot)==0.f,"zero CLP gain");
-    voiceArray[0].FaderVolumeFilter.b=.0625f;
-    check(fabsf(mixer_clipMaxRoutedFaderGain(snapshot)-.5f)<.0001f,"CLP ramp curve");
-    mixer_audioRouting[0]=7;
-    check(fabsf(mixer_clipMaxRoutedFaderGain(snapshot)-.5f)<.0001f,
-          "CLP snapshot unchanged by live route update");
-    snapshot_capture(snapshot);
-    check(mixer_clipMaxRoutedFaderGain(snapshot)==1.f,"next-block CLP removal");
-    puts("PASS: 100000 source-extracted snapshot/mask cases, CLP oracle, negative control");
+    /* Independent oracle: extracted production feedback coefficient remains
+       unity across all fader positions, routing and 64-frame samples. */
+    const float faders[]={0.f, .01f, .0625f, .25f, .5f, 1.f};
+    for(unsigned routed=0;routed<2;routed++) {
+        for(unsigned k=0;k<sizeof(faders)/sizeof(faders[0]);k++) {
+            for(unsigned i=0;i<6;i++)mixer_audioRouting[i]=routed ? 9 : 0;
+            snapshot_capture(snapshot);
+            voiceArray[0].FaderVolumeFilter.b=faders[k];
+            snareVoice.FaderVolumeFilter.b=1.f-faders[k];
+            fxBus.distortion.clipFaderFeedbackFirst=-1.f;
+            fxBus.distortion.clipFaderFeedbackStep=99.f;
+            r24_update_clip_control();
+            check(fxBus.distortion.clipFaderFeedbackFirst==1.f,
+                  "CLP feedback unity at every Voice fader position");
+            check(fxBus.distortion.clipFaderFeedbackStep==0.f,
+                  "CLP feedback no longer ramps with Voice faders");
+            for(unsigned sample=0;sample<64;sample++)
+                check(fxBus.distortion.clipFaderFeedbackFirst+
+                      sample*fxBus.distortion.clipFaderFeedbackStep==1.f,
+                      "CLP feedback constant within audio block");
+        }
+    }
+    puts("PASS: 100000 source-extracted snapshot/mask cases, CLP feedback independent of fader, negative control");
     printf("negative control detected %u post-capture divergences\n",negative);
     return 0;
 }
