@@ -570,39 +570,6 @@ IN_ITCM_RAM static __attribute__((noinline)) void mixer_addDataToOutput(uint8_t 
 }
 //#pragma GCC pop_options
 //-----------------------------------------------------------------------
-/* R14: select the highest *existing* smoothed fader among FX routes.
- * This block-rate control calculation stays in flash rather than ITCM.
- * An unrouted CLP retains R13's unity-fader fallback; the R5 idle gate remains.
- * For one route, the resulting R13 feedback curve is unchanged.
- */
-static __attribute__((noinline)) float mixer_clipMaxRoutedFaderGain(const uint8_t routes[FX_POOL_VOICE_COUNT])
-{
-    float maxQ = -1.f;
-    if(SharedFxPool_typeForRoute(routes[0]) == FX_DISTORTION &&
-       voiceArray[0].FaderVolumeFilter.b > maxQ)
-        maxQ = voiceArray[0].FaderVolumeFilter.b;
-    if(SharedFxPool_typeForRoute(routes[1]) == FX_DISTORTION &&
-       voiceArray[1].FaderVolumeFilter.b > maxQ)
-        maxQ = voiceArray[1].FaderVolumeFilter.b;
-    if(SharedFxPool_typeForRoute(routes[2]) == FX_DISTORTION &&
-       voiceArray[2].FaderVolumeFilter.b > maxQ)
-        maxQ = voiceArray[2].FaderVolumeFilter.b;
-    if(SharedFxPool_typeForRoute(routes[3]) == FX_DISTORTION &&
-       snareVoice.FaderVolumeFilter.b > maxQ)
-        maxQ = snareVoice.FaderVolumeFilter.b;
-    if(SharedFxPool_typeForRoute(routes[4]) == FX_DISTORTION &&
-       cymbalVoice.FaderVolumeFilter.b > maxQ)
-        maxQ = cymbalVoice.FaderVolumeFilter.b;
-    if(SharedFxPool_typeForRoute(routes[5]) == FX_DISTORTION &&
-       hatVoice.FaderVolumeFilter.b > maxQ)
-        maxQ = hatVoice.FaderVolumeFilter.b;
-
-    if(maxQ < 0.f) return 1.f; /* No FX route: retain R13 fallback. */
-    if(maxQ <= 0.f) return 0.f;
-    if(maxQ >= .25f) return 1.f;
-    return 2.f * sqrtf(maxQ);
-}
-
 IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 {
 
@@ -651,10 +618,6 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
     for (uint8_t voice = 0; voice < FX_POOL_VOICE_COUNT; ++voice)
         routesForBlock[voice] = mixer_audioRouting[voice];
     const uint8_t fxPoolMask = SharedFxPool_activeMask(routesForBlock);
-	/* R14: evaluate shared MAX-feedback control before voice rendering. */
-	const uint8_t clpFeedbackActive = (fxPoolMask & (1u << FX_DISTORTION)) != 0 &&
-		fxBus.distortion.distortionType == DISTORTION_RAT;
-	const float clpFeedbackFirst = clpFeedbackActive ? mixer_clipMaxRoutedFaderGain(routesForBlock) : 1.f;
 
 
 	const uint8_t pos = 0;
@@ -779,18 +742,10 @@ IN_ITCM_RAM void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 #endif
 
 #endif
-	/* R14: preserve R13's 64-frame ramp; only the fader selector changes. */
-	fxBus.distortion.clipFaderFeedbackFirst = clpFeedbackFirst;
-	if(clpFeedbackActive)
-	{
-		const float last = mixer_clipMaxRoutedFaderGain(routesForBlock);
-		fxBus.distortion.clipFaderFeedbackStep =
-			(last - clpFeedbackFirst) / (OUTPUT_DMA_SIZE - 1);
-	}
-	else
-	{
-		fxBus.distortion.clipFaderFeedbackStep = 0.f;
-	}
+	/* R24: retain CLP's input/output levels and idle gate; remove only the
+	 * additional feedback gain modulation by the routed Voice faders. */
+	fxBus.distortion.clipFaderFeedbackFirst = 1.f;
+	fxBus.distortion.clipFaderFeedbackStep = 0.f;
 	/* A shared processor is invoked at most once, regardless of voice count. */
     if (!(fxPoolMask & (1u << FX_DISTORTION)) && fxBus.distortion.clipStateActive)
         Distortion_resetClip(&fxBus.distortion);
