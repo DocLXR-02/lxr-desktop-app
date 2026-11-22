@@ -1,0 +1,102 @@
+name: Notify LXR Lab when CI evidence is ready
+
+# GitHub evaluates workflow_run listeners from the firmware repository default
+# branch. This job does not build, test, check out, or edit firmware source.
+on:
+  workflow_run:
+    workflows:
+      - "R23*"
+      - "LXR*"
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  notify-private-evidence-archive:
+    if: >-
+      github.event.workflow_run.repository.full_name == 'DocLXR-02/lxr-desktop-app'
+      && github.event.workflow_run.head_repository.full_name == 'DocLXR-02/lxr-desktop-app'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      SOURCE_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      SOURCE_RUN_EVENT: ${{ github.event.workflow_run.event }}
+      SOURCE_ACTIONS_TOKEN: ${{ github.token }}
+      LAB_DISPATCH_TOKEN: ${{ secrets.LXR_LAB_DISPATCH_TOKEN }}
+    steps:
+      - name: Notify Lab about source CI run with evidence artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import urllib.error
+          import urllib.request
+
+          source_repo = 'DocLXR-02/lxr-desktop-app'
+          destination_repo = 'DocLXR-02/lxr-firmware-lab'
+          source_id = os.environ['RUN_ID']
+          source_sha = os.environ['SOURCE_HEAD_SHA']
+          event = os.environ['SOURCE_RUN_EVENT']
+          source_token = os.environ['SOURCE_ACTIONS_TOKEN']
+          dispatch_token = os.environ.get('LAB_DISPATCH_TOKEN', '')
+          if not re.fullmatch(r'[0-9]+', source_id):
+              raise RuntimeError('Invalid completed source run ID')
+          if not re.fullmatch(r'[0-9a-f]{40}', source_sha):
+              raise RuntimeError('Invalid source SHA')
+          if event not in ('push', 'workflow_dispatch', 'pull_request'):
+              print('No dispatch: source CI event not within reviewed scope')
+              raise SystemExit(0)
+
+          url = f'https://api.github.com/repos/{source_repo}/actions/runs/{source_id}/artifacts?per_page=100'
+          headers = {
+              'Authorization': 'Bearer ' + source_token,
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+              'User-Agent': 'LXR-ci-evidence-notifier',
+          }
+          with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=30) as response:
+              listed = json.load(response)
+          if listed.get('total_count', 0) > 100:
+              raise RuntimeError('More than 100 CI artifacts; cannot silently omit some')
+          selected = [
+              a for a in listed.get('artifacts', [])
+              if 'evidence' in a.get('name', '').lower()
+          ]
+          if not selected:
+              print('No named evidence artifacts; no notification required')
+              raise SystemExit(0)
+          if not dispatch_token:
+              raise RuntimeError('Missing firmware repository secret LXR_LAB_DISPATCH_TOKEN')
+
+          payload = {
+              'event_type': 'lxr-ci-evidence-ready',
+              'client_payload': {
+                  'source_repo': source_repo,
+                  'run_id': int(source_id),
+                  'head_sha': source_sha,
+              },
+          }
+          body = json.dumps(payload, separators=(',', ':')).encode('utf-8')
+          request = urllib.request.Request(
+              f'https://api.github.com/repos/{destination_repo}/dispatches',
+              data=body,
+              headers={
+                  'Authorization': 'Bearer ' + dispatch_token,
+                  'Accept': 'application/vnd.github+json',
+                  'Content-Type': 'application/json',
+                  'X-GitHub-Api-Version': '2022-11-28',
+                  'User-Agent': 'LXR-ci-evidence-notifier',
+              },
+              method='POST',
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              if response.status != 204:
+                  raise RuntimeError('Lab dispatch not acknowledged as HTTP 204')
+          print('LAB DISPATCH ACCEPTED', source_id, len(selected), 'evidence artifacts')
+          PY
