@@ -1,0 +1,165 @@
+name: R23 block routing snapshot - authorized host and ARM validation
+on:
+  push:
+    branches:
+      - release/r23-block-routing-snapshot
+    paths:
+      - .github/workflows/r23-routing-snapshot-validation.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  host-regressions:
+    name: R23 snapshot and inherited full host regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout the exact candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify source lineage and allowed modifications
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/r23-snapshot-host-evidence
+          git rev-parse HEAD | tee build/r23-snapshot-host-evidence/SOURCE_SHA.txt
+          git merge-base --is-ancestor 629975bb10ddd6c643b8fccf88194a013155c278 HEAD
+          git merge-base --is-ancestor 36fa9a5a4b8dce156f42667342f4144ecc063c5e HEAD
+          git merge-base --is-ancestor f8fc6fba3b7599095bd073460760b47ad49b173c HEAD
+          git -c core.whitespace=cr-at-eol diff --check f8fc6fba3b7599095bd073460760b47ad49b173c HEAD
+          git diff --name-only f8fc6fba3b7599095bd073460760b47ad49b173c HEAD > build/r23-snapshot-host-evidence/changed-files.txt
+          unexpected="$(grep -Ev '^(Core/Src/Soundengine/DSPAudio/mixer\.c|tests/r23_block_routing_snapshot/run\.py|\.github/workflows/r23-routing-snapshot-validation\.yml)$' build/r23-snapshot-host-evidence/changed-files.txt || true)"
+          if [ -n "$unexpected" ]; then echo "STOP unexpected source paths: $unexpected"; exit 1; fi
+          for f in Delay Ringmod Distortion Compressor; do
+            git diff --quiet f8fc6fba3b7599095bd073460760b47ad49b173c HEAD -- "Core/Src/Soundengine/DSPAudio/FX/$f.c"
+          done
+          python3 --version | tee build/r23-snapshot-host-evidence/host-toolchain.txt
+          gcc --version | head -1 | tee -a build/r23-snapshot-host-evidence/host-toolchain.txt
+          clang --version | head -1 | tee -a build/r23-snapshot-host-evidence/host-toolchain.txt
+      - name: Test real-source snapshot extraction and ARM contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r23_block_routing_snapshot/run.py 2>&1 | tee build/r23-snapshot-host-evidence/snapshot-contract.log
+      - name: Re-run MIDI, FX banks, Kit format and legacy migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r23_midi_hardening/run.py 2>&1 | tee build/r23-snapshot-host-evidence/midi.log
+          python3 tests/r23_fx_kit_format/run.py 2>&1 | tee build/r23-snapshot-host-evidence/kit-format.log
+          python3 tests/r23_fx_banks/run.py 2>&1 | tee build/r23-snapshot-host-evidence/banks.log
+          python3 tests/r23_legacy_kit_migration/run.py 2>&1 | tee build/r23-snapshot-host-evidence/legacy-kit.log
+          python3 tests/r23_fx_route_menu/run.py 2>&1 | tee build/r23-snapshot-host-evidence/voice-menu.log
+      - name: Re-run four DSP integration, editor continuity and FX routing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r23_final_fx_integration/run.py 2>&1 | tee build/r23-snapshot-host-evidence/four-dsp-integration.log
+          python3 tests/r23_clp_editor_continuity/run.py 2>&1 | tee build/r23-snapshot-host-evidence/editor-continuity.log
+          python3 tests/fx_pool_r23/run.py 2>&1 | tee build/r23-snapshot-host-evidence/pool-routing.log
+      - name: Re-run inherited DSP, USB and storage regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r18_delay_mono/run.py build/r23-snapshot-delay 2>&1 | tee build/r23-snapshot-host-evidence/delay.log
+          python3 tests/r18_compressor_mono/run.py build/r23-snapshot-compressor 2>&1 | tee build/r23-snapshot-host-evidence/compressor.log
+          python3 tests/fx_clip_r18/compare.py 2>&1 | tee build/r23-snapshot-host-evidence/clp-compare.log
+          python3 tests/r18_usb_midi/run.py build/r23-snapshot-usb 2>&1 | tee build/r23-snapshot-host-evidence/usb-midi.log
+          python3 tests/r21_voice_copy/run.py 2>&1 | tee build/r23-snapshot-host-evidence/voice-copy.log
+          python3 tests/r22_drum_copy/run.py 2>&1 | tee build/r23-snapshot-host-evidence/drum-copy.log
+          python3 tests/project_storage/run.py 2>&1 | tee build/r23-snapshot-host-evidence/storage.log
+          python3 tests/project_transaction/run.py 2>&1 | tee build/r23-snapshot-host-evidence/project.log
+          python3 tests/project_transaction/run.py legacy 2>&1 | tee build/r23-snapshot-host-evidence/legacy-project.log
+      - name: Retain host evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r23-snapshot-host-evidence
+          path: |
+            build/r23-snapshot-host-evidence/
+            build/r23-final-four-fx-kit/
+            build/r23-clp-editor/
+            build/r23-midi-hardening/
+            build/r23-legacy-kit-upgrade/
+            build/r23-snapshot-delay/
+            build/r23-snapshot-compressor/
+            build/r23-snapshot-usb/
+          retention-days: 30
+          if-no-files-found: warn
+
+  arm-validation:
+    name: Full Cortex-M7 firmware compile and static memory sections
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pin source and verify no unrelated DSP changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/r23-snapshot-arm-evidence
+          git rev-parse HEAD | tee build/r23-snapshot-arm-evidence/SOURCE_SHA.txt
+          git merge-base --is-ancestor 629975bb10ddd6c643b8fccf88194a013155c278 HEAD
+          git -c core.whitespace=cr-at-eol diff --check 36fa9a5a4b8dce156f42667342f4144ecc063c5e HEAD
+          git diff --name-status 36fa9a5a4b8dce156f42667342f4144ecc063c5e HEAD | tee build/r23-snapshot-arm-evidence/changed-files.txt
+      - name: Install SHA-256-verified Arm GNU 14.3.rel1 toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          url=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz
+          curl -fL --retry 3 "$url" -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          echo "8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd  $RUNNER_TEMP/arm-toolchain.tar.xz" | sha256sum --check
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+      - name: Build complete ARM Release for validation, not deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          arm-none-eabi-gcc --version | tee build/r23-snapshot-arm-evidence/toolchain.txt
+          cmake --version | tee -a build/r23-snapshot-arm-evidence/toolchain.txt
+          cmake --preset release 2>&1 | tee build/r23-snapshot-arm-evidence/configure.log
+          cmake --build --preset release --parallel 2 2>&1 | tee build/r23-snapshot-arm-evidence/build.log
+          arm-none-eabi-size -A build/release/LXR_V2_STM32F765.elf 2>&1 | tee build/r23-snapshot-arm-evidence/sections.log
+          cp build/release/LXR_V2_STM32F765.map build/r23-snapshot-arm-evidence/firmware.map
+          sha256sum build/release/LXR_V2_V1.7.img build/release/LXR_V2_STM32F765.elf build/release/LXR_V2_STM32F765.map | tee build/r23-snapshot-arm-evidence/OUTPUT_SHA256SUMS.txt
+          stat -c '%n %s bytes' build/release/LXR_V2_V1.7.img build/release/LXR_V2_STM32F765.elf build/release/LXR_V2_STM32F765.map | tee build/r23-snapshot-arm-evidence/OUTPUT_SIZES.txt
+          printf 'Validation only. No firmware image delivered, flashed, released or merged. CPU deadline, IRQ margin and device audio are unmeasured.\n' > build/r23-snapshot-arm-evidence/NOT_FOR_FLASHING.txt
+      - name: Compare static sections to R22 and enforce memory limits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee build/r23-snapshot-arm-evidence/section-comparison.txt
+          from pathlib import Path
+          import re
+          data=Path('build/r23-snapshot-arm-evidence/sections.log').read_text()
+          sizes={}
+          for line in data.splitlines():
+              m=re.fullmatch(r'\s*(\.[\w.]+)\s+(\d+)\s+\d+\s*',line)
+              if m:sizes[m.group(1)]=int(m.group(2))
+          required=('.text','.rodata','.itcm_text','.dtcm','.dtcmz','.data','.bss','._user_heap')
+          missing=[s for s in required if s not in sizes]
+          if missing:raise RuntimeError('Missing expected sections: '+repr(missing))
+          base={'text':160712,'rodata':83272,'itcm':15304,'dtcm':107424,'sram':275164}
+          actual={'text':sizes['.text'],'rodata':sizes['.rodata'],
+              'itcm':sizes['.itcm_text'],'dtcm':sizes['.dtcm']+sizes['.dtcmz'],
+              'sram':sizes['.data']+sizes['.bss']+sizes['._user_heap']}
+          for label,ref in base.items():
+              print(f'{label}: R22={ref} R23Snapshot={actual[label]} delta={actual[label]-ref:+}')
+          assert actual['itcm'] <= 16384, 'ITCM section overflow'
+          assert actual['dtcm'] <= 131072, 'DTCM static region overflow'
+          assert actual['sram'] <= 393216, 'General SRAM static region overflow'
+          print('CPU/WCET, stack high-water, DMA deadlines and real-device sound UNMEASURED')
+          PY
+      - name: Retain ARM logs, map and hashes, not an installable image
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r23-snapshot-arm-evidence
+          path: build/r23-snapshot-arm-evidence/
+          retention-days: 30
+          if-no-files-found: warn
