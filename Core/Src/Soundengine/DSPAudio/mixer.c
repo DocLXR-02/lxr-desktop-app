@@ -327,7 +327,7 @@ IN_ITCM_RAM static inline void mixer_addDataToOutputFilteredPan(uint8_t dest, co
 	dest = mixer_checkOutJackAvailable(dest);
 	const uint8_t selectedType = SharedFxPool_typeForRoute(dest);
 	if (selectedType != FX_POOL_INVALID)
-		fxBuffer += (uint32_t)selectedType * (OUTPUT_DMA_SIZE * 2u);
+		fxBuffer = fxPoolInputs[selectedType];
 	//assert_param(dest <= MIXER_ROUTING_DAC2_R);
 
 	//TODO may be possible to optimize here using both halfwords of add for stereo mixing
@@ -460,7 +460,7 @@ IN_ITCM_RAM static __attribute__((noinline)) void mixer_addDataToOutput(uint8_t 
 
     const uint8_t selectedType = SharedFxPool_typeForRoute(dest);
     if (selectedType != FX_POOL_INVALID)
-        fxBuffer += (uint32_t)selectedType * (OUTPUT_DMA_SIZE * 2u);
+        fxBuffer = fxPoolInputs[selectedType];
 	//assert_param(dest <= MIXER_ROUTING_DAC2_R);
 
 	//TODO may be possible to optimize here using both halfwords of add for stereo mixing
