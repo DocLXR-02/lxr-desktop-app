@@ -64,13 +64,11 @@ extern float sqrtf(float);
 typedef struct { struct { float b; } FaderVolumeFilter; } TestVoice;
 TestVoice voiceArray[3], snareVoice, cymbalVoice, hatVoice;
 uint8_t mixer_audioRouting[FX_POOL_VOICE_COUNT];
-"""
 typedef struct { float clipFaderFeedbackFirst, clipFaderFeedbackStep; } TestDistortion;
 struct { TestDistortion distortion; } fxBus;
 void r24_update_clip_control(void) {
 """ + clp_setting + r"""
 }
-""" + r"""
 uint8_t snapshot_capture(uint8_t out[FX_POOL_VOICE_COUNT]) {
 """ + capture + r"""
     for (uint8_t i=0;i<FX_POOL_VOICE_COUNT;++i) out[i]=routesForBlock[i];
