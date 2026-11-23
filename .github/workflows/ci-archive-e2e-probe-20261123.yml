@@ -1,0 +1,33 @@
+name: Evidence bridge E2E probe with an arbitrary workflow name
+
+# Single-use owner-authorized archive integration probe. No source checkout,
+# firmware build, deployment, device operation, or firmware-main changes.
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/ci-archive-e2e-probe-20261123.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  original-evidence-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Produce harmless original evidence fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-e2e-originals
+          printf '%s\n' 'LXR archive-only integration probe' 'No firmware source or test executed' > ci-e2e-originals/README.txt
+          printf 'source_run=%s\ncommit=%s\nevent=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_EVENT_NAME" > ci-e2e-originals/provenance.txt
+      - name: Upload one evidence ZIP for independent private Lab transfer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-archive-e2e-original-evidence
+          path: ci-e2e-originals/
+          if-no-files-found: error
+          retention-days: 7
