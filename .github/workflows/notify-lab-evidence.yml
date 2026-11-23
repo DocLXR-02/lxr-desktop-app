@@ -4,9 +4,11 @@ name: Notify LXR Lab when CI evidence is ready
 # branch. This job does not build, test, check out, or edit firmware source.
 on:
   workflow_run:
+    # Glob all CI names, including new and renamed workflows. Exclude self to
+    # prevent a completed notifier run from triggering another notifier run.
     workflows:
-      - "R23*"
-      - "LXR*"
+      - "*"
+      - "!Notify LXR Lab when CI evidence is ready"
     types: [completed]
 
 permissions:
@@ -18,6 +20,7 @@ jobs:
     if: >-
       github.event.workflow_run.repository.full_name == 'DocLXR-02/lxr-desktop-app'
       && github.event.workflow_run.head_repository.full_name == 'DocLXR-02/lxr-desktop-app'
+      && github.event.workflow_run.name != 'Notify LXR Lab when CI evidence is ready'
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     env:
