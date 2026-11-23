@@ -1,0 +1,78 @@
+name: LXR-BUG-033 R22 isolated MIDI regression and ARM validation
+
+on:
+  push:
+    branches:
+      - fix/lxr-bug-033-r22-note-on
+
+permissions:
+  contents: read
+
+jobs:
+  lxr-bug-033:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pin source and constrain change scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/lxr-bug-033-evidence
+          git rev-parse HEAD | tee build/lxr-bug-033-evidence/SOURCE_SHA.txt
+          git -c core.whitespace=cr-at-eol diff --check 0e37942250f79306627702061d851731bdfdbbc8 HEAD
+          git diff --name-only 0e37942250f79306627702061d851731bdfdbbc8 HEAD \
+            | tee build/lxr-bug-033-evidence/CHANGED_FILES.txt
+          unexpected="$(grep -Ev '^(Core/Inc/Soundengine/MIDI/MidiVoiceControl\.h|Core/Src/Soundengine/MIDI/MidiParser\.c|Core/Src/Soundengine/MIDI/MidiVoiceControl\.c|Core/Src/Soundengine/Sequencer/sequencer\.c|tests/lxr_bug_033/(run|validate_arm)\.py|\.github/workflows/lxr-bug-033-r22-validation\.yml|docs/codex-berichte/2026-11-23_lxr-bug-033-r22-midi-note-on\.md|docs/checkpoints/LXR-BUG-033\.md)$' build/lxr-bug-033-evidence/CHANGED_FILES.txt || true)"
+          if [ -n "$unexpected" ]; then echo "STOP unexpected paths: $unexpected"; exit 1; fi
+      - name: Production-source MIDI baseline and candidate host oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/lxr_bug_033/run.py 2>&1 | tee build/lxr-bug-033-evidence/host-summary.log
+      - name: Inherited R22 voice-copy and input regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r22_drum_copy/run.py 2>&1 | tee build/lxr-bug-033-evidence/r22-regressions.log
+      - name: Inherited R18 USB MIDI transport regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r18_usb_midi/run.py build/lxr-bug-033-usb 2>&1 | tee build/lxr-bug-033-evidence/usb-regression.log
+      - name: Install matched ARM GNU Toolchain 14.3.rel1
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz
+          curl -fL --retry 3 "$URL" -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          echo "8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd  $RUNNER_TEMP/arm-toolchain.tar.xz" | sha256sum --check
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+      - name: Build actual ARM candidate firmware
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --preset release 2>&1 | tee build/lxr-bug-033-evidence/configure.log
+          cmake --build --preset release --parallel 2 2>&1 | tee build/lxr-bug-033-evidence/build.log
+          arm-none-eabi-size -A build/release/LXR_V2_STM32F765.elf 2>&1 | tee build/lxr-bug-033-evidence/sections.log
+          arm-none-eabi-gcc --version | tee build/lxr-bug-033-evidence/TOOLCHAIN.txt
+          cp build/release/LXR_V2_STM32F765.elf build/lxr-bug-033-evidence/
+          cp build/release/LXR_V2_STM32F765.map build/lxr-bug-033-evidence/
+      - name: Validate updater image, ELF and matched static resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/lxr_bug_033/validate_arm.py 2>&1 | tee build/lxr-bug-033-evidence/arm-summary.log
+          (cd build/lxr-bug-033-evidence && sha256sum LXR_BUG_033_R22_CANDIDATE_NOT_FOR_FLASHING.img LXR_V2_STM32F765.elf LXR_V2_STM32F765.map > OUTPUT_SHA256SUMS.txt)
+          printf '%s\n' 'ISOLATED LXR-BUG-033 R22 MIDI CANDIDATE. NOT FOR FLASHING. NOT OWNER TESTED. R22 TEST03 STABLE REMAINS UNCHANGED. NO RELEASE.' > build/lxr-bug-033-evidence/NOT_FOR_FLASHING.txt
+      - name: Preserve complete evidence even if a gate fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lxr-bug-033-r22-evidence-${{ github.sha }}
+          path: build/lxr-bug-033-evidence/
+          retention-days: 30
+          if-no-files-found: warn
