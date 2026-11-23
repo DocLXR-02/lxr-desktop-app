@@ -1,0 +1,125 @@
+name: CC0 policy B - host sanitizers and matched ARM R22 comparison
+
+on:
+  push:
+    branches:
+      - fix/cc0-reject-invalid-kit-r22-20261123
+  pull_request:
+    branches:
+      - release/r22
+
+permissions:
+  contents: read
+
+jobs:
+  cc0-host-safety:
+    name: CC0 real-handler ASan/UBSan + R22 negative oracle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Read exact candidate and R22 baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p cc0-evidence/host
+          git rev-parse HEAD | tee cc0-evidence/host/SOURCE_SHA.txt
+          git rev-parse 0e37942250f79306627702061d851731bdfdbbc8 > cc0-evidence/host/BASE_SHA.txt
+          git -c core.whitespace=cr-at-eol diff --check 0e37942250f79306627702061d851731bdfdbbc8 HEAD
+          git diff --name-only 0e37942250f79306627702061d851731bdfdbbc8 HEAD -- Core/Inc Core/Src > cc0-evidence/host/PRODUCTION_CHANGED_FILES.txt
+          test "$(cat cc0-evidence/host/PRODUCTION_CHANGED_FILES.txt)" = "Core/Src/frontPanelParser.c"
+      - name: Execute CC0 production-handler host tests with sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/cc0_bounds/run.py --out cc0-evidence/host | tee cc0-evidence/host/summary.log
+      - name: Existing R22 Kit/selector host regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r22_drum_copy/run.py 2>&1 | tee cc0-evidence/host/r22-regression.log
+      - name: Existing USB MIDI host regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/r18_usb_midi/run.py 2>&1 | tee cc0-evidence/host/usb-midi-regression.log
+      - name: Preserve host evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cc0-host-safety-evidence
+          path: cc0-evidence/host/
+          retention-days: 30
+          if-no-files-found: warn
+
+  cc0-matched-arm:
+    name: ARM GNU 14.3 R22 vs CC0 source candidate, static resources
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Record comparison and source identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p cc0-evidence/arm/{baseline,candidate}
+          git rev-parse HEAD | tee cc0-evidence/arm/WORKFLOW_SOURCE_SHA.txt
+          git rev-parse 0e37942250f79306627702061d851731bdfdbbc8 > cc0-evidence/arm/BASE_SHA.txt
+          git -c core.whitespace=cr-at-eol diff --check 0e37942250f79306627702061d851731bdfdbbc8 HEAD
+          git diff --name-only 0e37942250f79306627702061d851731bdfdbbc8 HEAD -- Core/Inc Core/Src > cc0-evidence/arm/PRODUCTION_CHANGED_FILES.txt
+          test "$(cat cc0-evidence/arm/PRODUCTION_CHANGED_FILES.txt)" = "Core/Src/frontPanelParser.c"
+      - name: Install R22-matched ARM GNU Toolchain 14.3.rel1
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz
+          curl -fL --retry 3 "$URL" -o "$RUNNER_TEMP/arm-toolchain.tar.xz"
+          echo "8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd  $RUNNER_TEMP/arm-toolchain.tar.xz" | sha256sum --check
+          tar -xJf "$RUNNER_TEMP/arm-toolchain.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin" >> "$GITHUB_PATH"
+      - name: Build exact accepted R22 source baseline (no flash)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout --detach 0e37942250f79306627702061d851731bdfdbbc8
+          git rev-parse HEAD > cc0-evidence/arm/baseline/SOURCE_SHA.txt
+          arm-none-eabi-gcc --version | tee cc0-evidence/arm/COMPILER.txt
+          cmake --preset release 2>&1 | tee cc0-evidence/arm/baseline/configure.log
+          cmake --build --preset release --parallel 2 2>&1 | tee cc0-evidence/arm/baseline/build.log
+          arm-none-eabi-size -A build/release/LXR_V2_STM32F765.elf | tee cc0-evidence/arm/baseline/sections.log
+          cp build/release/LXR_V2_STM32F765.elf build/release/LXR_V2_STM32F765.map build/release/LXR_V2_V1.7.img cc0-evidence/arm/baseline/
+          (cd cc0-evidence/arm/baseline && sha256sum LXR_V2_STM32F765.elf LXR_V2_STM32F765.map LXR_V2_V1.7.img > SHA256SUMS.txt)
+      - name: Build CC0 candidate with identical compiler and Release flags (no flash)
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build/release
+          git checkout --detach "$(cat cc0-evidence/arm/WORKFLOW_SOURCE_SHA.txt)"
+          git rev-parse HEAD > cc0-evidence/arm/candidate/SOURCE_SHA.txt
+          cmake --preset release 2>&1 | tee cc0-evidence/arm/candidate/configure.log
+          cmake --build --preset release --parallel 2 2>&1 | tee cc0-evidence/arm/candidate/build.log
+          arm-none-eabi-size -A build/release/LXR_V2_STM32F765.elf | tee cc0-evidence/arm/candidate/sections.log
+          cp build/release/LXR_V2_STM32F765.elf build/release/LXR_V2_STM32F765.map build/release/LXR_V2_V1.7.img cc0-evidence/arm/candidate/
+          (cd cc0-evidence/arm/candidate && sha256sum LXR_V2_STM32F765.elf LXR_V2_STM32F765.map LXR_V2_V1.7.img > SHA256SUMS.txt)
+          arm-none-eabi-objdump -d build/release/LXR_V2_STM32F765.elf > cc0-evidence/arm/candidate/disassembly.txt
+      - name: Check both ARM ELFs/images and compare region headroom
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/cc0_bounds/resources.py \
+            --baseline cc0-evidence/arm/baseline \
+            --candidate cc0-evidence/arm/candidate \
+            --out cc0-evidence/arm | tee cc0-evidence/arm/resource-summary.log
+          echo "NOT FOR FLASHING. HOST AND ARM VALIDATION CANDIDATE ONLY; DEVICE/SOUND ACCEPTANCE PENDING." > cc0-evidence/arm/NOT_FOR_FLASHING.txt
+      - name: Preserve ARM evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cc0-matched-arm-build-evidence
+          path: cc0-evidence/arm/
+          retention-days: 30
+          if-no-files-found: warn
