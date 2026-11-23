@@ -28,7 +28,7 @@ def source(mode, path):
     return (ROOT / path).read_text(encoding="utf-8")
 
 def function(text, name):
-    pattern = r"(?m)^[ \t]*(?:static[ \t]+)?void[ \t]+" + re.escape(name) + r"[ \t]*\([^;]*?\)[ \t]*\{"
+    pattern = r"(?m)^[ \t]*(?:static[ \t]+)?void[ \t]+" + re.escape(name) + r"[ \t]*\([^;]*?\)\s*\{"
     matches = list(re.finditer(pattern, text))
     assert len(matches) == 1, (name, len(matches))
     m = matches[0]
