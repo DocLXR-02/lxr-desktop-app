@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/cc0-reject-invalid-kit-r22-20261123
+  pull_request:
+    branches:
+      - release/r22
 
 permissions:
   contents: read
