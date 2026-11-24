@@ -28,6 +28,20 @@ uint32_t lxr_diag_now(void);
 void lxr_diag_record(unsigned metric, uint32_t begin);
 void lxr_diag_callback(unsigned stream, unsigned ready);
 void lxr_diag_rearm(unsigned stream, unsigned status);
+/* DIAG 01 session API: foreground only; the existing live writers stay unchanged. */
+typedef enum {
+    LXR_DIAG_READY = 0, LXR_DIAG_RUNNING, LXR_DIAG_FROZEN
+} LxrDiagSessionState;
+typedef struct {
+    LxrDiagnostics data;
+    uint32_t number, elapsed_ms;
+    uint8_t duration_limit;
+} LxrDiagResult;
+LxrDiagSessionState lxr_diag_session_state(void);
+uint8_t lxr_diag_session_start(void);
+uint8_t lxr_diag_session_stop(void);
+uint8_t lxr_diag_session_poll(void);
+const LxrDiagResult *lxr_diag_session_result(void);
 #define LXR_DIAG_INIT() lxr_diag_init()
 #define LXR_DIAG_START(name) uint32_t name = lxr_diag_now()
 #define LXR_DIAG_END(metric, name) lxr_diag_record(metric, name)
