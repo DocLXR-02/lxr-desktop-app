@@ -8,6 +8,7 @@
  */
 
 #include "menu/menu.h"
+#include "safety/runtimeDiagnostics.h"
 #include "lcd.h"
 #include <string.h>
 #include <stdlib.h>
@@ -715,6 +716,7 @@ static uint8_t editModeActive = 0;			/**< when edit mode is active, only the cur
 static uint8_t lastEncoderButton = 0;		/**< stores the state of the encoder button so the edit mode is only switched once when the button is pressed*/
 
 #include "voiceTransfer.inc"
+#include "diagnosticsMenu.inc"
 
 /** array holding all the available parameter values*/
 uint8_t mainParameters[NUM_KIT_SLOTS][END_OF_SOUND_PARAMETERS];
@@ -1843,6 +1845,9 @@ void menu_repaint()
     if(menu_activePage != PATTERN_SAVE_PAGE_OK && menu_activePage != KIT_SAVE_PAGE_OK &&
        menu_renderAutomationNotice()) return;
 	if(screensaver_Active) return;
+#if LXR_RUNTIME_DIAGNOSTICS
+    if(menu_diagRender()) return;
+#endif
 
 	visibleCursor = 0;
 	if(menu_activePage == LOAD_PAGE || menu_activePage==SAVE_PAGE)
@@ -2917,7 +2922,15 @@ static void getMenuItemNameForValue(const uint8_t menuId, const uint8_t curParmV
 // button - 1 if the button is depressed, 0 if its not
 void menu_parseEncoder(int8_t inc, uint8_t button)
 {
+#if LXR_RUNTIME_DIAGNOSTICS
+    menu_diagService();
+    if(menu_diagDrain && !menu_voiceCopyActive && !menu_voiceCopyDrain &&
+       menu_diagEncoder(inc, button)) return;
+#endif
     if(menu_voiceTransferEncoder(inc, button)) return;
+#if LXR_RUNTIME_DIAGNOSTICS
+    if(menu_diagEncoder(inc, button)) return;
+#endif
 	uint8_t btnClicked=0;
 	// handle the button being clicked or released
 	if(button != lastEncoderButton) { // was the button clicked?
@@ -3345,6 +3358,9 @@ void menu_resetSaveParameters()
 // if its the global menu, and there are multiple pages will toggle to the next page
 void menu_switchSubPage(uint8_t subPageNr, uint8_t toggle)
 {
+#if LXR_RUNTIME_DIAGNOSTICS
+    menu_diagClose();
+#endif
 	//leave edit mode if active
 	editModeActive = 0;
 
@@ -3406,6 +3422,9 @@ uint8_t menu_getSubPage()
 //-----------------------------------------------------------------
 void menu_switchPage(uint8_t pageNr)
 {
+#if LXR_RUNTIME_DIAGNOSTICS
+    menu_diagClose();
+#endif
 	//autosave config page settings
 	/*
 	if(menu_activePage == MENU_MIDI_PAGE)
@@ -4110,6 +4129,9 @@ uint8_t getMenuIndx(void)
 //-----------------------------------------------------------------
 uint8_t menu_parseKnobValue(uint8_t potNr, int16_t diff)
 {
+#if LXR_RUNTIME_DIAGNOSTICS
+    if(menu_diagVisible) return 0;
+#endif
 	screensaver_touch();
 	preset_touchTimer(PRESET_KIT_TIMER);
 

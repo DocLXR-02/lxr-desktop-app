@@ -679,6 +679,11 @@ void menu_init();
 /** takes the values received from the encoder and translates it to menu changes*/
 uint8_t menu_voiceTransferButton(uint8_t button, uint8_t pressed);
 void menu_parseEncoder(int8_t inc, uint8_t button);
+#if defined(LXR_RUNTIME_DIAGNOSTICS) && LXR_RUNTIME_DIAGNOSTICS
+uint8_t menu_diagConfig(void);
+void menu_diagClose(void);
+uint8_t menu_diagPotMode(void);
+#endif
 //-----------------------------------------------------------------
 void menu_switchPage(uint8_t pageNr);
 //-----------------------------------------------------------------

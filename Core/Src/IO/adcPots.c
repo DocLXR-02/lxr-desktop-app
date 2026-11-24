@@ -195,9 +195,17 @@ void adc_checkPots()
 #else
 
 	//uint8_t i = adc_idx;
+#if defined(LXR_RUNTIME_DIAGNOSTICS) && LXR_RUNTIME_DIAGNOSTICS
+    const uint8_t diagPotMode = menu_diagPotMode();
+    if(diagPotMode == 1u) return;
+#endif
 	for(uint8_t i=0;i<4;i++)
 	{
-		if( ((adc_buf[i*2]>>4) > ((adc_buf_old[i*2]>>4) + HYSTERSIS)) ||
+		if(
+#if defined(LXR_RUNTIME_DIAGNOSTICS) && LXR_RUNTIME_DIAGNOSTICS
+            diagPotMode == 2u ||
+#endif
+            ((adc_buf[i*2]>>4) > ((adc_buf_old[i*2]>>4) + HYSTERSIS)) ||
 			((adc_buf_old[i*2]>>4) > ((adc_buf[i*2]>>4) + HYSTERSIS)))
 		{
 
@@ -220,6 +228,12 @@ void adc_checkPots()
 			adc_buf_old[i*2] = adc_buf[i*2];
 			//>> 1 to reduce resolution and increase pot travel
 			uint16_t newValue = calcPosition(adc_buf[i*2]>>4, adc_buf[i*2+1]>>4) >>shiftAmount;
+#if defined(LXR_RUNTIME_DIAGNOSTICS) && LXR_RUNTIME_DIAGNOSTICS
+            if(diagPotMode == 2u) {
+                adc_potValues[i] = newValue;
+                continue; /* No deferred parameter change after the overlay. */
+            }
+#endif
 
 		   if (newValue !=  adc_potValues[i] )
 		   {

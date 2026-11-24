@@ -906,6 +906,9 @@ static void buttonHandler_seqButtonPressed(uint8_t seqButtonPressed)
 			buttonHandler_stateMemory.selectButtonMode = SEQ_CONFIG;
 			led_clearAllBlinkLeds();
 			led_setBlinkLed(LED_STEP12,1);
+			#if defined(LXR_RUNTIME_DIAGNOSTICS) && LXR_RUNTIME_DIAGNOSTICS
+            if(menu_diagConfig()) break;
+			#endif
 			menu_switchPage(MENU_MIDI_PAGE);
 			break;
 
@@ -1594,6 +1597,10 @@ void buttonHandler_copyEditableBase(uint8_t *out, uint16_t count)
 
 void buttonHandler_buttonPressed(uint8_t buttonNr) {
     if(menu_voiceTransferButton(buttonNr, 1)) return;
+#if defined(LXR_RUNTIME_DIAGNOSTICS) && LXR_RUNTIME_DIAGNOSTICS
+    if(buttonNr != BUT_SHIFT && !(buttonNr == BUT_SEQ12 && buttonHandler_getShift()))
+        menu_diagClose();
+#endif
 
 	screensaver_touch();
 
