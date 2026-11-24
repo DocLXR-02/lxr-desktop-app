@@ -1,5 +1,5 @@
 """Validate two actual ARM outputs; report static resource deltas, not timing."""
-import hashlib,json,struct,subprocess
+import hashlib,json,struct,subprocess,zipfile
 from pathlib import Path
 out=Path("build/r25-diag01-evidence")
 def inspect(mode):
@@ -29,6 +29,9 @@ def inspect(mode):
              "SRAM":span([".data",".bss","._user_heap"],0x20020000),"FLASH_payload":len(img)-16}
     capacities={"ITCM":16384,"DTCM":131072,"SRAM":393216,"FLASH_payload":1015808}
     assert all(regions[k]<capacities[k] for k in regions)
+    assert (b"LXR LAB R25" in img)==(mode=="ON")
+    assert (b"LXR LAB R22" in img)==(mode=="OFF")
+    if mode=="OFF":assert hashlib.sha256(img).hexdigest()=="da1c882f6600c96fa5926ad4797d618ce13eefc16ab5563b8a161686f1909c0b"
     nm=(p/"symbols.txt").read_text()
     assert (" lxr_diag_session_start" in nm)==(mode=="ON")
     assert (" lxr_diagnostics" in nm)==(mode=="ON")
@@ -36,7 +39,15 @@ def inspect(mode):
             "files":{f.name:{"bytes":f.stat().st_size,"sha256":hashlib.sha256(f.read_bytes()).hexdigest()} for f in p.iterdir() if f.is_file()}}
 a,b=inspect("OFF"),inspect("ON")
 delta={k:b["regions"][k]-a["regions"][k] for k in a["regions"]}
-report={"source_sha":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),
+assert delta["SRAM"]+delta["DTCM"]<=256
+sp,reset=struct.unpack_from("<II",(out/"ON/LXR_V2_V1.7.img").read_bytes(),16)
+assert sp%8==0 and 0x20000000<=sp<=0x20080000 and reset&1 and 0x08008000<=reset<0x08100000
+delivery=out/"LXR_R25_DIAG01.zip"
+with zipfile.ZipFile(delivery,"w",compression=zipfile.ZIP_DEFLATED) as z:
+    z.write(out/"ON/LXR_V2_V1.7.img","LXR_V2_V1.7.img")
+with zipfile.ZipFile(delivery) as z:
+    assert z.testzip() is None and z.namelist()==["LXR_V2_V1.7.img"] and z.read(z.namelist()[0])==(out/"ON/LXR_V2_V1.7.img").read_bytes()
+report={"delivery":{"name":delivery.name,"bytes":delivery.stat().st_size,"sha256":hashlib.sha256(delivery.read_bytes()).hexdigest()},"source_sha":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),
         "OFF":a,"ON":b,"ON_minus_OFF":delta,"runtime":"UNMEASURED","status":"STATIC_ONLY"}
 (out/"validation.json").write_text(json.dumps(report,indent=2)+"\n")
-print(json.dumps({"OFF":a["regions"],"ON":b["regions"],"delta":delta},indent=2))
+print(json.dumps({"OFF":a["regions"],"ON":b["regions"],"delta":delta,"delivery":report["delivery"],"images":{"OFF":a["files"]["LXR_V2_V1.7.img"],"ON":b["files"]["LXR_V2_V1.7.img"]}},indent=2))

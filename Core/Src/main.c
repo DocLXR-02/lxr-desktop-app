@@ -351,7 +351,11 @@ int main(void)
 #else
 	//print boot up message
 lcd_clear();
+#if defined(LXR_RUNTIME_DIAGNOSTICS) && LXR_RUNTIME_DIAGNOSTICS
+lcd_string("LXR LAB R25");
+#else
 lcd_string("LXR LAB R22");
+#endif
 //goto 2nd line
 lcd_setcursor(0,2);
 /* Line 2 intentionally blank on LXR LAB firmware. */

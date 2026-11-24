@@ -143,7 +143,7 @@ static uint8_t menu_diagEncoder(int8_t inc, uint8_t button)
 {
     if(menu_diagDrain) {
         lastEncoderButton = button;
-        if(!button) menu_diagDrain = 0;
+        if(!button && !inc) menu_diagDrain = 0;
         if(button || inc) screensaver_touch();
         return 1;
     }
