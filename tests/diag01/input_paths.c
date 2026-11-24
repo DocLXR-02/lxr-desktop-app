@@ -28,7 +28,7 @@ static uint8_t has2ndPage(uint8_t p){return p==0;}
 #define pgm_read_word(p) (*(p))
 #define AVR 0
 #define USE_ATAN2 0
-#define HYSTERESIS 40
+#define HYSTERSIS 40
 static uint16_t adc_buf[8],adc_buf_old[8],adc_potValues[4];
 static uint8_t adc_idx,activeParameters[256];
 static uint8_t getMenuIndx(void){return menuIndex;}
